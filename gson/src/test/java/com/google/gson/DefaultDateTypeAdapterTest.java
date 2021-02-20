@@ -16,6 +16,9 @@
 
 package com.google.gson;
 
+import com.google.gson.internal.JavaVersion;
+import junit.framework.TestCase;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -23,9 +26,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import com.google.gson.internal.JavaVersion;
-
-import junit.framework.TestCase;
+import static com.google.gson.internal.bind.util.ISO8601Utils.indexOfNonDigit;
 
 /**
  * A simple unit test for the {@link DefaultDateTypeAdapter} class.
@@ -139,8 +140,16 @@ public class DefaultDateTypeAdapterTest extends TestCase {
     }
   }
 
+  public void testIncreaseCoverageParseMethod()throws Exception {
+
+  };
+
   public void testDateDeserializationISO8601() throws Exception {
     DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);
+    //Two added tests for coverage
+    assertParsed("1970-01-01T00:00:00.00Z", adapter);
+    assertParsed("1970-01-01T00:00:00.0Z", adapter);
+    //
     assertParsed("1970-01-01T00:00:00.000Z", adapter);
     assertParsed("1970-01-01T00:00Z", adapter);
     assertParsed("1970-01-01T00:00:00+00:00", adapter);
@@ -199,7 +208,14 @@ public class DefaultDateTypeAdapterTest extends TestCase {
     assertEquals("ISO 8601", new Date(0), adapter.fromJson(toLiteral("1970-01-01T00:00:00Z")));
   }
 
+  public static void main(String[] args) {
+    int endOffset = indexOfNonDigit("1970-01-01T00:00:00:00Z", 20 + 1);
+    System.out.println(endOffset);
+
+  }
+
   private static String toLiteral(String s) {
     return '"' + s + '"';
   }
 }
+

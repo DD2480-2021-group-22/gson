@@ -1501,7 +1501,7 @@ public class JsonReader implements Closeable {
    */
   private char readEscapeCharacter() throws IOException {
     if (pos == limit && !fillBuffer(1)) {
-      System.out.println("Covered #1"); throw syntaxError("Unterminated escape sequence");
+       throw syntaxError("Unterminated escape sequence");
     }
 
     char escaped = buffer[pos++];

@@ -1484,7 +1484,12 @@ public class JsonReader implements Closeable {
     }
     return result.toString();
   }
-
+  public char interfaceReadEscapedCharacter(int pos, int limit) throws IOException{
+    this.pos = pos;
+    this.limit = limit;
+    char[] buffer = this.buffer;
+    return readEscapeCharacter();
+  };
   /**
    * Unescapes the character identified by the character or characters that
    * immediately follow a backslash. The backslash '\' should have already
@@ -1496,13 +1501,14 @@ public class JsonReader implements Closeable {
    */
   private char readEscapeCharacter() throws IOException {
     if (pos == limit && !fillBuffer(1)) {
-      throw syntaxError("Unterminated escape sequence");
+      System.out.println("Covered #1"); throw syntaxError("Unterminated escape sequence");
     }
 
     char escaped = buffer[pos++];
     switch (escaped) {
     case 'u':
       if (pos + 4 > limit && !fillBuffer(4)) {
+
         throw syntaxError("Unterminated escape sequence");
       }
       // Equivalent to Integer.parseInt(stringPool.get(buffer, pos, 4), 16);

@@ -16,22 +16,13 @@
 
 package com.google.gson.stream;
 
+import junit.framework.TestCase;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
-import junit.framework.TestCase;
-
-import static com.google.gson.stream.JsonToken.BEGIN_ARRAY;
-import static com.google.gson.stream.JsonToken.BEGIN_OBJECT;
-import static com.google.gson.stream.JsonToken.BOOLEAN;
-import static com.google.gson.stream.JsonToken.END_ARRAY;
-import static com.google.gson.stream.JsonToken.END_OBJECT;
-import static com.google.gson.stream.JsonToken.NAME;
-import static com.google.gson.stream.JsonToken.NULL;
-import static com.google.gson.stream.JsonToken.NUMBER;
-import static com.google.gson.stream.JsonToken.STRING;
 
 @SuppressWarnings("resource")
 public final class JsonReaderTest extends TestCase {
@@ -44,6 +35,18 @@ public final class JsonReaderTest extends TestCase {
     assertEquals(JsonToken.END_DOCUMENT, reader.peek());
   }
 
+  /**
+   * Hello Kitty
+   * @throws IOException
+   */
+  public void testReadEscapedCharacterposlimit0() throws IOException {
+    JsonReader reader = new JsonReader(reader(""));
+    try {
+      char a=reader.interfaceReadEscapedCharacter(0,0);
+    }catch (MalformedJsonException expected){
+
+    } }
+
   public void testReadEmptyArray() throws IOException {
     JsonReader reader = new JsonReader(reader("[]"));
     reader.beginArray();
@@ -51,6 +54,7 @@ public final class JsonReaderTest extends TestCase {
     reader.endArray();
     assertEquals(JsonToken.END_DOCUMENT, reader.peek());
   }
+
 
   public void testReadObject() throws IOException {
     JsonReader reader = new JsonReader(reader(
@@ -1665,6 +1669,8 @@ public final class JsonReaderTest extends TestCase {
     } catch (IOException expected) {
     }
   }
+
+
 
   private String repeat(char c, int count) {
     char[] array = new char[count];

@@ -6,7 +6,8 @@ target
 */target
 pom.xml.*
 release.properties
-
+bin/
+cfg/
 .idea
 *.iml
 *.ipr

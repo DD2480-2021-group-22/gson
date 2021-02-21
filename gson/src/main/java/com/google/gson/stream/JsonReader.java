@@ -1498,7 +1498,6 @@ public class JsonReader implements Closeable {
     FileAppender fileAppender = new FileAppender("./coverage_readEscapeCharacter");
     if (pos == limit && !fillBuffer(1)) {
       fileAppender.appendInt(0);
-      fileAppender.close();
       throw syntaxError("Unterminated escape sequence");
     }
     fileAppender.appendInt(1);
@@ -1508,7 +1507,6 @@ public class JsonReader implements Closeable {
     case 'u':
       if (pos + 4 > limit && !fillBuffer(4)) {
         fileAppender.appendInt(2);
-        fileAppender.close();
         throw syntaxError("Unterminated escape sequence");
       }
       fileAppender.appendInt(3);
@@ -1529,12 +1527,10 @@ public class JsonReader implements Closeable {
           result += (c - 'A' + 10);
         } else {
           fileAppender.appendInt(8);
-          fileAppender.close();
           throw new NumberFormatException("\\u" + new String(buffer, pos, 4));
         }
       }
       fileAppender.appendInt(9);
-      fileAppender.close();
       pos += 4;
       return result;
 

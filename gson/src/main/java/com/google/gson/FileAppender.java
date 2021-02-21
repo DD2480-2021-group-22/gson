@@ -13,7 +13,7 @@ public class FileAppender {
 
     // PrintWriter solution largely based on SO question at:
     // https://stackoverflow.com/questions/4614227/how-to-add-a-new-line-of-text-to-an-existing-file-in-java
-    PrintWriter printWriter;
+    String filepath;
 
     /**
      * Creates a FileAppender which will attempt to write to the file specified.
@@ -21,15 +21,7 @@ public class FileAppender {
      * @param filePath The file to append lines to.
      */
     public FileAppender(String filePath) {
-        try {
-            File coverageFile = new File(filePath);
-            coverageFile.createNewFile(); // create file if it does not exist
-            FileWriter fw = new FileWriter(coverageFile, true); // appends to file
-            printWriter = new PrintWriter(fw, true); // automatic flush on
-        } catch (Exception e) {
-            System.out.println("FAILED TO SET UP TEMP FILE WRITER");
-            throw new RuntimeException("FAILED TO SET UP TEMP FILE WRITER", e);
-        }
+        this.filepath = filePath;
     }
 
     /**
@@ -38,13 +30,17 @@ public class FileAppender {
      * @param x the integer to write.
      */
     public void appendInt(int x) {
+        PrintWriter printWriter;
+        try {
+            File coverageFile = new File(filepath);
+            coverageFile.createNewFile(); // create file if it does not exist
+            FileWriter fw = new FileWriter(coverageFile, true); // appends to file
+            printWriter = new PrintWriter(fw, true); // automatic flush on
+        } catch (Exception e) {
+            System.out.println("FAILED TO SET UP TEMP FILE WRITER");
+            throw new RuntimeException("FAILED TO SET UP TEMP FILE WRITER", e);
+        }
         printWriter.println(x);
-    }
-
-    /**
-     * Closes the underlying PrintWriter. Call when done with this instance.
-     */
-    public void close() {
         printWriter.close();
     }
 }

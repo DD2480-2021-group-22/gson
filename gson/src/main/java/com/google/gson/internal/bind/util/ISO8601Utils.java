@@ -125,6 +125,7 @@ public class ISO8601Utils
      */
     public static Date parse(String date, ParsePosition pos) throws ParseException {
 
+        // This method contains 33 different branches that can be taken, counting if/while only
         FileAppender fileAppender = new FileAppender("." + File.separator + "parse-coverage.txt");
 
         Exception fail = null;

@@ -26,8 +26,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import static com.google.gson.internal.bind.util.ISO8601Utils.indexOfNonDigit;
-
 /**
  * A simple unit test for the {@link DefaultDateTypeAdapter} class.
  *
@@ -140,16 +138,25 @@ public class DefaultDateTypeAdapterTest extends TestCase {
     }
   }
 
+  /**
+   * Added tests to increase coverage for the function parse in src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java.
+   * The requirements for triggering the uncovered switch-cases are that (parseEndOffset - offset) is either 1 or 2.
+   * parseEndOffset is calculated asMath.min(endOffset, offset + 3) -
+   * - which chooses the minimum of the offset to the last number and the offset +3.
+   * First assert results in an (parseEndOffset - offset) value of 2 which results in switch case 2.
+   * Second assert results in an (parseEndOffset - offset) value of 1 which results in switch case 1.
+   * Both are parsed to the format of a DefaultDateTypeAdapter, despite the length.
+   * @throws Exception
+   */
   public void testIncreaseCoverageParseMethod()throws Exception {
-
-  };
-
-  public void testDateDeserializationISO8601() throws Exception {
     DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);
     //Two added tests for coverage
     assertParsed("1970-01-01T00:00:00.00Z", adapter);
     assertParsed("1970-01-01T00:00:00.0Z", adapter);
-    //
+  };
+
+  public void testDateDeserializationISO8601() throws Exception {
+    DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);
     assertParsed("1970-01-01T00:00:00.000Z", adapter);
     assertParsed("1970-01-01T00:00Z", adapter);
     assertParsed("1970-01-01T00:00:00+00:00", adapter);
@@ -206,12 +213,6 @@ public class DefaultDateTypeAdapterTest extends TestCase {
   private void assertParsed(String date, DefaultDateTypeAdapter adapter) throws IOException {
     assertEquals(date, new Date(0), adapter.fromJson(toLiteral(date)));
     assertEquals("ISO 8601", new Date(0), adapter.fromJson(toLiteral("1970-01-01T00:00:00Z")));
-  }
-
-  public static void main(String[] args) {
-    int endOffset = indexOfNonDigit("1970-01-01T00:00:00:00Z", 20 + 1);
-    System.out.println(endOffset);
-
   }
 
   private static String toLiteral(String s) {

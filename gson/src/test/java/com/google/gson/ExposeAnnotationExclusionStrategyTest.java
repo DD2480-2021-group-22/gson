@@ -94,6 +94,5 @@ public class ExposeAnnotationExclusionStrategyTest extends TestCase {
     public final int explicitlyDifferentModeField = 0;
 
     public final int hiddenField = 0;
-    public final Class<? extends Object> obj = new Object() {}.getClass();
   }
 }

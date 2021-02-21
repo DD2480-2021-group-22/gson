@@ -11,7 +11,7 @@ import java.io.PrintWriter;
  */
 public class FileAppender {
 
-    String filepath;
+    private String filepath;
 
     /**
      * Creates a FileAppender which will attempt to write to the file specified.

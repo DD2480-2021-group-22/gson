@@ -16,12 +16,11 @@
 
 package com.google.gson.stream;
 
+import com.google.gson.FileAppender;
 import com.google.gson.internal.JsonReaderInternalAccess;
 import com.google.gson.internal.bind.JsonTreeReader;
-import java.io.Closeable;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.Reader;
+
+import java.io.*;
 import java.util.Arrays;
 
 /**
@@ -1495,61 +1494,85 @@ public class JsonReader implements Closeable {
    *     malformed.
    */
   private char readEscapeCharacter() throws IOException {
+    // Initiate file adapter to gather branch info
+    FileAppender fileAppender = new FileAppender("./coverage_readEscapeCharacter");
     if (pos == limit && !fillBuffer(1)) {
+      fileAppender.appendInt(0);
       throw syntaxError("Unterminated escape sequence");
     }
+    fileAppender.appendInt(1);
 
     char escaped = buffer[pos++];
     switch (escaped) {
     case 'u':
+      fileAppender.appendInt(10);
       if (pos + 4 > limit && !fillBuffer(4)) {
+        fileAppender.appendInt(2);
         throw syntaxError("Unterminated escape sequence");
       }
+      fileAppender.appendInt(3);
       // Equivalent to Integer.parseInt(stringPool.get(buffer, pos, 4), 16);
       char result = 0;
       for (int i = pos, end = i + 4; i < end; i++) {
+        fileAppender.appendInt(4);
         char c = buffer[i];
         result <<= 4;
         if (c >= '0' && c <= '9') {
+          fileAppender.appendInt(5);
           result += (c - '0');
         } else if (c >= 'a' && c <= 'f') {
+          fileAppender.appendInt(6);
           result += (c - 'a' + 10);
         } else if (c >= 'A' && c <= 'F') {
+          fileAppender.appendInt(7);
           result += (c - 'A' + 10);
         } else {
+          fileAppender.appendInt(8);
           throw new NumberFormatException("\\u" + new String(buffer, pos, 4));
         }
       }
+      fileAppender.appendInt(9);
       pos += 4;
       return result;
 
     case 't':
+      fileAppender.appendInt(11);
       return '\t';
 
     case 'b':
+      fileAppender.appendInt(12);
       return '\b';
 
     case 'n':
+      fileAppender.appendInt(13);
       return '\n';
 
     case 'r':
+      fileAppender.appendInt(14);
       return '\r';
 
     case 'f':
+      fileAppender.appendInt(15);
       return '\f';
 
     case '\n':
+      fileAppender.appendInt(16);
       lineNumber++;
       lineStart = pos;
       // fall-through
 
     case '\'':
+      fileAppender.appendInt(17);
     case '"':
+      fileAppender.appendInt(18);
     case '\\':
-    case '/':	
+      fileAppender.appendInt(19);
+    case '/':
+      fileAppender.appendInt(20);
     	return escaped;
     default:
     	// throw error when none of the above cases are matched
+      fileAppender.appendInt(21);
     	throw syntaxError("Invalid escape sequence");
     }
   }

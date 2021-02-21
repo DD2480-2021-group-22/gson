@@ -245,6 +245,13 @@ public class JsonPrimitiveTest extends TestCase {
     assertFalse(new JsonPrimitive(0).equals(new JsonPrimitive(1)));
   }
 
+  // Asserts that an ordinary double is not considered equal to a NaN double
+  // for both possible orderings.
+  public void testEqualsNanAndDouble() {
+    assertFalse(new JsonPrimitive(Double.NaN).equals(new JsonPrimitive(Double.valueOf(-1.2D))));
+    assertFalse(new JsonPrimitive(Double.valueOf(5.1D)).equals(new JsonPrimitive(Double.NaN)));
+  }
+
   public void testEqualsAcrossTypes() {
     MoreAsserts.assertEqualsAndHashCode(new JsonPrimitive("a"), new JsonPrimitive('a'));
     MoreAsserts.assertEqualsAndHashCode(new JsonPrimitive(new BigInteger("0")), new JsonPrimitive(0));

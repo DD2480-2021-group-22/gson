@@ -1549,6 +1549,25 @@ public final class JsonReaderTest extends TestCase {
     reader.endArray();
   }
 
+  // The setLenient documentation specifies that syntax errors
+  // caused by unquoted String values and end-of-line comments starting with "//"
+  // should be ignored if a JsonReader is set to be lenient. Thus, the Json Object
+  // {"abc": s//a comment\n} should then be parsed without errors. Additionally,
+  // the first calls to the nextName and nextString methods should return "abc"
+  // and "s", respectively. This test should increase JaCoCo branch coverage
+  // of the nextUnquotedValue method of the JsonReader class by causing a
+  // call to the checkLenient method that doesn't throw. This test was based on the test
+  // "testVeryLongQuotedString" in this file.
+  public void testLenientUnquotedStringWithComment() throws IOException {
+    String json = "{\"abc\": s//a comment\n}";
+    JsonReader reader = new JsonReader(reader(json));
+    reader.setLenient(true);
+    reader.beginObject();
+    assertEquals("abc", reader.nextName());
+    assertEquals("s", reader.nextString());
+    reader.endObject();
+  }
+
   public void testVeryLongUnquotedString() throws IOException {
     char[] stringChars = new char[1024 * 16];
     Arrays.fill(stringChars, 'x');

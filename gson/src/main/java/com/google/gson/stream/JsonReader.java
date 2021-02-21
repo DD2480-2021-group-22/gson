@@ -1319,7 +1319,7 @@ public class JsonReader implements Closeable {
      * before any (potentially indirect) call to fillBuffer() and reread both
      * 'p' and 'l' after any (potentially indirect) call to the same method.
      */
-    FileAppender fa = new FileAppender("coverage.txt");
+    FileAppender fa = new FileAppender("./nextNonWhitespace-coverage.txt");
     char[] buffer = this.buffer;
     int p = pos;
     int l = limit;

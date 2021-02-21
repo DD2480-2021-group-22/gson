@@ -535,58 +535,66 @@ public class JsonReader implements Closeable {
         case '=':
           checkLenient();
           if ((pos < limit || fillBuffer(1)) && buffer[pos] == '>') {
+            fileAppender.appendInt(11);
             pos++;
+          }
+          else{
+            fileAppender.appendInt(12);
           }
           break;
         default:
           throw syntaxError("Expected ':'");
       }
     } else if (peekStack == JsonScope.EMPTY_DOCUMENT) {
-      fileAppender.appendInt(11);
+      fileAppender.appendInt(13);
       if (lenient) {
-        fileAppender.appendInt(12);
+        fileAppender.appendInt(14);
         consumeNonExecutePrefix();
       }
       else{
-        fileAppender.appendInt(13);
+        fileAppender.appendInt(15);
       }
       stack[stackSize - 1] = JsonScope.NONEMPTY_DOCUMENT;
     } else if (peekStack == JsonScope.NONEMPTY_DOCUMENT) {
-      fileAppender.appendInt(14);
+      fileAppender.appendInt(16);
       int c = nextNonWhitespace(false);
       if (c == -1) {
-        fileAppender.appendInt(15);
+        fileAppender.appendInt(17);
         return peeked = PEEKED_EOF;
       } else {
-        fileAppender.appendInt(16);
+        fileAppender.appendInt(18);
         checkLenient();
         pos--;
       }
     } else if (peekStack == JsonScope.CLOSED) {
-      fileAppender.appendInt(17);
+      fileAppender.appendInt(19);
       throw new IllegalStateException("JsonReader is closed");
     }
     else{
-      fileAppender.appendInt(18);
+      fileAppender.appendInt(20);
     }
 
     int c = nextNonWhitespace(true);
     switch (c) {
       case ']':
         if (peekStack == JsonScope.EMPTY_ARRAY) {
+          fileAppender.appendInt(21);
           return peeked = PEEKED_END_ARRAY;
+        }
+        else{
+          fileAppender.appendInt(22);
         }
         // fall-through to handle ",]"
       case ';':
       case ',':
         // In lenient mode, a 0-length literal in an array means 'null'.
         if (peekStack == JsonScope.EMPTY_ARRAY || peekStack == JsonScope.NONEMPTY_ARRAY) {
-          fileAppender.appendInt(19);
+          fileAppender.appendInt(23);
           checkLenient();
           pos--;
           return peeked = PEEKED_NULL;
         } else {
-          fileAppender.appendInt(20);
+          fileAppender.appendInt(24);
           throw syntaxError("Unexpected value");
         }
       case '\'':
@@ -604,28 +612,28 @@ public class JsonReader implements Closeable {
 
     int result = peekKeyword();
     if (result != PEEKED_NONE) {
-      fileAppender.appendInt(21);
+      fileAppender.appendInt(25);
       return result;
     }
     else{
-      fileAppender.appendInt(22);
+      fileAppender.appendInt(26);
     }
 
     result = peekNumber();
     if (result != PEEKED_NONE) {
-      fileAppender.appendInt(23);
+      fileAppender.appendInt(27);
       return result;
     }
     else{
-      fileAppender.appendInt(24);
+      fileAppender.appendInt(28);
     }
 
     if (!isLiteral(buffer[pos])) {
-      fileAppender.appendInt(25);
+      fileAppender.appendInt(29);
       throw syntaxError("Expected value");
     }
     else{
-      fileAppender.appendInt(26);
+      fileAppender.appendInt(30);
     }
 
     checkLenient();

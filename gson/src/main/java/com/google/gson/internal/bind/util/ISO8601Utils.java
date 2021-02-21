@@ -1,5 +1,8 @@
 package com.google.gson.internal.bind.util;
 
+import com.google.gson.FileAppender;
+
+import java.io.File;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.*;
@@ -121,6 +124,9 @@ public class ISO8601Utils
      * @throws ParseException if the date is not in the appropriate format
      */
     public static Date parse(String date, ParsePosition pos) throws ParseException {
+
+        FileAppender fileAppender = new FileAppender("." + File.separator + "parse-coverage.txt");
+
         Exception fail = null;
         try {
             int offset = pos.getIndex();
@@ -128,13 +134,19 @@ public class ISO8601Utils
             // extract year
             int year = parseInt(date, offset, offset += 4);
             if (checkOffset(date, offset, '-')) {
+                fileAppender.appendInt(0);
                 offset += 1;
+            } else {
+                fileAppender.appendInt(1);
             }
 
             // extract month
             int month = parseInt(date, offset, offset += 2);
             if (checkOffset(date, offset, '-')) {
+                fileAppender.appendInt(2);
                 offset += 1;
+            } else {
+                fileAppender.appendInt(3);
             }
 
             // extract day
@@ -149,32 +161,50 @@ public class ISO8601Utils
             boolean hasT = checkOffset(date, offset, 'T');
             
             if (!hasT && (date.length() <= offset)) {
+                fileAppender.appendInt(4);
                 Calendar calendar = new GregorianCalendar(year, month - 1, day);
 
                 pos.setIndex(offset);
                 return calendar.getTime();
+            } else {
+                fileAppender.appendInt(5);
             }
 
             if (hasT) {
+                fileAppender.appendInt(6);
 
                 // extract hours, minutes, seconds and milliseconds
                 hour = parseInt(date, offset += 1, offset += 2);
                 if (checkOffset(date, offset, ':')) {
+                    fileAppender.appendInt(7);
                     offset += 1;
+                } else {
+                    fileAppender.appendInt(8);
                 }
 
                 minutes = parseInt(date, offset, offset += 2);
                 if (checkOffset(date, offset, ':')) {
+                    fileAppender.appendInt(9);
                     offset += 1;
+                } else {
+                    fileAppender.appendInt(10);
                 }
                 // second and milliseconds can be optional
                 if (date.length() > offset) {
+                    fileAppender.appendInt(11);
                     char c = date.charAt(offset);
                     if (c != 'Z' && c != '+' && c != '-') {
+                        fileAppender.appendInt(12);
                         seconds = parseInt(date, offset, offset += 2);
-                        if (seconds > 59 && seconds < 63) seconds = 59; // truncate up to 3 leap seconds
+                        if (seconds > 59 && seconds < 63) {
+                            fileAppender.appendInt(13);
+                            seconds = 59; // truncate up to 3 leap seconds
+                        } else {
+                            fileAppender.appendInt(14);
+                        }
                         // milliseconds can be optional in the format
                         if (checkOffset(date, offset, '.')) {
+                            fileAppender.appendInt(15);
                             offset += 1;
                             int endOffset = indexOfNonDigit(date, offset + 1); // assume at least one digit
                             int parseEndOffset = Math.min(endOffset, offset + 3); // parse up to 3 digits
@@ -191,23 +221,36 @@ public class ISO8601Utils
                                 milliseconds = fraction;
                             }
                             offset = endOffset;
+                        } else {
+                            fileAppender.appendInt(16);
                         }
+                    } else {
+                        fileAppender.appendInt(17);
                     }
+                } else {
+                    fileAppender.appendInt(18);
                 }
+            } else {
+                fileAppender.appendInt(19);
             }
 
             // extract timezone
             if (date.length() <= offset) {
+                fileAppender.appendInt(20);
                 throw new IllegalArgumentException("No time zone indicator");
+            } else {
+                fileAppender.appendInt(21);
             }
 
             TimeZone timezone = null;
             char timezoneIndicator = date.charAt(offset);
 
             if (timezoneIndicator == 'Z') {
+                fileAppender.appendInt(22);
                 timezone = TIMEZONE_UTC;
                 offset += 1;
             } else if (timezoneIndicator == '+' || timezoneIndicator == '-') {
+                fileAppender.appendInt(23);
                 String timezoneOffset = date.substring(offset);
 
                 // When timezone has no minutes, we should append it, valid timezones are, for example: +00:00, +0000 and +00
@@ -216,8 +259,10 @@ public class ISO8601Utils
                 offset += timezoneOffset.length();
                 // 18-Jun-2015, tatu: Minor simplification, skip offset of "+0000"/"+00:00"
                 if ("+0000".equals(timezoneOffset) || "+00:00".equals(timezoneOffset)) {
+                    fileAppender.appendInt(24);
                     timezone = TIMEZONE_UTC;
                 } else {
+                    fileAppender.appendInt(25);
                     // 18-Jun-2015, tatu: Looks like offsets only work from GMT, not UTC...
                     //    not sure why, but that's the way it looks. Further, Javadocs for
                     //    `java.util.TimeZone` specifically instruct use of GMT as base for
@@ -229,6 +274,7 @@ public class ISO8601Utils
 
                     String act = timezone.getID();
                     if (!act.equals(timezoneId)) {
+                        fileAppender.appendInt(26);
                         /* 22-Jan-2015, tatu: Looks like canonical version has colons, but we may be given
                          *    one without. If so, don't sweat.
                          *   Yes, very inefficient. Hopefully not hit often.
@@ -236,12 +282,18 @@ public class ISO8601Utils
                          */
                         String cleaned = act.replace(":", "");
                         if (!cleaned.equals(timezoneId)) {
+                            fileAppender.appendInt(27);
                             throw new IndexOutOfBoundsException("Mismatching time zone indicator: "+timezoneId+" given, resolves to "
                                     +timezone.getID());
+                        } else {
+                            fileAppender.appendInt(28);
                         }
+                    } else {
+                        fileAppender.appendInt(29);
                     }
                 }
             } else {
+                fileAppender.appendInt(30);
                 throw new IndexOutOfBoundsException("Invalid time zone indicator '" + timezoneIndicator+"'");
             }
 
@@ -269,7 +321,10 @@ public class ISO8601Utils
         String input = (date == null) ? null : ('"' + date + '"');
         String msg = fail.getMessage();
         if (msg == null || msg.isEmpty()) {
+            fileAppender.appendInt(31);
             msg = "("+fail.getClass().getName()+")";
+        } else {
+            fileAppender.appendInt(32);
         }
         ParseException ex = new ParseException("Failed to parse date [" + input + "]: " + msg, pos.getIndex());
         ex.initCause(fail);

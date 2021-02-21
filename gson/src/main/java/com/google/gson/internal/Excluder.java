@@ -16,6 +16,7 @@
 
 package com.google.gson.internal;
 
+import com.google.gson.DYI.DYIStructureSingleton;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
@@ -148,45 +149,114 @@ public final class Excluder implements TypeAdapterFactory, Cloneable {
     };
   }
 
+
+  /**
+   * Sets flags for each branching decision in the function structure, -
+   * through the implementation of singleton class DYIStructureSingleton.
+   * The coverage tool is hooked to Maven and is automatically with by building a lifestage phase that involves testing.
+   * If a branch is reached the flag with the corresponding id is set to true.
+   * To handle ternary operations, the chosen implementation creates a if- statement and a corresponding flag for each of conditions.
+   * The flags are numbered in a ascending order.
+   * Total number of flags is 30.
+   * @param field Field object
+   * @param serialize boolean value
+   * @return boolean
+   */
   public boolean excludeField(Field field, boolean serialize) {
+    DYIStructureSingleton s = DYIStructureSingleton.getInstance(); s.flag[0]=true;
     if ((modifiers & field.getModifiers()) != 0) {
+      s.flag[1]=true;
       return true;
-    }
-
-    if (version != Excluder.IGNORE_VERSIONS
-        && !isValidVersion(field.getAnnotation(Since.class), field.getAnnotation(Until.class))) {
-      return true;
-    }
-
-    if (field.isSynthetic()) {
-      return true;
-    }
-
-    if (requireExpose) {
-      Expose annotation = field.getAnnotation(Expose.class);
-      if (annotation == null || (serialize ? !annotation.serialize() : !annotation.deserialize())) {
-        return true;
+    } else{
+      if (modifiers == 0) {
+        s.flag[2]=true;
+      }
+      if (field.getModifiers() == 1) {
+        s.flag[3]=true;
       }
     }
 
-    if (!serializeInnerClasses && isInnerClass(field.getType())) {
+
+    if (version != Excluder.IGNORE_VERSIONS && !isValidVersion(field.getAnnotation(Since.class), field.getAnnotation(Until.class))) {
+      s.flag[4]=true;
       return true;
+    } else{
+      if (version == Excluder.IGNORE_VERSIONS) {
+        s.flag[5]=true;
+      }
+      if (isValidVersion(field.getAnnotation(Since.class), field.getAnnotation(Until.class))) {
+        s.flag[6]=true;
+      }
+      }
+
+    if (field.isSynthetic()) {
+      s.flag[7]=true;
+      return true;
+    } else{s.flag[8]=true;}
+
+    if (requireExpose) {
+      s.flag[9]=true;
+      Expose annotation = field.getAnnotation(Expose.class);
+      //8 branches if, divide?
+      if (annotation == null || (serialize ? !annotation.serialize() : !annotation.deserialize())) {
+        if (annotation == null) {
+          s.flag[10]=true;
+        }
+        if (serialize == true) {
+          s.flag[11]=true;
+        }
+        if (serialize == false) {
+          s.flag[12]=true;
+        }
+
+        return true;
+      } else{
+        if (annotation != null) {
+          s.flag[13]=true;
+        }
+        if (serialize == true) {
+          s.flag[14]=true;
+        }
+        if (serialize == false) {
+          s.flag[15]=true;
+        }}
+
+
+    } else{s.flag[16]=true;}
+
+    if (!serializeInnerClasses && isInnerClass(field.getType())) {
+      s.flag[17]=true;
+      return true;
+    } else{
+      if (serializeInnerClasses == true) {
+        s.flag[18]=true;
+      }
+      if (isInnerClass(field.getType()) == false) {
+        s.flag[19]=true;
+      }
     }
+
 
     if (isAnonymousOrLocal(field.getType())) {
+      s.flag[20]=true;
       return true;
-    }
-
+    } else{s.flag[21]=true;}
     List<ExclusionStrategy> list = serialize ? serializationStrategies : deserializationStrategies;
+    if (serialize == true){
+      s.flag[22]=true;
+    } else {s.flag[23]=true;}
+
     if (!list.isEmpty()) {
+      s.flag[24]=true;
       FieldAttributes fieldAttributes = new FieldAttributes(field);
       for (ExclusionStrategy exclusionStrategy : list) {
         if (exclusionStrategy.shouldSkipField(fieldAttributes)) {
+          s.flag[25]=true;
           return true;
-        }
+        } else{s.flag[26]=true;}
       }
-    }
-
+    } else{s.flag[27]=true;}
+    s.flag[28]=true;
     return false;
   }
 

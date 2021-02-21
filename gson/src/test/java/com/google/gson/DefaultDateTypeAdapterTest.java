@@ -142,7 +142,7 @@ public class DefaultDateTypeAdapterTest extends TestCase {
    * Added tests to increase coverage for the function parse in src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java.
    * The requirements for triggering the uncovered switch-cases are that (parseEndOffset - offset) is either 1 or 2.
    * parseEndOffset is calculated asMath.min(endOffset, offset + 3) -
-   * - which chooses the minimum of the offset to the last number and the offset +3.
+   * - which chooses the minimum of the offset to the last letter and the offset +3.
    * First assert results in an (parseEndOffset - offset) value of 2 which results in switch case 2.
    * Second assert results in an (parseEndOffset - offset) value of 1 which results in switch case 1.
    * Both are parsed to the format of a DefaultDateTypeAdapter, despite the length.

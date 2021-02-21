@@ -16,6 +16,7 @@
 
 package com.google.gson.stream;
 
+import com.google.gson.FileAppender;
 import com.google.gson.internal.JsonReaderInternalAccess;
 import com.google.gson.internal.bind.JsonTreeReader;
 import java.io.Closeable;
@@ -1318,13 +1319,17 @@ public class JsonReader implements Closeable {
      * before any (potentially indirect) call to fillBuffer() and reread both
      * 'p' and 'l' after any (potentially indirect) call to the same method.
      */
+    FileAppender fa = new FileAppender("coverage.txt");
     char[] buffer = this.buffer;
     int p = pos;
     int l = limit;
     while (true) {
+      fa.appendInt(1);
       if (p == l) {
+        fa.appendInt(2);
         pos = p;
         if (!fillBuffer(1)) {
+          fa.appendInt(3);
           break;
         }
         p = pos;
@@ -1333,20 +1338,25 @@ public class JsonReader implements Closeable {
 
       int c = buffer[p++];
       if (c == '\n') {
+        fa.appendInt(4);
         lineNumber++;
         lineStart = p;
         continue;
       } else if (c == ' ' || c == '\r' || c == '\t') {
+        fa.appendInt(5);
         continue;
       }
 
       if (c == '/') {
+        fa.appendInt(6);
         pos = p;
         if (p == l) {
+          fa.appendInt(7);
           pos--; // push back '/' so it's still in the buffer when this method returns
           boolean charsLoaded = fillBuffer(2);
           pos++; // consume the '/' again
           if (!charsLoaded) {
+            fa.appendInt(8);
             return c;
           }
         }
@@ -1356,8 +1366,10 @@ public class JsonReader implements Closeable {
         switch (peek) {
         case '*':
           // skip a /* c-style comment */
+          fa.appendInt(9);
           pos++;
           if (!skipTo("*/")) {
+            fa.appendInt(10);
             throw syntaxError("Unterminated comment");
           }
           p = pos + 2;
@@ -1366,6 +1378,7 @@ public class JsonReader implements Closeable {
 
         case '/':
           // skip a // end-of-line comment
+          fa.appendInt(11);
           pos++;
           skipToEndOfLine();
           p = pos;
@@ -1373,9 +1386,11 @@ public class JsonReader implements Closeable {
           continue;
 
         default:
+          fa.appendInt(12);
           return c;
         }
       } else if (c == '#') {
+        fa.appendInt(13);
         pos = p;
         /*
          * Skip a # hash end-of-line comment. The JSON RFC doesn't
@@ -1387,13 +1402,16 @@ public class JsonReader implements Closeable {
         p = pos;
         l = limit;
       } else {
+        fa.appendInt(14);
         pos = p;
         return c;
       }
     }
     if (throwOnEof) {
+      fa.appendInt(15);
       throw new EOFException("End of input" + locationString());
     } else {
+      fa.appendInt(16);
       return -1;
     }
   }

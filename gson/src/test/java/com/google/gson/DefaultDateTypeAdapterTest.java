@@ -16,16 +16,15 @@
 
 package com.google.gson;
 
+import com.google.gson.internal.JavaVersion;
+import junit.framework.TestCase;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import com.google.gson.internal.JavaVersion;
-
-import junit.framework.TestCase;
 
 /**
  * A simple unit test for the {@link DefaultDateTypeAdapter} class.
@@ -189,6 +188,7 @@ public class DefaultDateTypeAdapterTest extends TestCase {
       fail("Unexpected token should fail.");
     } catch (IllegalStateException expected) { }
   }
+
 
   private void assertFormatted(String formatted, DefaultDateTypeAdapter adapter) {
     assertEquals(toLiteral(formatted), adapter.toJson(new Date(0)));

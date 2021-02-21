@@ -1505,6 +1505,7 @@ public class JsonReader implements Closeable {
     char escaped = buffer[pos++];
     switch (escaped) {
     case 'u':
+      fileAppender.appendInt(10);
       if (pos + 4 > limit && !fillBuffer(4)) {
         fileAppender.appendInt(2);
         throw syntaxError("Unterminated escape sequence");
@@ -1535,32 +1536,43 @@ public class JsonReader implements Closeable {
       return result;
 
     case 't':
+      fileAppender.appendInt(11);
       return '\t';
 
     case 'b':
+      fileAppender.appendInt(12);
       return '\b';
 
     case 'n':
+      fileAppender.appendInt(13);
       return '\n';
 
     case 'r':
+      fileAppender.appendInt(14);
       return '\r';
 
     case 'f':
+      fileAppender.appendInt(15);
       return '\f';
 
     case '\n':
+      fileAppender.appendInt(16);
       lineNumber++;
       lineStart = pos;
       // fall-through
 
     case '\'':
+      fileAppender.appendInt(17);
     case '"':
+      fileAppender.appendInt(18);
     case '\\':
-    case '/':	
+      fileAppender.appendInt(19);
+    case '/':
+      fileAppender.appendInt(20);
     	return escaped;
     default:
     	// throw error when none of the above cases are matched
+      fileAppender.appendInt(21);
     	throw syntaxError("Invalid escape sequence");
     }
   }

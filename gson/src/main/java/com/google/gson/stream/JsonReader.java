@@ -458,7 +458,7 @@ public class JsonReader implements Closeable {
   }
 
   int doPeek() throws IOException {
-    FileAppender fileAppender = new FileAppender("." + File.separator + "coverage.txt");
+    FileAppender fileAppender = new FileAppender("." + File.separator + "doPeek-kaniyi.txt");
     int peekStack = stack[stackSize - 1];
     if (peekStack == JsonScope.EMPTY_ARRAY) {
       fileAppender.appendInt(1);

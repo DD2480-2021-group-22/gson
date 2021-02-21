@@ -1515,6 +1515,16 @@ public final class JsonReaderTest extends TestCase {
     }
   }
 
+  public void testDocumentWithUnterminatedComment() throws IOException {
+    JsonReader reader = new JsonReader(reader("/* foo "));
+    reader.setLenient(true);
+    try {
+      reader.peek();
+      fail();
+    } catch (MalformedJsonException expected) {
+    }
+  }
+
   public void testStringWithLeadingSlash() throws IOException {
     JsonReader reader = new JsonReader(reader("/x"));
     reader.setLenient(true);

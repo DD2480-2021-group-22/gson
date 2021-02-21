@@ -11,8 +11,6 @@ import java.io.PrintWriter;
  */
 public class FileAppender {
 
-    // PrintWriter solution largely based on SO question at:
-    // https://stackoverflow.com/questions/4614227/how-to-add-a-new-line-of-text-to-an-existing-file-in-java
     String filepath;
 
     /**
@@ -30,6 +28,8 @@ public class FileAppender {
      * @param x the integer to write.
      */
     public void appendInt(int x) {
+        // PrintWriter solution largely based on SO question at:
+        // https://stackoverflow.com/questions/4614227/how-to-add-a-new-line-of-text-to-an-existing-file-in-java
         PrintWriter printWriter;
         try {
             File coverageFile = new File(filepath);

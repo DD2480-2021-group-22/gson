@@ -56,11 +56,11 @@ public final class LinkedHashTreeMapTest extends TestCase {
 
   public void testRemovingNodeWithLeftAndRightChildren(){
     //Arrange
-    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<>();
-    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<>();
-    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<>(parent,"parentKey" , 123 , parent,parent);
-    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<>(node1,"leftChild" , 123 , node1,node1);
-    LinkedHashTreeMap.Node<String,String> node3 = new LinkedHashTreeMap.Node<>(node1,"RightChild" , 124 , node1,node1);
+    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<String,String>();
+    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<String,String>();
+    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 123 , parent,parent);
+    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"leftChild" , 123 , node1,node1);
+    LinkedHashTreeMap.Node<String,String> node3 = new LinkedHashTreeMap.Node<String,String>(node1,"RightChild" , 124 , node1,node1);
     node1.left = node2;
     node1.right = node3;
     node2.right = node1;
@@ -83,10 +83,10 @@ public final class LinkedHashTreeMapTest extends TestCase {
    */
   public void testRemovingLeftChild(){
     //Arrange
-    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<>();
-    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<>();
-    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<>(parent,"parentKey" , 123 , parent,parent);
-    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<>(node1,"leftChild" , 123 , node1,node1);
+    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<String,String>();
+    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<String,String>();
+    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 123 , parent,parent);
+    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"leftChild" , 123 , node1,node1);
     parent.left = node1;
     node1.left = node2;
     node2.right = node1;
@@ -106,10 +106,10 @@ public final class LinkedHashTreeMapTest extends TestCase {
    */
   public void testRemovingRightChild(){
     //Arrange
-    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<>();
-    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<>();
-    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<>(parent,"parentKey" , 123 , parent,parent);
-    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<>(node1,"rightChild" , 123 , node1,node1);
+    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<String,String>();
+    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<String,String>();
+    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 123 , parent,parent);
+    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"rightChild" , 123 , node1,node1);
     parent.right = node1;
     node1.right = node2;
     node2.left = node1;

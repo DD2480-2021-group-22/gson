@@ -291,6 +291,21 @@ public final class JsonReaderTest extends TestCase {
     assertEquals(1L, reader.nextLong());
   }
 
+  /**
+   * Checks if nextInt can read single quoted number.
+   * Note that lenient is set to true for the tested JSON object.
+   * The reason is because single quoted numbers are usually not
+   * valid as numbers in JSON objects, but in this case it is acceptable.
+   * @throws IOException
+   */
+  public void testNextIntSingleQuoted() throws IOException {
+    JsonReader reader = new JsonReader(reader("{ \"number\": '123' }"));
+    reader.setLenient(true);
+    reader.beginObject();
+    assertEquals("number", reader.nextName());
+    assertEquals(123, reader.nextInt());
+  }
+
   public void testDoubles() throws IOException {
     String json = "[-0.0,"
         + "1.0,"

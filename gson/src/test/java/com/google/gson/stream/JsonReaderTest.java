@@ -1515,6 +1515,9 @@ public final class JsonReaderTest extends TestCase {
     }
   }
 
+  /**
+   * Test a document with an unterminated comment inside it.
+   */
   public void testDocumentWithUnterminatedComment() throws IOException {
     JsonReader reader = new JsonReader(reader("/* foo "));
     reader.setLenient(true);

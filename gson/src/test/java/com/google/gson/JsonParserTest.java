@@ -142,7 +142,7 @@ public class JsonParserTest extends TestCase {
     String json = "1-3";
     JsonElement e = JsonParser.parseString(json);
     assertTrue(e.isJsonPrimitive());
-    assertEquals(json,e.getAsString());;
+    assertEquals(json,e.getAsString());
   }
 
 
@@ -162,7 +162,7 @@ public class JsonParserTest extends TestCase {
       String json = "1+3";
       JsonElement e = JsonParser.parseString(json);
       assertTrue(e.isJsonPrimitive());
-      assertEquals(json,e.getAsString());;
+      assertEquals(json,e.getAsString());
   }
 
   /**
@@ -185,7 +185,7 @@ public class JsonParserTest extends TestCase {
     String json = "023";
     JsonElement e = JsonParser.parseString(json);
     assertTrue(e.isJsonPrimitive());
-    assertEquals(23,e.getAsInt());;
+    assertEquals(23,e.getAsInt());
   }
 
   /**
@@ -205,6 +205,6 @@ public class JsonParserTest extends TestCase {
     String json = "f";
     JsonElement e = JsonParser.parseString(json);
     assertTrue(e.isJsonPrimitive());
-    assertEquals(json,e.getAsString());;
+    assertEquals(json,e.getAsString());
   }
 }

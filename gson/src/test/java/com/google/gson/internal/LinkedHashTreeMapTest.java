@@ -52,6 +52,9 @@ public final class LinkedHashTreeMapTest extends TestCase {
    * Test for creating 4 new nodes, where one is the main parent node and the other three are connected
    * to it. Node1 is seen as the center node where Node2 and Node3 are its left and right childs.
    * The test here is to see that the method "removeInternal" works and to cover its branches.
+   * The constructor for LinkedHashTreeMap.Node requires a next and prev node and they could not
+   * be set to null (which didnt make much sense). And since we are using removeInternal() with unlinke set
+   * to false, we wont be looking for next or prev but rather left and right.
    */
 
   public void testRemovingNodeWithLeftAndRightChildren(){
@@ -59,8 +62,8 @@ public final class LinkedHashTreeMapTest extends TestCase {
     LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<String,String>();
     LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<String,String>();
     LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 123 , parent,parent);
-    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"leftChild" , 123 , node1,node1);
-    LinkedHashTreeMap.Node<String,String> node3 = new LinkedHashTreeMap.Node<String,String>(node1,"RightChild" , 124 , node1,node1);
+    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"leftChild" , 124 , node1,node1);
+    LinkedHashTreeMap.Node<String,String> node3 = new LinkedHashTreeMap.Node<String,String>(node1,"RightChild" , 125 , node1,node1);
     node1.left = node2;
     node1.right = node3;
     node2.right = node1;
@@ -69,7 +72,7 @@ public final class LinkedHashTreeMapTest extends TestCase {
     //Act/Assert
     assertNotNull(node1.left);
     assertNotNull(node1.right);
-    map.removeInternal(node1, true);
+    map.removeInternal(node1, false);
     assertNull(node1.left);
     assertNull(node1.right);
 
@@ -85,15 +88,15 @@ public final class LinkedHashTreeMapTest extends TestCase {
     //Arrange
     LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<String,String>();
     LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<String,String>();
-    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 123 , parent,parent);
-    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"leftChild" , 123 , node1,node1);
+    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 126 , parent,parent);
+    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"leftChild" , 127 , node1,node1);
     parent.left = node1;
     node1.left = node2;
     node2.right = node1;
 
     //Act/Assert
     assertNotNull(node1.left);
-    map.removeInternal(node1, true);
+    map.removeInternal(node1, false);
     assertNull(node1.left);
 
   }
@@ -108,15 +111,15 @@ public final class LinkedHashTreeMapTest extends TestCase {
     //Arrange
     LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<String,String>();
     LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<String,String>();
-    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 123 , parent,parent);
-    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"rightChild" , 123 , node1,node1);
+    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 128 , parent,parent);
+    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"rightChild" , 129 , node1,node1);
     parent.right = node1;
     node1.right = node2;
     node2.left = node1;
 
     //Act/Assert
     assertNotNull(node1.right);
-    map.removeInternal(node1, true);
+    map.removeInternal(node1, false);
     assertNull(node1.right);
 
   }

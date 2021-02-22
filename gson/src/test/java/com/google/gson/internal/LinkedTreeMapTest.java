@@ -79,14 +79,19 @@ public final class LinkedTreeMapTest extends TestCase {
   // comparator has been supplied. This test was largely based on other
   // tests in this file.
   public void testFindWithSpecialComparator() {
-    Comparator comparator = Comparator.reverseOrder();
+    Comparator<String> comparator = new Comparator<String>() {
+      @Override
+      public int compare(String s, String t1) {
+        return s.compareTo(t1);
+      }
+    };
     LinkedTreeMap<String, String> map = new LinkedTreeMap<String, String>(comparator);
-    map.put("a", "android");
+    map.put("aaaaaaa", "android");
     map.put("i", "iOS");
-    map.put("p", "PC");
-    assertEquals("android", map.find("a", false).getValue());
+    map.put("pp", "PC");
+    assertEquals("android", map.find("aaaaaaa", false).getValue());
     assertEquals("iOS", map.find("i", false).getValue());
-    assertEquals("PC", map.find("p", false).getValue());
+    assertEquals("PC", map.find("pp", false).getValue());
   }
 
   public void testPutOverrides() throws Exception {

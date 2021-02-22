@@ -148,13 +148,13 @@ public final class Excluder implements TypeAdapterFactory, Cloneable {
     };
   }
 
+  //Method for refactoring
   public boolean excludeField(Field field, boolean serialize) {
     if ((modifiers & field.getModifiers()) != 0) {
       return true;
     }
 
-    if (version != Excluder.IGNORE_VERSIONS
-        && !isValidVersion(field.getAnnotation(Since.class), field.getAnnotation(Until.class))) {
+    if (isVersion(field)) {
       return true;
     }
 
@@ -164,7 +164,7 @@ public final class Excluder implements TypeAdapterFactory, Cloneable {
 
     if (requireExpose) {
       Expose annotation = field.getAnnotation(Expose.class);
-      if (annotation == null || (serialize ? !annotation.serialize() : !annotation.deserialize())) {
+      if (isAnnotation(serialize, annotation)) {
         return true;
       }
     }
@@ -178,6 +178,17 @@ public final class Excluder implements TypeAdapterFactory, Cloneable {
     }
 
     List<ExclusionStrategy> list = serialize ? serializationStrategies : deserializationStrategies;
+    if (isExtracted(field, list)) return true;
+
+    return false;
+  }
+
+  // Refactored: Separation from excludeField method to decrease complexity.
+  private boolean isVersion(Field field) {
+    return version != Excluder.IGNORE_VERSIONS && !isValidVersion(field.getAnnotation(Since.class), field.getAnnotation(Until.class));
+  }
+  // Refactored: Separation from excludeField method to decrease complexity.
+  private boolean isExtracted(Field field, List<ExclusionStrategy> list) {
     if (!list.isEmpty()) {
       FieldAttributes fieldAttributes = new FieldAttributes(field);
       for (ExclusionStrategy exclusionStrategy : list) {
@@ -186,8 +197,12 @@ public final class Excluder implements TypeAdapterFactory, Cloneable {
         }
       }
     }
-
     return false;
+  }
+
+  // Refactored: Separation from excludeField method to decrease complexity.
+  private boolean isAnnotation(boolean serialize, Expose annotation) {
+    return annotation == null || (serialize ? !annotation.serialize() : !annotation.deserialize());
   }
 
   private boolean excludeClassChecks(Class<?> clazz) {

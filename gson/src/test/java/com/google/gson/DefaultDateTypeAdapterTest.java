@@ -138,23 +138,6 @@ public class DefaultDateTypeAdapterTest extends TestCase {
     }
   }
 
-  /**
-   * Added tests to increase coverage for the function parse in src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java.
-   * The requirements for triggering the uncovered switch-cases are that (parseEndOffset - offset) is either 1 or 2.
-   * parseEndOffset is calculated asMath.min(endOffset, offset + 3) -
-   * - which chooses the minimum of the offset to the last letter and the offset +3.
-   * First assert results in an (parseEndOffset - offset) value of 2 which results in switch case 2.
-   * Second assert results in an (parseEndOffset - offset) value of 1 which results in switch case 1.
-   * Both are parsed to the format of a DefaultDateTypeAdapter, despite the length.
-   * @throws Exception
-   */
-  public void testIncreaseCoverageParseMethod()throws Exception {
-    DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);
-    //Two added tests for coverage
-    assertParsed("1970-01-01T00:00:00.00Z", adapter);
-    assertParsed("1970-01-01T00:00:00.0Z", adapter);
-  };
-
   public void testDateDeserializationISO8601() throws Exception {
     DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);
     assertParsed("1970-01-01T00:00:00.000Z", adapter);
@@ -205,6 +188,24 @@ public class DefaultDateTypeAdapterTest extends TestCase {
       fail("Unexpected token should fail.");
     } catch (IllegalStateException expected) { }
   }
+
+  /**
+   * Added tests to increase coverage for the function parse in src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java.
+   * The requirements for triggering the uncovered switch-cases are that (parseEndOffset - offset) is either 1 or 2.
+   * parseEndOffset is calculated asMath.min(endOffset, offset + 3) -
+   * - which chooses the minimum of the offset to the last letter and the offset +3.
+   * First assert results in an (parseEndOffset - offset) value of 2 which results in switch case 2.
+   * Second assert results in an (parseEndOffset - offset) value of 1 which results in switch case 1.
+   * Both are parsed to the format of a DefaultDateTypeAdapter, despite the length.
+   * Expected: Date format parsed to the format of DefaultDateTypeAdapter.
+   * @throws Exception
+   */
+  public void testIncreaseCoverageParseMethod()throws Exception {
+    DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);
+    //Two added tests for coverage
+    assertParsed("1970-01-01T00:00:00.00Z", adapter);
+    assertParsed("1970-01-01T00:00:00.0Z", adapter);
+  };
 
   private void assertFormatted(String formatted, DefaultDateTypeAdapter adapter) {
     assertEquals(toLiteral(formatted), adapter.toJson(new Date(0)));

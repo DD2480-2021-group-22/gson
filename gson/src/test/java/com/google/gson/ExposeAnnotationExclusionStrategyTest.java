@@ -28,13 +28,6 @@ import java.lang.reflect.Field;
  *
  * @author Joel Leitch
  */
-class ClassWithNoFields {
-  // Nothing here..
-  @Override
-  public boolean equals(Object other) {
-    return other.getClass() == TestTypes.ClassWithNoFields.class;
-  }
-}
 
 public class ExposeAnnotationExclusionStrategyTest extends TestCase {
   private Excluder excluder = Excluder.DEFAULT.excludeFieldsWithoutExposeAnnotation();

@@ -287,4 +287,32 @@ public final class LinkedHashTreeMapTest extends TestCase {
     }
     assertEquals(Arrays.asList(expected), actualList);
   }
+
+  /**
+   * Test method LinkedHashTreeMap::findByEntry for an entry without
+   * a key.
+   * Expected result: Null
+   */
+  public void testFindByEntryForNull() {
+    //Arrange
+    LinkedHashTreeMap<String, Integer> map = new LinkedHashTreeMap<String, Integer>();
+    map.put("A", 1);
+    Map.Entry<String, Integer> entry = new Node<>();
+    //Act/Assert
+    assertNull(map.findByEntry(entry));
+  }
+
+  /**
+   * Test method LinkedHashTreeMap::findByEntry for an entry that
+   * we can guarantee exists within the map
+   * Expected result: Not Null
+   */
+  public void testFindByEntryForNotNull() {
+    //Arrange
+    LinkedHashTreeMap<String, Integer> map = new LinkedHashTreeMap<String, Integer>();
+    map.put("A", 1);
+    Map.Entry<String, Integer> entry = map.entrySet().iterator().next();
+    //Act/Assert
+    assertNotNull(map.findByEntry(entry));
+  }
 }

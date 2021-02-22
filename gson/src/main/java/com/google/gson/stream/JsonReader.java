@@ -18,11 +18,13 @@ package com.google.gson.stream;
 
 import com.google.gson.internal.JsonReaderInternalAccess;
 import com.google.gson.internal.bind.JsonTreeReader;
+
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * Reads a JSON (<a href="http://www.ietf.org/rfc/rfc7159.txt">RFC 7159</a>)
@@ -1495,63 +1497,73 @@ public class JsonReader implements Closeable {
    *     malformed.
    */
   private char readEscapeCharacter() throws IOException {
+    //could also be extracted, but this method only has 3 CC.
     if (pos == limit && !fillBuffer(1)) {
       throw syntaxError("Unterminated escape sequence");
     }
 
     char escaped = buffer[pos++];
-    switch (escaped) {
-    case 'u':
-      if (pos + 4 > limit && !fillBuffer(4)) {
-        throw syntaxError("Unterminated escape sequence");
-      }
-      // Equivalent to Integer.parseInt(stringPool.get(buffer, pos, 4), 16);
-      char result = 0;
-      for (int i = pos, end = i + 4; i < end; i++) {
-        char c = buffer[i];
-        result <<= 4;
-        if (c >= '0' && c <= '9') {
-          result += (c - '0');
-        } else if (c >= 'a' && c <= 'f') {
-          result += (c - 'a' + 10);
-        } else if (c >= 'A' && c <= 'F') {
-          result += (c - 'A' + 10);
-        } else {
-          throw new NumberFormatException("\\u" + new String(buffer, pos, 4));
-        }
-      }
-      pos += 4;
-      return result;
+    return returnEscape(escaped);
+  }
 
-    case 't':
-      return '\t';
-
-    case 'b':
-      return '\b';
-
-    case 'n':
-      return '\n';
-
-    case 'r':
-      return '\r';
-
-    case 'f':
-      return '\f';
-
-    case '\n':
+  //Extracted and refactored from readEscapedCharacter() to reduce CC.
+  //Consistent statements is replaced with hashmap to reduce complexity.
+  private char returnEscape(char escaped) throws IOException {
+    if (escaped == '\n') {
       lineNumber++;
       lineStart = pos;
-      // fall-through
-
-    case '\'':
-    case '"':
-    case '\\':
-    case '/':	
-    	return escaped;
-    default:
-    	// throw error when none of the above cases are matched
-    	throw syntaxError("Invalid escape sequence");
     }
+    HashMap<Character, Character> character = new HashMap<Character, Character>();
+    character.put('t','\t');
+    character.put('b','\b');
+    character.put('n','\n');
+    character.put('r','\r');
+    character.put('f','\f');
+    character.put( '\n',escaped);
+    character.put('\'',escaped);
+    character.put('"',escaped);
+    character.put('\\',escaped);
+    character.put( '/',escaped);
+
+
+    Character tempvalue = character.get(escaped);
+    if (tempvalue != null) {
+      return tempvalue;
+    }
+
+    switch (escaped) {
+      case 'u':
+        if (pos + 4 > limit && !fillBuffer(4)) {
+          throw syntaxError("Unterminated escape sequence");
+        }
+        // Equivalent to Integer.parseInt(stringPool.get(buffer, pos, 4), 16);
+        char result = 0;
+        result = getResult(result);
+        pos += 4;
+        return result;
+
+      default:
+        // throw error when none of the above cases are matched
+        throw syntaxError("Invalid escape sequence");
+    }
+  }
+
+  // Extracted from readEscapeCharacter() to reduce CC.
+  private char getResult(char result) {
+    for (int i = pos, end = i + 4; i < end; i++) {
+      char c = buffer[i];
+      result <<= 4;
+      if (c >= '0' && c <= '9') {
+        result += (c - '0');
+      } else if (c >= 'a' && c <= 'f') {
+        result += (c - 'a' + 10);
+      } else if (c >= 'A' && c <= 'F') {
+        result += (c - 'A' + 10);
+      } else {
+        throw new NumberFormatException("\\u" + new String(buffer, pos, 4));
+      }
+    }
+    return result;
   }
 
   /**

@@ -297,7 +297,7 @@ public final class LinkedHashTreeMapTest extends TestCase {
     //Arrange
     LinkedHashTreeMap<String, Integer> map = new LinkedHashTreeMap<String, Integer>();
     map.put("A", 1);
-    Map.Entry<String, Integer> entry = new Node<>();
+    Map.Entry<String, Integer> entry = new Node<String, Integer>();
     //Act/Assert
     assertNull(map.findByEntry(entry));
   }

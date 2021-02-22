@@ -163,43 +163,47 @@ public final class Excluder implements TypeAdapterFactory, Cloneable {
    * @return boolean
    */
   public boolean excludeField(Field field, boolean serialize) {
-    DYIStructureSingleton s = DYIStructureSingleton.getInstance(); s.flag[0]=true;
+    DYIStructureSingleton s = DYIStructureSingleton.getInstance();
     if ((modifiers & field.getModifiers()) != 0) {
-      s.flag[1]=true;
+      s.flag[0]=true;
       return true;
     } else{
-      if (modifiers == 0) {
-        s.flag[2]=true;
-      }
-      if (field.getModifiers() == 1) {
-        s.flag[3]=true;
-      }
+        s.flag[1]=true;
     }
 
 
     if (version != Excluder.IGNORE_VERSIONS && !isValidVersion(field.getAnnotation(Since.class), field.getAnnotation(Until.class))) {
-      s.flag[4]=true;
+      if (version != Excluder.IGNORE_VERSIONS) {
+        s.flag[2]=true;
+      }
+      if (!isValidVersion(field.getAnnotation(Since.class), field.getAnnotation(Until.class))) {
+        s.flag[3]=true;
+      }
+
       return true;
     } else{
       if (version == Excluder.IGNORE_VERSIONS) {
-        s.flag[5]=true;
+        s.flag[4]=true;
       }
       if (isValidVersion(field.getAnnotation(Since.class), field.getAnnotation(Until.class))) {
-        s.flag[6]=true;
+        s.flag[5]=true;
       }
       }
 
     if (field.isSynthetic()) {
-      s.flag[7]=true;
+      s.flag[6]=true;
       return true;
-    } else{s.flag[8]=true;}
+    } else{s.flag[7]=true;}
 
     if (requireExpose) {
-      s.flag[9]=true;
+      s.flag[8]=true;
       Expose annotation = field.getAnnotation(Expose.class);
       //8 branches if, divide?
       if (annotation == null || (serialize ? !annotation.serialize() : !annotation.deserialize())) {
         if (annotation == null) {
+          s.flag[9]=true;
+        }
+        if (annotation != null) {
           s.flag[10]=true;
         }
         if (serialize == true) {
@@ -215,48 +219,54 @@ public final class Excluder implements TypeAdapterFactory, Cloneable {
           s.flag[13]=true;
         }
         if (serialize == true) {
-          s.flag[14]=true;
+          s.flag[15]=true;
         }
         if (serialize == false) {
-          s.flag[15]=true;
+          s.flag[16]=true;
         }}
 
 
-    } else{s.flag[16]=true;}
+    } else{s.flag[17]=true;}
 
     if (!serializeInnerClasses && isInnerClass(field.getType())) {
-      s.flag[17]=true;
+      if (!serializeInnerClasses) {
+        s.flag[18]=true;
+      }
+      if (isInnerClass(field.getType())){
+        s.flag[19]=true;
+      }
+
       return true;
     } else{
       if (serializeInnerClasses == true) {
-        s.flag[18]=true;
+        s.flag[20]=true;
       }
       if (isInnerClass(field.getType()) == false) {
-        s.flag[19]=true;
+        s.flag[21]=true;
       }
     }
 
 
     if (isAnonymousOrLocal(field.getType())) {
-      s.flag[20]=true;
+      s.flag[22]=true;
       return true;
-    } else{s.flag[21]=true;}
+    } else{s.flag[23]=true;}
     List<ExclusionStrategy> list = serialize ? serializationStrategies : deserializationStrategies;
     if (serialize == true){
-      s.flag[22]=true;
-    } else {s.flag[23]=true;}
+      s.flag[24]=true;
+    } else {s.flag[25]=true;}
 
     if (!list.isEmpty()) {
-      s.flag[24]=true;
+      s.flag[26]=true;
       FieldAttributes fieldAttributes = new FieldAttributes(field);
       for (ExclusionStrategy exclusionStrategy : list) {
         if (exclusionStrategy.shouldSkipField(fieldAttributes)) {
-          s.flag[25]=true;
+          s.flag[27]=true;
           return true;
-        } else{s.flag[26]=true;}
+        } else{s.flag[28]=true;}
       }
-    } else{s.flag[27]=true;}
-    s.flag[28]=true;
+    } else{s.flag[29]=true;}
+    s.flag[14]=true;
     return false;
   }
 

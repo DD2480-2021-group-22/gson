@@ -10,7 +10,7 @@ public class DYIStructureSingleton {
     private static DYIStructureSingleton single_instance = null;
 
     // boolean list with length of number of points.
-    public boolean[] flag = new boolean[29];
+    public boolean[] flag = new boolean[30];
 
     /**
      * Private constructor for singleton object. (see: https://www.geeksforgeeks.org/singleton-class-java/)
@@ -27,7 +27,6 @@ public class DYIStructureSingleton {
     {
         if (single_instance == null)
             single_instance = new DYIStructureSingleton();
-
         return single_instance;
     }
 

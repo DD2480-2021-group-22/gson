@@ -299,7 +299,10 @@ public final class JsonReaderTest extends TestCase {
   }
 
   /**
-   * Checks if nextInt can read single quoted number
+   * Checks if nextInt can read single quoted number.
+   * Note that lenient is set to true for the tested JSON object.
+   * The reason is because single quoted numbers are usually not
+   * valid as numbers in JSON objects, but in this case it is acceptable.
    * @throws IOException
    */
   public void testNextIntSingleQuoted() throws IOException {

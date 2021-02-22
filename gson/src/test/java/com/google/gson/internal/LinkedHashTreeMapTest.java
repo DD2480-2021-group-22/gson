@@ -20,11 +20,9 @@ import com.google.gson.common.MoreAsserts;
 import com.google.gson.internal.LinkedHashTreeMap.AvlBuilder;
 import com.google.gson.internal.LinkedHashTreeMap.AvlIterator;
 import com.google.gson.internal.LinkedHashTreeMap.Node;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
+
+import java.util.*;
+
 import junit.framework.TestCase;
 
 public final class LinkedHashTreeMapTest extends TestCase {
@@ -48,6 +46,79 @@ public final class LinkedHashTreeMapTest extends TestCase {
     it.next();
     it.remove();
     assertIterationOrder(map.keySet(), "a", "c");
+  }
+
+  /**
+   * Test for creating 4 new nodes, where one is the main parent node and the other three are connected
+   * to it. Node1 is seen as the center node where Node2 and Node3 are its left and right childs.
+   * The test here is to see that the method "removeInternal" works and to cover its branches.
+   */
+
+  public void testRemovingNodeWithLeftAndRightChildren(){
+    //Arrange
+    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<>();
+    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<>();
+    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<>(parent,"parentKey" , 123 , parent,parent);
+    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<>(node1,"leftChild" , 123 , node1,node1);
+    LinkedHashTreeMap.Node<String,String> node3 = new LinkedHashTreeMap.Node<>(node1,"RightChild" , 124 , node1,node1);
+    node1.left = node2;
+    node1.right = node3;
+    node2.right = node1;
+    node3.left = node1;
+
+    //Act/Assert
+    assertNotNull(node1.left);
+    assertNotNull(node1.right);
+    map.removeInternal(node1, true);
+    assertNull(node1.left);
+    assertNull(node1.right);
+
+  }
+
+  /**
+   * Test for creating 3 new nodes, where one is the main parent node and the other two are connected
+   * to it. Node1 is the targeted node to be removed and Node2 is its left child. It is of interest
+   * to test removing a node that only has a left child to move in a certain way throughout the code
+   * for branch covering.
+   */
+  public void testRemovingLeftChild(){
+    //Arrange
+    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<>();
+    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<>();
+    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<>(parent,"parentKey" , 123 , parent,parent);
+    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<>(node1,"leftChild" , 123 , node1,node1);
+    parent.left = node1;
+    node1.left = node2;
+    node2.right = node1;
+
+    //Act/Assert
+    assertNotNull(node1.left);
+    map.removeInternal(node1, true);
+    assertNull(node1.left);
+
+  }
+
+  /**
+   * Test for creating 3 new nodes, where one is the main parent node and the other two are connected
+   * to it. Node1 is the targeted node to be removed and Node2 is its right child. It is of interest
+   * to test removing a node that only has a right child to move in a certain way throughout the code
+   * for branch covering.
+   */
+  public void testRemovingRightChild(){
+    //Arrange
+    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<>();
+    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<>();
+    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<>(parent,"parentKey" , 123 , parent,parent);
+    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<>(node1,"rightChild" , 123 , node1,node1);
+    parent.right = node1;
+    node1.right = node2;
+    node2.left = node1;
+
+    //Act/Assert
+    assertNotNull(node1.right);
+    map.removeInternal(node1, true);
+    assertNull(node1.right);
+
   }
 
   public void testPutNullKeyFails() {
@@ -287,4 +358,5 @@ public final class LinkedHashTreeMapTest extends TestCase {
     }
     assertEquals(Arrays.asList(expected), actualList);
   }
+
 }

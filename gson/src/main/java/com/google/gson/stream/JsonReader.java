@@ -19,7 +19,6 @@ package com.google.gson.stream;
 import com.google.gson.FileAppender;
 import com.google.gson.internal.JsonReaderInternalAccess;
 import com.google.gson.internal.bind.JsonTreeReader;
-
 import java.io.*;
 import java.util.Arrays;
 
@@ -457,140 +456,188 @@ public class JsonReader implements Closeable {
   }
 
   int doPeek() throws IOException {
+    FileAppender fileAppender = new FileAppender("." + File.separator + "doPeek-kaniyi.txt");
     int peekStack = stack[stackSize - 1];
     if (peekStack == JsonScope.EMPTY_ARRAY) {
+      fileAppender.appendInt(1);
       stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;
     } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {
+      fileAppender.appendInt(2);
       // Look for a comma before the next element.
       int c = nextNonWhitespace(true);
       switch (c) {
-      case ']':
-        return peeked = PEEKED_END_ARRAY;
-      case ';':
-        checkLenient(); // fall-through
-      case ',':
-        break;
-      default:
-        throw syntaxError("Unterminated array");
-      }
-    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {
-      stack[stackSize - 1] = JsonScope.DANGLING_NAME;
-      // Look for a comma before the next element.
-      if (peekStack == JsonScope.NONEMPTY_OBJECT) {
-        int c = nextNonWhitespace(true);
-        switch (c) {
-        case '}':
-          return peeked = PEEKED_END_OBJECT;
+        case ']':
+          return peeked = PEEKED_END_ARRAY;
         case ';':
           checkLenient(); // fall-through
         case ',':
           break;
         default:
-          throw syntaxError("Unterminated object");
+          throw syntaxError("Unterminated array");
+      }
+    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {
+      fileAppender.appendInt(3);
+      stack[stackSize - 1] = JsonScope.DANGLING_NAME;
+      // Look for a comma before the next element.
+      if (peekStack == JsonScope.NONEMPTY_OBJECT) {
+        fileAppender.appendInt(4);
+        int c = nextNonWhitespace(true);
+        switch (c) {
+          case '}':
+            return peeked = PEEKED_END_OBJECT;
+          case ';':
+            checkLenient(); // fall-through
+          case ',':
+            break;
+          default:
+            throw syntaxError("Unterminated object");
         }
+      }
+      else{
+        fileAppender.appendInt(5);
       }
       int c = nextNonWhitespace(true);
       switch (c) {
-      case '"':
-        return peeked = PEEKED_DOUBLE_QUOTED_NAME;
-      case '\'':
-        checkLenient();
-        return peeked = PEEKED_SINGLE_QUOTED_NAME;
-      case '}':
-        if (peekStack != JsonScope.NONEMPTY_OBJECT) {
-          return peeked = PEEKED_END_OBJECT;
-        } else {
-          throw syntaxError("Expected name");
-        }
-      default:
-        checkLenient();
-        pos--; // Don't consume the first character in an unquoted string.
-        if (isLiteral((char) c)) {
-          return peeked = PEEKED_UNQUOTED_NAME;
-        } else {
-          throw syntaxError("Expected name");
-        }
+        case '"':
+          return peeked = PEEKED_DOUBLE_QUOTED_NAME;
+        case '\'':
+          checkLenient();
+          return peeked = PEEKED_SINGLE_QUOTED_NAME;
+        case '}':
+          if (peekStack != JsonScope.NONEMPTY_OBJECT) {
+            fileAppender.appendInt(6);
+            return peeked = PEEKED_END_OBJECT;
+          } else {
+            fileAppender.appendInt(7);
+            throw syntaxError("Expected name");
+          }
+        default:
+          checkLenient();
+          pos--; // Don't consume the first character in an unquoted string.
+          if (isLiteral((char) c)) {
+            fileAppender.appendInt(8);
+            return peeked = PEEKED_UNQUOTED_NAME;
+          } else {
+            fileAppender.appendInt(9);
+            throw syntaxError("Expected name");
+          }
       }
     } else if (peekStack == JsonScope.DANGLING_NAME) {
+      fileAppender.appendInt(10);
       stack[stackSize - 1] = JsonScope.NONEMPTY_OBJECT;
       // Look for a colon before the value.
       int c = nextNonWhitespace(true);
       switch (c) {
-      case ':':
-        break;
-      case '=':
-        checkLenient();
-        if ((pos < limit || fillBuffer(1)) && buffer[pos] == '>') {
-          pos++;
-        }
-        break;
-      default:
-        throw syntaxError("Expected ':'");
+        case ':':
+          break;
+        case '=':
+          checkLenient();
+          if ((pos < limit || fillBuffer(1)) && buffer[pos] == '>') {
+            fileAppender.appendInt(11);
+            pos++;
+          }
+          else{
+            fileAppender.appendInt(12);
+          }
+          break;
+        default:
+          throw syntaxError("Expected ':'");
       }
     } else if (peekStack == JsonScope.EMPTY_DOCUMENT) {
+      fileAppender.appendInt(13);
       if (lenient) {
+        fileAppender.appendInt(14);
         consumeNonExecutePrefix();
+      }
+      else{
+        fileAppender.appendInt(15);
       }
       stack[stackSize - 1] = JsonScope.NONEMPTY_DOCUMENT;
     } else if (peekStack == JsonScope.NONEMPTY_DOCUMENT) {
+      fileAppender.appendInt(16);
       int c = nextNonWhitespace(false);
       if (c == -1) {
+        fileAppender.appendInt(17);
         return peeked = PEEKED_EOF;
       } else {
+        fileAppender.appendInt(18);
         checkLenient();
         pos--;
       }
     } else if (peekStack == JsonScope.CLOSED) {
+      fileAppender.appendInt(19);
       throw new IllegalStateException("JsonReader is closed");
+    }
+    else{
+      fileAppender.appendInt(20);
     }
 
     int c = nextNonWhitespace(true);
     switch (c) {
-    case ']':
-      if (peekStack == JsonScope.EMPTY_ARRAY) {
-        return peeked = PEEKED_END_ARRAY;
-      }
-      // fall-through to handle ",]"
-    case ';':
-    case ',':
-      // In lenient mode, a 0-length literal in an array means 'null'.
-      if (peekStack == JsonScope.EMPTY_ARRAY || peekStack == JsonScope.NONEMPTY_ARRAY) {
+      case ']':
+        if (peekStack == JsonScope.EMPTY_ARRAY) {
+          fileAppender.appendInt(21);
+          return peeked = PEEKED_END_ARRAY;
+        }
+        else{
+          fileAppender.appendInt(22);
+        }
+        // fall-through to handle ",]"
+      case ';':
+      case ',':
+        // In lenient mode, a 0-length literal in an array means 'null'.
+        if (peekStack == JsonScope.EMPTY_ARRAY || peekStack == JsonScope.NONEMPTY_ARRAY) {
+          fileAppender.appendInt(23);
+          checkLenient();
+          pos--;
+          return peeked = PEEKED_NULL;
+        } else {
+          fileAppender.appendInt(24);
+          throw syntaxError("Unexpected value");
+        }
+      case '\'':
         checkLenient();
-        pos--;
-        return peeked = PEEKED_NULL;
-      } else {
-        throw syntaxError("Unexpected value");
-      }
-    case '\'':
-      checkLenient();
-      return peeked = PEEKED_SINGLE_QUOTED;
-    case '"':
-      return peeked = PEEKED_DOUBLE_QUOTED;
-    case '[':
-      return peeked = PEEKED_BEGIN_ARRAY;
-    case '{':
-      return peeked = PEEKED_BEGIN_OBJECT;
-    default:
-      pos--; // Don't consume the first character in a literal value.
+        return peeked = PEEKED_SINGLE_QUOTED;
+      case '"':
+        return peeked = PEEKED_DOUBLE_QUOTED;
+      case '[':
+        return peeked = PEEKED_BEGIN_ARRAY;
+      case '{':
+        return peeked = PEEKED_BEGIN_OBJECT;
+      default:
+        pos--; // Don't consume the first character in a literal value.
     }
 
     int result = peekKeyword();
     if (result != PEEKED_NONE) {
+      fileAppender.appendInt(25);
       return result;
+    }
+    else{
+      fileAppender.appendInt(26);
     }
 
     result = peekNumber();
     if (result != PEEKED_NONE) {
+      fileAppender.appendInt(27);
       return result;
+    }
+    else{
+      fileAppender.appendInt(28);
     }
 
     if (!isLiteral(buffer[pos])) {
+      fileAppender.appendInt(29);
       throw syntaxError("Expected value");
+    }
+    else{
+      fileAppender.appendInt(30);
     }
 
     checkLenient();
     return peeked = PEEKED_UNQUOTED;
   }
+
 
   private int peekKeyword() throws IOException {
     // Figure out which keyword we're matching against by its first character.

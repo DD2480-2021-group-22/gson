@@ -16,11 +16,7 @@
 
 package com.google.gson.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import junit.framework.TestCase;
 
@@ -77,6 +73,20 @@ public final class LinkedTreeMapTest extends TestCase {
     LinkedTreeMap<String, String> map = new LinkedTreeMap<String, String>();
     map.put("a", "android");
     assertFalse(map.containsKey(null));
+  }
+
+  // Asserts that the find method finds inserted elements when a custom
+  // comparator has been supplied. This test was largely based on other
+  // tests in this file.
+  public void testFindWithSpecialComparator() {
+    Comparator comparator = Comparator.reverseOrder();
+    LinkedTreeMap<String, String> map = new LinkedTreeMap<String, String>(comparator);
+    map.put("a", "android");
+    map.put("i", "iOS");
+    map.put("p", "PC");
+    assertEquals("android", map.find("a", false).getValue());
+    assertEquals("iOS", map.find("i", false).getValue());
+    assertEquals("PC", map.find("p", false).getValue());
   }
 
   public void testPutOverrides() throws Exception {

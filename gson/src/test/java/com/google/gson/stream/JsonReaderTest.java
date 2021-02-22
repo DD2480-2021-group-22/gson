@@ -1606,6 +1606,28 @@ public final class JsonReaderTest extends TestCase {
     assertEquals(JsonToken.END_DOCUMENT, reader.peek());
   }
 
+  /**
+   * Check if value with unquoted name is skipped
+   * @throws IOException
+   */
+  public void testSkipUnquotedName() throws IOException {
+    JsonReader reader = new JsonReader(reader("{ name: \"name\"}"));
+    reader.setLenient(true);
+    reader.skipValue();
+    assertEquals(JsonToken.END_DOCUMENT, reader.peek());
+  }
+
+  /**
+   * Check if value with single quoted name is skipped
+   * @throws IOException
+   */
+  public void testSkipSingleQuotedName() throws IOException {
+    JsonReader reader = new JsonReader(reader("{ 'name': \"name\"}"));
+    reader.setLenient(true);
+    reader.skipValue();
+    assertEquals(JsonToken.END_DOCUMENT, reader.peek());
+  }
+
   public void testStringAsNumberWithTruncatedExponent() throws IOException {
     JsonReader reader = new JsonReader(reader("[123e]"));
     reader.setLenient(true);

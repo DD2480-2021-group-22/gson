@@ -49,79 +49,72 @@ public final class LinkedHashTreeMapTest extends TestCase {
   }
 
   /**
-   * Test for creating 4 new nodes, where one is the main parent node and the other three are connected
-   * to it. Node1 is seen as the center node where Node2 and Node3 are its left and right childs.
-   * The test here is to see that the method "removeInternal" works and to cover its branches.
-   * The constructor for LinkedHashTreeMap.Node requires a next and prev node and they could not
-   * be set to null (which didnt make much sense). And since we are using removeInternal() with unlinke set
-   * to false, we wont be looking for next or prev but rather left and right.
+   * Coverage prolem: We never pass the if-statement that says:
+   * if (left != null && right != null)
+   * To pass this if statement, we create 3 nodes and place them within our map.
+   * Then we retrieve their node objects to later connect Node1 to Node2 and Node3.
+   * This way we are assured to pass the if-statement.
    */
-
   public void testRemovingNodeWithLeftAndRightChildren(){
     //Arrange
-    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<String,String>();
-    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<String,String>();
-    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 123 , parent,parent);
-    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"leftChild" , 124 , node1,node1);
-    LinkedHashTreeMap.Node<String,String> node3 = new LinkedHashTreeMap.Node<String,String>(node1,"RightChild" , 125 , node1,node1);
+    LinkedHashTreeMap<Integer,String> map = new LinkedHashTreeMap<Integer,String>();
+    map.put(1,"First");
+    map.put(2,"Second");
+    map.put(3,"Third");
+    LinkedHashTreeMap.Node<Integer,String> node1 = map.find(1,false);
+    LinkedHashTreeMap.Node<Integer,String> node2 = map.find(2,false);
+    LinkedHashTreeMap.Node<Integer,String> node3 = map.find(3,false);
+    assert node1 != null;
     node1.left = node2;
     node1.right = node3;
-    node2.right = node1;
-    node3.left = node1;
 
     //Act/Assert
-    assertNotNull(node1.left);
-    assertNotNull(node1.right);
-    map.removeInternal(node1, false);
-    assertNull(node1.left);
-    assertNull(node1.right);
-
+    assertNotNull(node1);
+    map.removeInternal(node1,true);
+    node1 = map.find(1, false);
+    assertNull(node1);
   }
 
   /**
-   * Test for creating 3 new nodes, where one is the main parent node and the other two are connected
-   * to it. Node1 is the targeted node to be removed and Node2 is its left child. It is of interest
-   * to test removing a node that only has a left child to move in a certain way throughout the code
-   * for branch covering.
+   * Coverage problem: We never pass the else-if statement:
+   * else if (right != null)
+   * By creating two nodes and adding that Node1 has a right sibling Node2,
+   * we are guaranteed to pass the else-if statement.
    */
-  public void testRemovingLeftChild(){
-    //Arrange
-    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<String,String>();
-    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<String,String>();
-    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 126 , parent,parent);
-    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"leftChild" , 127 , node1,node1);
-    parent.left = node1;
-    node1.left = node2;
-    node2.right = node1;
-
-    //Act/Assert
-    assertNotNull(node1.left);
-    map.removeInternal(node1, false);
-    assertNull(node1.left);
-
-  }
-
-  /**
-   * Test for creating 3 new nodes, where one is the main parent node and the other two are connected
-   * to it. Node1 is the targeted node to be removed and Node2 is its right child. It is of interest
-   * to test removing a node that only has a right child to move in a certain way throughout the code
-   * for branch covering.
-   */
-  public void testRemovingRightChild(){
-    //Arrange
-    LinkedHashTreeMap<String,String> map = new LinkedHashTreeMap<String,String>();
-    LinkedHashTreeMap.Node<String,String> parent = new LinkedHashTreeMap.Node<String,String>();
-    LinkedHashTreeMap.Node<String,String> node1 = new LinkedHashTreeMap.Node<String,String>(parent,"parentKey" , 128 , parent,parent);
-    LinkedHashTreeMap.Node<String,String> node2 = new LinkedHashTreeMap.Node<String,String>(node1,"rightChild" , 129 , node1,node1);
-    parent.right = node1;
+  public void testRemovingNodeWithRightSibling(){
+    LinkedHashTreeMap<Integer,String> map = new LinkedHashTreeMap<Integer,String>();
+    map.put(1,"First");
+    map.put(2,"Second");
+    LinkedHashTreeMap.Node<Integer,String> node1 = map.find(1,false);
+    LinkedHashTreeMap.Node<Integer,String> node2 = map.find(2,false);
+    assert node1 != null;
     node1.right = node2;
-    node2.left = node1;
 
-    //Act/Assert
-    assertNotNull(node1.right);
-    map.removeInternal(node1, false);
-    assertNull(node1.right);
+    assertNotNull(node1);
+    map.removeInternal(node1,true);
+    node1 = map.find(1, false);
+    assertNull(node1);
+  }
 
+  /**
+   * Coverage problem: We never pass the else-if statement:
+   * else if (left != null)
+   * By creating two nodes and adding that Node1 has a left sibling Node2,
+   * we are guaranteed to pass the else-if statement.
+   */
+  public void testRemovingNodeWithLeftSibling(){
+    LinkedHashTreeMap<Integer,String> map = new LinkedHashTreeMap<Integer,String>();
+    map.put(1,"First");
+    map.put(2,"Second");
+    LinkedHashTreeMap.Node<Integer,String> node1 = map.find(1,false);
+    LinkedHashTreeMap.Node<Integer,String> node2 = map.find(2,false);
+    assert node1 != null;
+    node1.left = node2;
+
+    assertNotNull(node1);
+    map.removeInternal(node1,true);
+    node1 = map.find(1, false);
+    assertNull(node1);
   }
 
   public void testPutNullKeyFails() {

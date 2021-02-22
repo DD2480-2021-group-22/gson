@@ -142,6 +142,14 @@ public final class LinkedHashTreeMapTest extends TestCase {
 
     MoreAsserts.assertEqualsAndHashCode(map1, map2);
   }
+  /**
+   * Try to find a node using a non-existing key.
+   */
+  public void testFindWithNonExistingKey() {
+    LinkedHashTreeMap<String, String> map = new LinkedHashTreeMap<String, String>();
+    assertNull(map.find("a", false));
+
+  }
 
   public void testAvlWalker() {
     assertAvlWalker(node(node("a"), "b", node("c")),

@@ -20,11 +20,9 @@ import com.google.gson.common.MoreAsserts;
 import com.google.gson.internal.LinkedHashTreeMap.AvlBuilder;
 import com.google.gson.internal.LinkedHashTreeMap.AvlIterator;
 import com.google.gson.internal.LinkedHashTreeMap.Node;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
+
+import java.util.*;
+
 import junit.framework.TestCase;
 
 public final class LinkedHashTreeMapTest extends TestCase {
@@ -48,6 +46,75 @@ public final class LinkedHashTreeMapTest extends TestCase {
     it.next();
     it.remove();
     assertIterationOrder(map.keySet(), "a", "c");
+  }
+
+  /**
+   * Coverage prolem: We never pass the if-statement that says:
+   * if (left != null && right != null)
+   * To pass this if statement, we create 3 nodes and place them within our map.
+   * Then we retrieve their node objects to later connect Node1 to Node2 and Node3.
+   * This way we are assured to pass the if-statement.
+   */
+  public void testRemovingNodeWithLeftAndRightChildren(){
+    //Arrange
+    LinkedHashTreeMap<Integer,String> map = new LinkedHashTreeMap<Integer,String>();
+    map.put(1,"First");
+    map.put(2,"Second");
+    map.put(3,"Third");
+    LinkedHashTreeMap.Node<Integer,String> node1 = map.find(1,false);
+    LinkedHashTreeMap.Node<Integer,String> node2 = map.find(2,false);
+    LinkedHashTreeMap.Node<Integer,String> node3 = map.find(3,false);
+    assert node1 != null;
+    node1.left = node2;
+    node1.right = node3;
+
+    //Act/Assert
+    assertNotNull(node1);
+    map.removeInternal(node1,true);
+    node1 = map.find(1, false);
+    assertNull(node1);
+  }
+
+  /**
+   * Coverage problem: We never pass the else-if statement:
+   * else if (right != null)
+   * By creating two nodes and adding that Node1 has a right sibling Node2,
+   * we are guaranteed to pass the else-if statement.
+   */
+  public void testRemovingNodeWithRightSibling(){
+    LinkedHashTreeMap<Integer,String> map = new LinkedHashTreeMap<Integer,String>();
+    map.put(1,"First");
+    map.put(2,"Second");
+    LinkedHashTreeMap.Node<Integer,String> node1 = map.find(1,false);
+    LinkedHashTreeMap.Node<Integer,String> node2 = map.find(2,false);
+    assert node1 != null;
+    node1.right = node2;
+
+    assertNotNull(node1);
+    map.removeInternal(node1,true);
+    node1 = map.find(1, false);
+    assertNull(node1);
+  }
+
+  /**
+   * Coverage problem: We never pass the else-if statement:
+   * else if (left != null)
+   * By creating two nodes and adding that Node1 has a left sibling Node2,
+   * we are guaranteed to pass the else-if statement.
+   */
+  public void testRemovingNodeWithLeftSibling(){
+    LinkedHashTreeMap<Integer,String> map = new LinkedHashTreeMap<Integer,String>();
+    map.put(1,"First");
+    map.put(2,"Second");
+    LinkedHashTreeMap.Node<Integer,String> node1 = map.find(1,false);
+    LinkedHashTreeMap.Node<Integer,String> node2 = map.find(2,false);
+    assert node1 != null;
+    node1.left = node2;
+
+    assertNotNull(node1);
+    map.removeInternal(node1,true);
+    node1 = map.find(1, false);
+    assertNull(node1);
   }
 
   public void testPutNullKeyFails() {
@@ -287,4 +354,5 @@ public final class LinkedHashTreeMapTest extends TestCase {
     }
     assertEquals(Arrays.asList(expected), actualList);
   }
+
 }

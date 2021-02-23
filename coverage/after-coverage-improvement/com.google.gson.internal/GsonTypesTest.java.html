@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GsonTypesTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal</a> &gt; <span class="el_source">GsonTypesTest.java</span></div><h1>GsonTypesTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2014 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.internal;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.List;
+
+import junit.framework.TestCase;
+
+<span class="fc" id="L25">public final class GsonTypesTest extends TestCase {</span>
+
+  public void testNewParameterizedTypeWithoutOwner() throws Exception {
+    // List&lt;A&gt;. List is a top-level class
+<span class="fc" id="L29">    Type type = $Gson$Types.newParameterizedTypeWithOwner(null, List.class, A.class);</span>
+<span class="fc" id="L30">    assertEquals(A.class, getFirstTypeArgument(type));</span>
+
+    // A&lt;B&gt;. A is a static inner class.
+<span class="fc" id="L33">    type = $Gson$Types.newParameterizedTypeWithOwner(null, A.class, B.class);</span>
+<span class="fc" id="L34">    assertEquals(B.class, getFirstTypeArgument(type));</span>
+
+<span class="nc" id="L36">    final class D {</span>
+    }
+    try {
+      // D&lt;A&gt; is not allowed since D is not a static inner class
+<span class="nc" id="L40">      $Gson$Types.newParameterizedTypeWithOwner(null, D.class, A.class);</span>
+<span class="nc" id="L41">      fail();</span>
+<span class="pc" id="L42">    } catch (IllegalArgumentException expected) {}</span>
+
+    // A&lt;D&gt; is allowed.
+<span class="fc" id="L45">    type = $Gson$Types.newParameterizedTypeWithOwner(null, A.class, D.class);</span>
+<span class="fc" id="L46">    assertEquals(D.class, getFirstTypeArgument(type));</span>
+<span class="fc" id="L47">  }</span>
+
+  public void testGetFirstTypeArgument() throws Exception {
+<span class="fc" id="L50">    assertNull(getFirstTypeArgument(A.class));</span>
+
+<span class="fc" id="L52">    Type type = $Gson$Types.newParameterizedTypeWithOwner(null, A.class, B.class, C.class);</span>
+<span class="fc" id="L53">    assertEquals(B.class, getFirstTypeArgument(type));</span>
+<span class="fc" id="L54">  }</span>
+
+  private static final class A {
+  }
+  private static final class B {
+  }
+  private static final class C {
+  }
+
+  /**
+   * Given a parameterized type A&amp;lt;B,C&amp;gt;, returns B. If the specified type is not
+   * a generic type, returns null.
+   */
+  public static Type getFirstTypeArgument(Type type) throws Exception {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">    if (!(type instanceof ParameterizedType)) return null;</span>
+<span class="fc" id="L69">    ParameterizedType ptype = (ParameterizedType) type;</span>
+<span class="fc" id="L70">    Type[] actualTypeArguments = ptype.getActualTypeArguments();</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">    if (actualTypeArguments.length == 0) return null;</span>
+<span class="fc" id="L72">    return $Gson$Types.canonicalize(actualTypeArguments[0]);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

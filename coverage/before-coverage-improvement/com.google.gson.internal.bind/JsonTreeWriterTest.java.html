@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonTreeWriterTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal.bind</a> &gt; <span class="el_source">JsonTreeWriterTest.java</span></div><h1>JsonTreeWriterTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2011 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.internal.bind;
+
+import com.google.gson.JsonNull;
+import java.io.IOException;
+import junit.framework.TestCase;
+
+@SuppressWarnings(&quot;resource&quot;)
+<span class="fc" id="L24">public final class JsonTreeWriterTest extends TestCase {</span>
+  public void testArray() throws IOException {
+<span class="fc" id="L26">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L27">    writer.beginArray();</span>
+<span class="fc" id="L28">    writer.value(1);</span>
+<span class="fc" id="L29">    writer.value(2);</span>
+<span class="fc" id="L30">    writer.value(3);</span>
+<span class="fc" id="L31">    writer.endArray();</span>
+<span class="fc" id="L32">    assertEquals(&quot;[1,2,3]&quot;, writer.get().toString());</span>
+<span class="fc" id="L33">  }</span>
+
+  public void testNestedArray() throws IOException {
+<span class="fc" id="L36">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L37">    writer.beginArray();</span>
+<span class="fc" id="L38">    writer.beginArray();</span>
+<span class="fc" id="L39">    writer.endArray();</span>
+<span class="fc" id="L40">    writer.beginArray();</span>
+<span class="fc" id="L41">    writer.beginArray();</span>
+<span class="fc" id="L42">    writer.endArray();</span>
+<span class="fc" id="L43">    writer.endArray();</span>
+<span class="fc" id="L44">    writer.endArray();</span>
+<span class="fc" id="L45">    assertEquals(&quot;[[],[[]]]&quot;, writer.get().toString());</span>
+<span class="fc" id="L46">  }</span>
+
+  public void testObject() throws IOException {
+<span class="fc" id="L49">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L50">    writer.beginObject();</span>
+<span class="fc" id="L51">    writer.name(&quot;A&quot;).value(1);</span>
+<span class="fc" id="L52">    writer.name(&quot;B&quot;).value(2);</span>
+<span class="fc" id="L53">    writer.endObject();</span>
+<span class="fc" id="L54">    assertEquals(&quot;{\&quot;A\&quot;:1,\&quot;B\&quot;:2}&quot;, writer.get().toString());</span>
+<span class="fc" id="L55">  }</span>
+
+  public void testNestedObject() throws IOException {
+<span class="fc" id="L58">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L59">    writer.beginObject();</span>
+<span class="fc" id="L60">    writer.name(&quot;A&quot;);</span>
+<span class="fc" id="L61">    writer.beginObject();</span>
+<span class="fc" id="L62">    writer.name(&quot;B&quot;);</span>
+<span class="fc" id="L63">    writer.beginObject();</span>
+<span class="fc" id="L64">    writer.endObject();</span>
+<span class="fc" id="L65">    writer.endObject();</span>
+<span class="fc" id="L66">    writer.name(&quot;C&quot;);</span>
+<span class="fc" id="L67">    writer.beginObject();</span>
+<span class="fc" id="L68">    writer.endObject();</span>
+<span class="fc" id="L69">    writer.endObject();</span>
+<span class="fc" id="L70">    assertEquals(&quot;{\&quot;A\&quot;:{\&quot;B\&quot;:{}},\&quot;C\&quot;:{}}&quot;, writer.get().toString());</span>
+<span class="fc" id="L71">  }</span>
+
+  public void testWriteAfterClose() throws Exception {
+<span class="fc" id="L74">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L75">    writer.setLenient(true);</span>
+<span class="fc" id="L76">    writer.beginArray();</span>
+<span class="fc" id="L77">    writer.value(&quot;A&quot;);</span>
+<span class="fc" id="L78">    writer.endArray();</span>
+<span class="fc" id="L79">    writer.close();</span>
+    try {
+<span class="nc" id="L81">      writer.beginArray();</span>
+<span class="nc" id="L82">      fail();</span>
+<span class="fc" id="L83">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L84">    }</span>
+<span class="fc" id="L85">  }</span>
+
+  public void testPrematureClose() throws Exception {
+<span class="fc" id="L88">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L89">    writer.setLenient(true);</span>
+<span class="fc" id="L90">    writer.beginArray();</span>
+    try {
+<span class="nc" id="L92">      writer.close();</span>
+<span class="nc" id="L93">      fail();</span>
+<span class="fc" id="L94">    } catch (IOException expected) {</span>
+<span class="nc" id="L95">    }</span>
+<span class="fc" id="L96">  }</span>
+
+  public void testSerializeNullsFalse() throws IOException {
+<span class="fc" id="L99">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L100">    writer.setSerializeNulls(false);</span>
+<span class="fc" id="L101">    writer.beginObject();</span>
+<span class="fc" id="L102">    writer.name(&quot;A&quot;);</span>
+<span class="fc" id="L103">    writer.nullValue();</span>
+<span class="fc" id="L104">    writer.endObject();</span>
+<span class="fc" id="L105">    assertEquals(&quot;{}&quot;, writer.get().toString());</span>
+<span class="fc" id="L106">  }</span>
+
+  public void testSerializeNullsTrue() throws IOException {
+<span class="fc" id="L109">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L110">    writer.setSerializeNulls(true);</span>
+<span class="fc" id="L111">    writer.beginObject();</span>
+<span class="fc" id="L112">    writer.name(&quot;A&quot;);</span>
+<span class="fc" id="L113">    writer.nullValue();</span>
+<span class="fc" id="L114">    writer.endObject();</span>
+<span class="fc" id="L115">    assertEquals(&quot;{\&quot;A\&quot;:null}&quot;, writer.get().toString());</span>
+<span class="fc" id="L116">  }</span>
+
+  public void testEmptyWriter() {
+<span class="fc" id="L119">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L120">    assertEquals(JsonNull.INSTANCE, writer.get());</span>
+<span class="fc" id="L121">  }</span>
+
+  public void testBeginArray() throws Exception {
+<span class="fc" id="L124">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L125">    assertEquals(writer, writer.beginArray());</span>
+<span class="fc" id="L126">  }</span>
+
+  public void testBeginObject() throws Exception {
+<span class="fc" id="L129">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L130">    assertEquals(writer, writer.beginObject());</span>
+<span class="fc" id="L131">  }</span>
+
+  public void testValueString() throws Exception {
+<span class="fc" id="L134">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L135">    String n = &quot;as&quot;;</span>
+<span class="fc" id="L136">    assertEquals(writer, writer.value(n));</span>
+<span class="fc" id="L137">  }</span>
+
+  public void testBoolValue() throws Exception {
+<span class="fc" id="L140">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L141">    boolean bool = true;</span>
+<span class="fc" id="L142">    assertEquals(writer, writer.value(bool));</span>
+<span class="fc" id="L143">  }</span>
+
+  public void testBoolMaisValue() throws Exception {
+<span class="fc" id="L146">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L147">    Boolean bool = true;</span>
+<span class="fc" id="L148">    assertEquals(writer, writer.value(bool));</span>
+<span class="fc" id="L149">  }</span>
+
+  public void testLenientNansAndInfinities() throws IOException {
+<span class="fc" id="L152">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L153">    writer.setLenient(true);</span>
+<span class="fc" id="L154">    writer.beginArray();</span>
+<span class="fc" id="L155">    writer.value(Double.NaN);</span>
+<span class="fc" id="L156">    writer.value(Double.NEGATIVE_INFINITY);</span>
+<span class="fc" id="L157">    writer.value(Double.POSITIVE_INFINITY);</span>
+<span class="fc" id="L158">    writer.endArray();</span>
+<span class="fc" id="L159">    assertEquals(&quot;[NaN,-Infinity,Infinity]&quot;, writer.get().toString());</span>
+<span class="fc" id="L160">  }</span>
+
+  public void testStrictNansAndInfinities() throws IOException {
+<span class="fc" id="L163">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L164">    writer.setLenient(false);</span>
+<span class="fc" id="L165">    writer.beginArray();</span>
+    try {
+<span class="nc" id="L167">      writer.value(Double.NaN);</span>
+<span class="nc" id="L168">      fail();</span>
+<span class="fc" id="L169">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L170">    }</span>
+    try {
+<span class="nc" id="L172">      writer.value(Double.NEGATIVE_INFINITY);</span>
+<span class="nc" id="L173">      fail();</span>
+<span class="fc" id="L174">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L175">    }</span>
+    try {
+<span class="nc" id="L177">      writer.value(Double.POSITIVE_INFINITY);</span>
+<span class="nc" id="L178">      fail();</span>
+<span class="fc" id="L179">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L180">    }</span>
+<span class="fc" id="L181">  }</span>
+
+  public void testStrictBoxedNansAndInfinities() throws IOException {
+<span class="fc" id="L184">    JsonTreeWriter writer = new JsonTreeWriter();</span>
+<span class="fc" id="L185">    writer.setLenient(false);</span>
+<span class="fc" id="L186">    writer.beginArray();</span>
+    try {
+<span class="nc" id="L188">      writer.value(Double.valueOf(Double.NaN));</span>
+<span class="nc" id="L189">      fail();</span>
+<span class="fc" id="L190">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L191">    }</span>
+    try {
+<span class="nc" id="L193">      writer.value(Double.valueOf(Double.NEGATIVE_INFINITY));</span>
+<span class="nc" id="L194">      fail();</span>
+<span class="fc" id="L195">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L196">    }</span>
+    try {
+<span class="nc" id="L198">      writer.value(Double.valueOf(Double.POSITIVE_INFINITY));</span>
+<span class="nc" id="L199">      fail();</span>
+<span class="fc" id="L200">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L201">    }</span>
+<span class="fc" id="L202">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

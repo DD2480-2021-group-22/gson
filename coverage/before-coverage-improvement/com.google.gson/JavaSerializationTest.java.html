@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JavaSerializationTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson</a> &gt; <span class="el_source">JavaSerializationTest.java</span></div><h1>JavaSerializationTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2012 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson;
+
+import com.google.gson.reflect.TypeToken;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import junit.framework.TestCase;
+
+/**
+ * Check that Gson doesn't return non-serializable data types.
+ *
+ * @author Jesse Wilson
+ */
+<span class="fc" id="L37">public final class JavaSerializationTest extends TestCase {</span>
+<span class="fc" id="L38">  private final Gson gson = new Gson();</span>
+
+  public void testMapIsSerializable() throws Exception {
+<span class="fc" id="L41">    Type type = new TypeToken&lt;Map&lt;String, Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L42">    Map&lt;String, Integer&gt; map = gson.fromJson(&quot;{\&quot;b\&quot;:1,\&quot;c\&quot;:2,\&quot;a\&quot;:3}&quot;, type);</span>
+<span class="fc" id="L43">    Map&lt;String, Integer&gt; serialized = serializedCopy(map);</span>
+<span class="fc" id="L44">    assertEquals(map, serialized);</span>
+    // Also check that the iteration order is retained.
+<span class="fc" id="L46">    assertEquals(Arrays.asList(&quot;b&quot;, &quot;c&quot;, &quot;a&quot;), new ArrayList&lt;String&gt;(serialized.keySet()));</span>
+<span class="fc" id="L47">  }</span>
+
+  public void testListIsSerializable() throws Exception {
+<span class="fc" id="L50">    Type type = new TypeToken&lt;List&lt;String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L51">    List&lt;String&gt; list = gson.fromJson(&quot;[\&quot;a\&quot;,\&quot;b\&quot;,\&quot;c\&quot;]&quot;, type);</span>
+<span class="fc" id="L52">    List&lt;String&gt; serialized = serializedCopy(list);</span>
+<span class="fc" id="L53">    assertEquals(list, serialized);</span>
+<span class="fc" id="L54">  }</span>
+
+  public void testNumberIsSerializable() throws Exception {
+<span class="fc" id="L57">    Type type = new TypeToken&lt;List&lt;Number&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L58">    List&lt;Number&gt; list = gson.fromJson(&quot;[1,3.14,6.673e-11]&quot;, type);</span>
+<span class="fc" id="L59">    List&lt;Number&gt; serialized = serializedCopy(list);</span>
+<span class="fc" id="L60">    assertEquals(1.0, serialized.get(0).doubleValue());</span>
+<span class="fc" id="L61">    assertEquals(3.14, serialized.get(1).doubleValue());</span>
+<span class="fc" id="L62">    assertEquals(6.673e-11, serialized.get(2).doubleValue());</span>
+<span class="fc" id="L63">  }</span>
+
+  @SuppressWarnings(&quot;unchecked&quot;) // Serialization promises to return the same type.
+  private &lt;T&gt; T serializedCopy(T object) throws IOException, ClassNotFoundException {
+<span class="fc" id="L67">    ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();</span>
+<span class="fc" id="L68">    ObjectOutputStream out = new ObjectOutputStream(bytesOut);</span>
+<span class="fc" id="L69">    out.writeObject(object);</span>
+<span class="fc" id="L70">    out.close();</span>
+<span class="fc" id="L71">    ByteArrayInputStream bytesIn = new ByteArrayInputStream(bytesOut.toByteArray());</span>
+<span class="fc" id="L72">    ObjectInputStream in = new ObjectInputStream(bytesIn);</span>
+<span class="fc" id="L73">    return (T) in.readObject();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

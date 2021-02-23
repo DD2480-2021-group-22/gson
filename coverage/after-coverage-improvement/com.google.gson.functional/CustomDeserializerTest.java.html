@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CustomDeserializerTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">CustomDeserializerTest.java</span></div><h1>CustomDeserializerTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.common.TestTypes.Base;
+import com.google.gson.common.TestTypes.ClassWithBaseField;
+
+import junit.framework.TestCase;
+
+import java.lang.reflect.Type;
+
+/**
+ * Functional Test exercising custom deserialization only. When test applies to both
+ * serialization and deserialization then add it to CustomTypeAdapterTest.
+ *
+ * @author Joel Leitch
+ */
+<span class="fc" id="L39">public class CustomDeserializerTest extends TestCase {</span>
+  private static final String DEFAULT_VALUE = &quot;test123&quot;;
+  private static final String SUFFIX = &quot;blah&quot;;
+
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L47">    super.setUp();</span>
+<span class="fc" id="L48">    gson = new GsonBuilder().registerTypeAdapter(DataHolder.class, new DataHolderDeserializer()).create();</span>
+<span class="fc" id="L49">  }</span>
+
+  public void testDefaultConstructorNotCalledOnObject() throws Exception {
+<span class="fc" id="L52">    DataHolder data = new DataHolder(DEFAULT_VALUE);</span>
+<span class="fc" id="L53">    String json = gson.toJson(data);</span>
+
+<span class="fc" id="L55">    DataHolder actual = gson.fromJson(json, DataHolder.class);</span>
+<span class="fc" id="L56">    assertEquals(DEFAULT_VALUE + SUFFIX, actual.getData());</span>
+<span class="fc" id="L57">  }</span>
+
+  public void testDefaultConstructorNotCalledOnField() throws Exception {
+<span class="fc" id="L60">    DataHolderWrapper dataWrapper = new DataHolderWrapper(new DataHolder(DEFAULT_VALUE));</span>
+<span class="fc" id="L61">    String json = gson.toJson(dataWrapper);</span>
+
+<span class="fc" id="L63">    DataHolderWrapper actual = gson.fromJson(json, DataHolderWrapper.class);</span>
+<span class="fc" id="L64">    assertEquals(DEFAULT_VALUE + SUFFIX, actual.getWrappedData().getData());</span>
+<span class="fc" id="L65">  }</span>
+
+  private static class DataHolder {
+    private final String data;
+
+    // For use by Gson
+    @SuppressWarnings(&quot;unused&quot;)
+<span class="nc" id="L72">    private DataHolder() {</span>
+<span class="nc" id="L73">      throw new IllegalStateException();</span>
+    }
+
+<span class="fc" id="L76">    public DataHolder(String data) {</span>
+<span class="fc" id="L77">      this.data = data;</span>
+<span class="fc" id="L78">    }</span>
+
+    public String getData() {
+<span class="fc" id="L81">      return data;</span>
+    }
+  }
+
+  private static class DataHolderWrapper {
+    private final DataHolder wrappedData;
+
+    // For use by Gson
+    @SuppressWarnings(&quot;unused&quot;)
+    private DataHolderWrapper() {
+<span class="fc" id="L91">      this(new DataHolder(DEFAULT_VALUE));</span>
+<span class="fc" id="L92">    }</span>
+
+<span class="fc" id="L94">    public DataHolderWrapper(DataHolder data) {</span>
+<span class="fc" id="L95">      this.wrappedData = data;</span>
+<span class="fc" id="L96">    }</span>
+
+    public DataHolder getWrappedData() {
+<span class="fc" id="L99">      return wrappedData;</span>
+    }
+  }
+
+  private static class DataHolderDeserializer implements JsonDeserializer&lt;DataHolder&gt; {
+    @Override
+    public DataHolder deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="fc" id="L107">      JsonObject jsonObj = json.getAsJsonObject();</span>
+<span class="fc" id="L108">      String dataString = jsonObj.get(&quot;data&quot;).getAsString();</span>
+<span class="fc" id="L109">      return new DataHolder(dataString + SUFFIX);</span>
+    }
+  }
+
+  public void testJsonTypeFieldBasedDeserialization() {
+<span class="fc" id="L114">    String json = &quot;{field1:'abc',field2:'def',__type__:'SUB_TYPE1'}&quot;;</span>
+<span class="fc" id="L115">    Gson gson = new GsonBuilder().registerTypeAdapter(MyBase.class, new JsonDeserializer&lt;MyBase&gt;() {</span>
+      @Override public MyBase deserialize(JsonElement json, Type pojoType,
+          JsonDeserializationContext context) throws JsonParseException {
+<span class="fc" id="L118">        String type = json.getAsJsonObject().get(MyBase.TYPE_ACCESS).getAsString();</span>
+<span class="fc" id="L119">        return context.deserialize(json, SubTypes.valueOf(type).getSubclass());</span>
+      }
+<span class="fc" id="L121">    }).create();</span>
+<span class="fc" id="L122">    SubType1 target = (SubType1) gson.fromJson(json, MyBase.class);</span>
+<span class="fc" id="L123">    assertEquals(&quot;abc&quot;, target.field1);</span>
+<span class="fc" id="L124">  }</span>
+
+  private static class MyBase {
+    static final String TYPE_ACCESS = &quot;__type__&quot;;
+  }
+
+<span class="fc" id="L130">  private enum SubTypes {</span>
+<span class="fc" id="L131">    SUB_TYPE1(SubType1.class),</span>
+<span class="fc" id="L132">    SUB_TYPE2(SubType2.class);</span>
+    private final Type subClass;
+<span class="fc" id="L134">    private SubTypes(Type subClass) {</span>
+<span class="fc" id="L135">      this.subClass = subClass;</span>
+<span class="fc" id="L136">    }</span>
+    public Type getSubclass() {
+<span class="fc" id="L138">      return subClass;</span>
+    }
+  }
+
+<span class="fc" id="L142">  private static class SubType1 extends MyBase {</span>
+    String field1;
+  }
+
+<span class="nc" id="L146">  private static class SubType2 extends MyBase {</span>
+    @SuppressWarnings(&quot;unused&quot;)
+    String field2;
+  }
+
+  public void testCustomDeserializerReturnsNullForTopLevelObject() {
+<span class="fc" id="L152">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L153">      .registerTypeAdapter(Base.class, new JsonDeserializer&lt;Base&gt;() {</span>
+        @Override
+        public Base deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
+<span class="fc" id="L157">          return null;</span>
+        }
+<span class="fc" id="L159">      }).create();</span>
+<span class="fc" id="L160">    String json = &quot;{baseName:'Base',subName:'SubRevised'}&quot;;</span>
+<span class="fc" id="L161">    Base target = gson.fromJson(json, Base.class);</span>
+<span class="fc" id="L162">    assertNull(target);</span>
+<span class="fc" id="L163">  }</span>
+
+  public void testCustomDeserializerReturnsNull() {
+<span class="fc" id="L166">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L167">      .registerTypeAdapter(Base.class, new JsonDeserializer&lt;Base&gt;() {</span>
+        @Override
+        public Base deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
+<span class="fc" id="L171">          return null;</span>
+        }
+<span class="fc" id="L173">      }).create();</span>
+<span class="fc" id="L174">    String json = &quot;{base:{baseName:'Base',subName:'SubRevised'}}&quot;;</span>
+<span class="fc" id="L175">    ClassWithBaseField target = gson.fromJson(json, ClassWithBaseField.class);</span>
+<span class="fc" id="L176">    assertNull(target.base);</span>
+<span class="fc" id="L177">  }</span>
+
+  public void testCustomDeserializerReturnsNullForArrayElements() {
+<span class="fc" id="L180">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L181">      .registerTypeAdapter(Base.class, new JsonDeserializer&lt;Base&gt;() {</span>
+        @Override
+        public Base deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
+<span class="fc" id="L185">          return null;</span>
+        }
+<span class="fc" id="L187">      }).create();</span>
+<span class="fc" id="L188">    String json = &quot;[{baseName:'Base'},{baseName:'Base'}]&quot;;</span>
+<span class="fc" id="L189">    Base[] target = gson.fromJson(json, Base[].class);</span>
+<span class="fc" id="L190">    assertNull(target[0]);</span>
+<span class="fc" id="L191">    assertNull(target[1]);</span>
+<span class="fc" id="L192">  }</span>
+
+  public void testCustomDeserializerReturnsNullForArrayElementsForArrayField() {
+<span class="fc" id="L195">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L196">      .registerTypeAdapter(Base.class, new JsonDeserializer&lt;Base&gt;() {</span>
+        @Override
+        public Base deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
+<span class="fc" id="L200">          return null;</span>
+        }
+<span class="fc" id="L202">      }).create();</span>
+<span class="fc" id="L203">    String json = &quot;{bases:[{baseName:'Base'},{baseName:'Base'}]}&quot;;</span>
+<span class="fc" id="L204">    ClassWithBaseArray target = gson.fromJson(json, ClassWithBaseArray.class);</span>
+<span class="fc" id="L205">    assertNull(target.bases[0]);</span>
+<span class="fc" id="L206">    assertNull(target.bases[1]);</span>
+<span class="fc" id="L207">  }</span>
+
+  private static final class ClassWithBaseArray {
+    Base[] bases;
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

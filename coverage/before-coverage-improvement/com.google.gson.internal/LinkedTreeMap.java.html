@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LinkedTreeMap.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal</a> &gt; <span class="el_source">LinkedTreeMap.java</span></div><h1>LinkedTreeMap.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2010 The Android Open Source Project
+ * Copyright (C) 2012 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.internal;
+
+import java.io.ObjectStreamException;
+import java.io.Serializable;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
+import java.util.Comparator;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.NoSuchElementException;
+import java.util.Set;
+
+/**
+ * A map of comparable keys to values. Unlike {@code TreeMap}, this class uses
+ * insertion order for iteration order. Comparison order is only used as an
+ * optimization for efficient insertion and removal.
+ *
+ * &lt;p&gt;This implementation was derived from Android 4.1's TreeMap class.
+ */
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">public final class LinkedTreeMap&lt;K, V&gt; extends AbstractMap&lt;K, V&gt; implements Serializable {</span>
+  @SuppressWarnings({ &quot;unchecked&quot;, &quot;rawtypes&quot; }) // to avoid Comparable&lt;Comparable&lt;Comparable&lt;...&gt;&gt;&gt;
+<span class="fc" id="L40">  private static final Comparator&lt;Comparable&gt; NATURAL_ORDER = new Comparator&lt;Comparable&gt;() {</span>
+    public int compare(Comparable a, Comparable b) {
+<span class="nc" id="L42">      return a.compareTo(b);</span>
+    }
+  };
+
+  Comparator&lt;? super K&gt; comparator;
+  Node&lt;K, V&gt; root;
+<span class="fc" id="L48">  int size = 0;</span>
+<span class="fc" id="L49">  int modCount = 0;</span>
+
+  // Used to preserve iteration order
+<span class="fc" id="L52">  final Node&lt;K, V&gt; header = new Node&lt;K, V&gt;();</span>
+
+  /**
+   * Create a natural order, empty tree map whose keys must be mutually
+   * comparable and non-null.
+   */
+  @SuppressWarnings(&quot;unchecked&quot;) // unsafe! this assumes K is comparable
+  public LinkedTreeMap() {
+<span class="fc" id="L60">    this((Comparator&lt;? super K&gt;) NATURAL_ORDER);</span>
+<span class="fc" id="L61">  }</span>
+
+  /**
+   * Create a tree map ordered by {@code comparator}. This map's keys may only
+   * be null if {@code comparator} permits.
+   *
+   * @param comparator the comparator to order elements with, or {@code null} to
+   *     use the natural ordering.
+   */
+  @SuppressWarnings({ &quot;unchecked&quot;, &quot;rawtypes&quot; }) // unsafe! if comparator is null, this assumes K is comparable
+<span class="fc" id="L71">  public LinkedTreeMap(Comparator&lt;? super K&gt; comparator) {</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">    this.comparator = comparator != null</span>
+<span class="fc" id="L73">        ? comparator</span>
+<span class="pc" id="L74">        : (Comparator) NATURAL_ORDER;</span>
+<span class="fc" id="L75">  }</span>
+
+  @Override public int size() {
+<span class="fc" id="L78">    return size;</span>
+  }
+
+  @Override public V get(Object key) {
+<span class="fc" id="L82">    Node&lt;K, V&gt; node = findByObject(key);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">    return node != null ? node.value : null;</span>
+  }
+
+  @Override public boolean containsKey(Object key) {
+<span class="fc bfc" id="L87" title="All 2 branches covered.">    return findByObject(key) != null;</span>
+  }
+
+  @Override public V put(K key, V value) {
+<span class="fc bfc" id="L91" title="All 2 branches covered.">    if (key == null) {</span>
+<span class="fc" id="L92">      throw new NullPointerException(&quot;key == null&quot;);</span>
+    }
+<span class="fc" id="L94">    Node&lt;K, V&gt; created = find(key, true);</span>
+<span class="fc" id="L95">    V result = created.value;</span>
+<span class="fc" id="L96">    created.value = value;</span>
+<span class="fc" id="L97">    return result;</span>
+  }
+
+  @Override public void clear() {
+<span class="fc" id="L101">    root = null;</span>
+<span class="fc" id="L102">    size = 0;</span>
+<span class="fc" id="L103">    modCount++;</span>
+
+    // Clear iteration order
+<span class="fc" id="L106">    Node&lt;K, V&gt; header = this.header;</span>
+<span class="fc" id="L107">    header.next = header.prev = header;</span>
+<span class="fc" id="L108">  }</span>
+
+  @Override public V remove(Object key) {
+<span class="fc" id="L111">    Node&lt;K, V&gt; node = removeInternalByKey(key);</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">    return node != null ? node.value : null;</span>
+  }
+
+  /**
+   * Returns the node at or adjacent to the given key, creating it if requested.
+   *
+   * @throws ClassCastException if {@code key} and the tree's keys aren't
+   *     mutually comparable.
+   */
+  Node&lt;K, V&gt; find(K key, boolean create) {
+<span class="fc" id="L122">    Comparator&lt;? super K&gt; comparator = this.comparator;</span>
+<span class="fc" id="L123">    Node&lt;K, V&gt; nearest = root;</span>
+<span class="fc" id="L124">    int comparison = 0;</span>
+
+<span class="fc bfc" id="L126" title="All 2 branches covered.">    if (nearest != null) {</span>
+      // Micro-optimization: avoid polymorphic calls to Comparator.compare().
+      @SuppressWarnings(&quot;unchecked&quot;) // Throws a ClassCastException below if there's trouble.
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">          Comparable&lt;Object&gt; comparableKey = (comparator == NATURAL_ORDER)</span>
+<span class="fc" id="L130">          ? (Comparable&lt;Object&gt;) key</span>
+<span class="pc" id="L131">          : null;</span>
+
+      while (true) {
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        comparison = (comparableKey != null)</span>
+<span class="fc" id="L135">            ? comparableKey.compareTo(nearest.key)</span>
+<span class="pc" id="L136">            : comparator.compare(key, nearest.key);</span>
+
+        // We found the requested key.
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (comparison == 0) {</span>
+<span class="fc" id="L140">          return nearest;</span>
+        }
+
+        // If it exists, the key is in a subtree. Go deeper.
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        Node&lt;K, V&gt; child = (comparison &lt; 0) ? nearest.left : nearest.right;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        if (child == null) {</span>
+<span class="fc" id="L146">          break;</span>
+        }
+
+<span class="fc" id="L149">        nearest = child;</span>
+<span class="fc" id="L150">      }</span>
+    }
+
+    // The key doesn't exist in this tree.
+<span class="fc bfc" id="L154" title="All 2 branches covered.">    if (!create) {</span>
+<span class="fc" id="L155">      return null;</span>
+    }
+
+    // Create the node and add it to the tree or the table.
+<span class="fc" id="L159">    Node&lt;K, V&gt; header = this.header;</span>
+    Node&lt;K, V&gt; created;
+<span class="fc bfc" id="L161" title="All 2 branches covered.">    if (nearest == null) {</span>
+      // Check that the value is comparable if we didn't do any comparisons.
+<span class="pc bpc" id="L163" title="1 of 4 branches missed.">      if (comparator == NATURAL_ORDER &amp;&amp; !(key instanceof Comparable)) {</span>
+<span class="fc" id="L164">        throw new ClassCastException(key.getClass().getName() + &quot; is not Comparable&quot;);</span>
+      }
+<span class="fc" id="L166">      created = new Node&lt;K, V&gt;(nearest, key, header, header.prev);</span>
+<span class="fc" id="L167">      root = created;</span>
+    } else {
+<span class="fc" id="L169">      created = new Node&lt;K, V&gt;(nearest, key, header, header.prev);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">      if (comparison &lt; 0) { // nearest.key is higher</span>
+<span class="fc" id="L171">        nearest.left = created;</span>
+      } else { // comparison &gt; 0, nearest.key is lower
+<span class="fc" id="L173">        nearest.right = created;</span>
+      }
+<span class="fc" id="L175">      rebalance(nearest, true);</span>
+    }
+<span class="fc" id="L177">    size++;</span>
+<span class="fc" id="L178">    modCount++;</span>
+
+<span class="fc" id="L180">    return created;</span>
+  }
+
+  @SuppressWarnings(&quot;unchecked&quot;)
+  Node&lt;K, V&gt; findByObject(Object key) {
+    try {
+<span class="fc bfc" id="L186" title="All 2 branches covered.">      return key != null ? find((K) key, false) : null;</span>
+<span class="fc" id="L187">    } catch (ClassCastException e) {</span>
+<span class="fc" id="L188">      return null;</span>
+    }
+  }
+
+  /**
+   * Returns this map's entry that has the same key and value as {@code
+   * entry}, or null if this map has no such entry.
+   *
+   * &lt;p&gt;This method uses the comparator for key equality rather than {@code
+   * equals}. If this map's comparator isn't consistent with equals (such as
+   * {@code String.CASE_INSENSITIVE_ORDER}), then {@code remove()} and {@code
+   * contains()} will violate the collections API.
+   */
+  Node&lt;K, V&gt; findByEntry(Entry&lt;?, ?&gt; entry) {
+<span class="nc" id="L202">    Node&lt;K, V&gt; mine = findByObject(entry.getKey());</span>
+<span class="nc bnc" id="L203" title="All 4 branches missed.">    boolean valuesEqual = mine != null &amp;&amp; equal(mine.value, entry.getValue());</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">    return valuesEqual ? mine : null;</span>
+  }
+
+  private boolean equal(Object a, Object b) {
+<span class="nc bnc" id="L208" title="All 6 branches missed.">    return a == b || (a != null &amp;&amp; a.equals(b));</span>
+  }
+
+  /**
+   * Removes {@code node} from this tree, rearranging the tree's structure as
+   * necessary.
+   *
+   * @param unlink true to also unlink this node from the iteration linked list.
+   */
+  void removeInternal(Node&lt;K, V&gt; node, boolean unlink) {
+<span class="fc bfc" id="L218" title="All 2 branches covered.">    if (unlink) {</span>
+<span class="fc" id="L219">      node.prev.next = node.next;</span>
+<span class="fc" id="L220">      node.next.prev = node.prev;</span>
+    }
+
+<span class="fc" id="L223">    Node&lt;K, V&gt; left = node.left;</span>
+<span class="fc" id="L224">    Node&lt;K, V&gt; right = node.right;</span>
+<span class="fc" id="L225">    Node&lt;K, V&gt; originalParent = node.parent;</span>
+<span class="pc bpc" id="L226" title="1 of 4 branches missed.">    if (left != null &amp;&amp; right != null) {</span>
+
+      /*
+       * To remove a node with both left and right subtrees, move an
+       * adjacent node from one of those subtrees into this node's place.
+       *
+       * Removing the adjacent node may change this node's subtrees. This
+       * node may no longer have two subtrees once the adjacent node is
+       * gone!
+       */
+
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">      Node&lt;K, V&gt; adjacent = (left.height &gt; right.height) ? left.last() : right.first();</span>
+<span class="fc" id="L238">      removeInternal(adjacent, false); // takes care of rebalance and size--</span>
+
+<span class="fc" id="L240">      int leftHeight = 0;</span>
+<span class="fc" id="L241">      left = node.left;</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">      if (left != null) {</span>
+<span class="fc" id="L243">        leftHeight = left.height;</span>
+<span class="fc" id="L244">        adjacent.left = left;</span>
+<span class="fc" id="L245">        left.parent = adjacent;</span>
+<span class="fc" id="L246">        node.left = null;</span>
+      }
+
+<span class="fc" id="L249">      int rightHeight = 0;</span>
+<span class="fc" id="L250">      right = node.right;</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">      if (right != null) {</span>
+<span class="nc" id="L252">        rightHeight = right.height;</span>
+<span class="nc" id="L253">        adjacent.right = right;</span>
+<span class="nc" id="L254">        right.parent = adjacent;</span>
+<span class="nc" id="L255">        node.right = null;</span>
+      }
+
+<span class="fc" id="L258">      adjacent.height = Math.max(leftHeight, rightHeight) + 1;</span>
+<span class="fc" id="L259">      replaceInParent(node, adjacent);</span>
+<span class="fc" id="L260">      return;</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">    } else if (left != null) {</span>
+<span class="nc" id="L262">      replaceInParent(node, left);</span>
+<span class="nc" id="L263">      node.left = null;</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">    } else if (right != null) {</span>
+<span class="fc" id="L265">      replaceInParent(node, right);</span>
+<span class="fc" id="L266">      node.right = null;</span>
+    } else {
+<span class="fc" id="L268">      replaceInParent(node, null);</span>
+    }
+
+<span class="fc" id="L271">    rebalance(originalParent, false);</span>
+<span class="fc" id="L272">    size--;</span>
+<span class="fc" id="L273">    modCount++;</span>
+<span class="fc" id="L274">  }</span>
+
+  Node&lt;K, V&gt; removeInternalByKey(Object key) {
+<span class="fc" id="L277">    Node&lt;K, V&gt; node = findByObject(key);</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">    if (node != null) {</span>
+<span class="fc" id="L279">      removeInternal(node, true);</span>
+    }
+<span class="fc" id="L281">    return node;</span>
+  }
+
+  private void replaceInParent(Node&lt;K, V&gt; node, Node&lt;K, V&gt; replacement) {
+<span class="fc" id="L285">    Node&lt;K, V&gt; parent = node.parent;</span>
+<span class="fc" id="L286">    node.parent = null;</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">    if (replacement != null) {</span>
+<span class="fc" id="L288">      replacement.parent = parent;</span>
+    }
+
+<span class="fc bfc" id="L291" title="All 2 branches covered.">    if (parent != null) {</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">      if (parent.left == node) {</span>
+<span class="fc" id="L293">        parent.left = replacement;</span>
+      } else {
+<span class="pc bpc" id="L295" title="2 of 4 branches missed.">        assert (parent.right == node);</span>
+<span class="fc" id="L296">        parent.right = replacement;</span>
+      }
+    } else {
+<span class="fc" id="L299">      root = replacement;</span>
+    }
+<span class="fc" id="L301">  }</span>
+
+  /**
+   * Rebalances the tree by making any AVL rotations necessary between the
+   * newly-unbalanced node and the tree's root.
+   *
+   * @param insert true if the node was unbalanced by an insert; false if it
+   *     was by a removal.
+   */
+  private void rebalance(Node&lt;K, V&gt; unbalanced, boolean insert) {
+<span class="fc bfc" id="L311" title="All 2 branches covered.">    for (Node&lt;K, V&gt; node = unbalanced; node != null; node = node.parent) {</span>
+<span class="fc" id="L312">      Node&lt;K, V&gt; left = node.left;</span>
+<span class="fc" id="L313">      Node&lt;K, V&gt; right = node.right;</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">      int leftHeight = left != null ? left.height : 0;</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">      int rightHeight = right != null ? right.height : 0;</span>
+
+<span class="fc" id="L317">      int delta = leftHeight - rightHeight;</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">      if (delta == -2) {</span>
+<span class="fc" id="L319">        Node&lt;K, V&gt; rightLeft = right.left;</span>
+<span class="fc" id="L320">        Node&lt;K, V&gt; rightRight = right.right;</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        int rightRightHeight = rightRight != null ? rightRight.height : 0;</span>
+<span class="fc bfc" id="L322" title="All 2 branches covered.">        int rightLeftHeight = rightLeft != null ? rightLeft.height : 0;</span>
+
+<span class="fc" id="L324">        int rightDelta = rightLeftHeight - rightRightHeight;</span>
+<span class="pc bpc" id="L325" title="3 of 6 branches missed.">        if (rightDelta == -1 || (rightDelta == 0 &amp;&amp; !insert)) {</span>
+<span class="fc" id="L326">          rotateLeft(node); // AVL right right</span>
+        } else {
+<span class="pc bpc" id="L328" title="2 of 4 branches missed.">          assert (rightDelta == 1);</span>
+<span class="fc" id="L329">          rotateRight(right); // AVL right left</span>
+<span class="fc" id="L330">          rotateLeft(node);</span>
+        }
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">        if (insert) {</span>
+<span class="fc" id="L333">          break; // no further rotations will be necessary</span>
+        }
+
+<span class="pc bfc" id="L336" title="All 2 branches covered.">      } else if (delta == 2) {</span>
+<span class="fc" id="L337">        Node&lt;K, V&gt; leftLeft = left.left;</span>
+<span class="fc" id="L338">        Node&lt;K, V&gt; leftRight = left.right;</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">        int leftRightHeight = leftRight != null ? leftRight.height : 0;</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">        int leftLeftHeight = leftLeft != null ? leftLeft.height : 0;</span>
+
+<span class="fc" id="L342">        int leftDelta = leftLeftHeight - leftRightHeight;</span>
+<span class="pc bpc" id="L343" title="3 of 6 branches missed.">        if (leftDelta == 1 || (leftDelta == 0 &amp;&amp; !insert)) {</span>
+<span class="fc" id="L344">          rotateRight(node); // AVL left left</span>
+        } else {
+<span class="pc bpc" id="L346" title="2 of 4 branches missed.">          assert (leftDelta == -1);</span>
+<span class="fc" id="L347">          rotateLeft(left); // AVL left right</span>
+<span class="fc" id="L348">          rotateRight(node);</span>
+        }
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">        if (insert) {</span>
+<span class="fc" id="L351">          break; // no further rotations will be necessary</span>
+        }
+
+<span class="pc bfc" id="L354" title="All 2 branches covered.">      } else if (delta == 0) {</span>
+<span class="fc" id="L355">        node.height = leftHeight + 1; // leftHeight == rightHeight</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">        if (insert) {</span>
+<span class="fc" id="L357">          break; // the insert caused balance, so rebalancing is done!</span>
+        }
+
+      } else {
+<span class="pc bpc" id="L361" title="2 of 6 branches missed.">        assert (delta == -1 || delta == 1);</span>
+<span class="fc" id="L362">        node.height = Math.max(leftHeight, rightHeight) + 1;</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">        if (!insert) {</span>
+<span class="fc" id="L364">          break; // the height hasn't changed, so rebalancing is done!</span>
+        }
+      }
+    }
+<span class="fc" id="L368">  }</span>
+
+  /**
+   * Rotates the subtree so that its root's right child is the new root.
+   */
+  private void rotateLeft(Node&lt;K, V&gt; root) {
+<span class="fc" id="L374">    Node&lt;K, V&gt; left = root.left;</span>
+<span class="fc" id="L375">    Node&lt;K, V&gt; pivot = root.right;</span>
+<span class="fc" id="L376">    Node&lt;K, V&gt; pivotLeft = pivot.left;</span>
+<span class="fc" id="L377">    Node&lt;K, V&gt; pivotRight = pivot.right;</span>
+
+    // move the pivot's left child to the root's right
+<span class="fc" id="L380">    root.right = pivotLeft;</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">    if (pivotLeft != null) {</span>
+<span class="fc" id="L382">      pivotLeft.parent = root;</span>
+    }
+
+<span class="fc" id="L385">    replaceInParent(root, pivot);</span>
+
+    // move the root to the pivot's left
+<span class="fc" id="L388">    pivot.left = root;</span>
+<span class="fc" id="L389">    root.parent = pivot;</span>
+
+    // fix heights
+<span class="fc bfc" id="L392" title="All 2 branches covered.">    root.height = Math.max(left != null ? left.height : 0,</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">        pivotLeft != null ? pivotLeft.height : 0) + 1;</span>
+<span class="fc" id="L394">    pivot.height = Math.max(root.height,</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        pivotRight != null ? pivotRight.height : 0) + 1;</span>
+<span class="fc" id="L396">  }</span>
+
+  /**
+   * Rotates the subtree so that its root's left child is the new root.
+   */
+  private void rotateRight(Node&lt;K, V&gt; root) {
+<span class="fc" id="L402">    Node&lt;K, V&gt; pivot = root.left;</span>
+<span class="fc" id="L403">    Node&lt;K, V&gt; right = root.right;</span>
+<span class="fc" id="L404">    Node&lt;K, V&gt; pivotLeft = pivot.left;</span>
+<span class="fc" id="L405">    Node&lt;K, V&gt; pivotRight = pivot.right;</span>
+
+    // move the pivot's right child to the root's left
+<span class="fc" id="L408">    root.left = pivotRight;</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">    if (pivotRight != null) {</span>
+<span class="fc" id="L410">      pivotRight.parent = root;</span>
+    }
+
+<span class="fc" id="L413">    replaceInParent(root, pivot);</span>
+
+    // move the root to the pivot's right
+<span class="fc" id="L416">    pivot.right = root;</span>
+<span class="fc" id="L417">    root.parent = pivot;</span>
+
+    // fixup heights
+<span class="fc bfc" id="L420" title="All 2 branches covered.">    root.height = Math.max(right != null ? right.height : 0,</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">        pivotRight != null ? pivotRight.height : 0) + 1;</span>
+<span class="fc" id="L422">    pivot.height = Math.max(root.height,</span>
+<span class="fc bfc" id="L423" title="All 2 branches covered.">        pivotLeft != null ? pivotLeft.height : 0) + 1;</span>
+<span class="fc" id="L424">  }</span>
+
+  private EntrySet entrySet;
+  private KeySet keySet;
+
+  @Override public Set&lt;Entry&lt;K, V&gt;&gt; entrySet() {
+<span class="fc" id="L430">    EntrySet result = entrySet;</span>
+<span class="fc bfc" id="L431" title="All 2 branches covered.">    return result != null ? result : (entrySet = new EntrySet());</span>
+  }
+
+  @Override public Set&lt;K&gt; keySet() {
+<span class="fc" id="L435">    KeySet result = keySet;</span>
+<span class="fc bfc" id="L436" title="All 2 branches covered.">    return result != null ? result : (keySet = new KeySet());</span>
+  }
+
+  static final class Node&lt;K, V&gt; implements Entry&lt;K, V&gt; {
+    Node&lt;K, V&gt; parent;
+    Node&lt;K, V&gt; left;
+    Node&lt;K, V&gt; right;
+    Node&lt;K, V&gt; next;
+    Node&lt;K, V&gt; prev;
+    final K key;
+    V value;
+    int height;
+
+    /** Create the header entry */
+<span class="fc" id="L450">    Node() {</span>
+<span class="fc" id="L451">      key = null;</span>
+<span class="fc" id="L452">      next = prev = this;</span>
+<span class="fc" id="L453">    }</span>
+
+    /** Create a regular entry */
+<span class="fc" id="L456">    Node(Node&lt;K, V&gt; parent, K key, Node&lt;K, V&gt; next, Node&lt;K, V&gt; prev) {</span>
+<span class="fc" id="L457">      this.parent = parent;</span>
+<span class="fc" id="L458">      this.key = key;</span>
+<span class="fc" id="L459">      this.height = 1;</span>
+<span class="fc" id="L460">      this.next = next;</span>
+<span class="fc" id="L461">      this.prev = prev;</span>
+<span class="fc" id="L462">      prev.next = this;</span>
+<span class="fc" id="L463">      next.prev = this;</span>
+<span class="fc" id="L464">    }</span>
+
+    public K getKey() {
+<span class="fc" id="L467">      return key;</span>
+    }
+
+    public V getValue() {
+<span class="fc" id="L471">      return value;</span>
+    }
+
+    public V setValue(V value) {
+<span class="nc" id="L475">      V oldValue = this.value;</span>
+<span class="nc" id="L476">      this.value = value;</span>
+<span class="nc" id="L477">      return oldValue;</span>
+    }
+
+    @SuppressWarnings(&quot;rawtypes&quot;)
+    @Override public boolean equals(Object o) {
+<span class="nc bnc" id="L482" title="All 2 branches missed.">      if (o instanceof Entry) {</span>
+<span class="nc" id="L483">        Entry other = (Entry) o;</span>
+<span class="nc bnc" id="L484" title="All 8 branches missed.">        return (key == null ? other.getKey() == null : key.equals(other.getKey()))</span>
+<span class="nc bnc" id="L485" title="All 4 branches missed.">            &amp;&amp; (value == null ? other.getValue() == null : value.equals(other.getValue()));</span>
+      }
+<span class="nc" id="L487">      return false;</span>
+    }
+
+    @Override public int hashCode() {
+<span class="pc bpc" id="L491" title="1 of 2 branches missed.">      return (key == null ? 0 : key.hashCode())</span>
+<span class="pc bpc" id="L492" title="1 of 2 branches missed.">          ^ (value == null ? 0 : value.hashCode());</span>
+    }
+
+    @Override public String toString() {
+<span class="nc" id="L496">      return key + &quot;=&quot; + value;</span>
+    }
+
+    /**
+     * Returns the first node in this subtree.
+     */
+    public Node&lt;K, V&gt; first() {
+<span class="fc" id="L503">      Node&lt;K, V&gt; node = this;</span>
+<span class="fc" id="L504">      Node&lt;K, V&gt; child = node.left;</span>
+<span class="pc bpc" id="L505" title="1 of 2 branches missed.">      while (child != null) {</span>
+<span class="nc" id="L506">        node = child;</span>
+<span class="nc" id="L507">        child = node.left;</span>
+      }
+<span class="fc" id="L509">      return node;</span>
+    }
+
+    /**
+     * Returns the last node in this subtree.
+     */
+    public Node&lt;K, V&gt; last() {
+<span class="nc" id="L516">      Node&lt;K, V&gt; node = this;</span>
+<span class="nc" id="L517">      Node&lt;K, V&gt; child = node.right;</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">      while (child != null) {</span>
+<span class="nc" id="L519">        node = child;</span>
+<span class="nc" id="L520">        child = node.right;</span>
+      }
+<span class="nc" id="L522">      return node;</span>
+    }
+  }
+
+  private abstract class LinkedTreeMapIterator&lt;T&gt; implements Iterator&lt;T&gt; {
+<span class="fc" id="L527">    Node&lt;K, V&gt; next = header.next;</span>
+<span class="fc" id="L528">    Node&lt;K, V&gt; lastReturned = null;</span>
+<span class="fc" id="L529">    int expectedModCount = modCount;</span>
+
+<span class="fc" id="L531">    LinkedTreeMapIterator() {</span>
+<span class="fc" id="L532">    }</span>
+
+    public final boolean hasNext() {
+<span class="fc bfc" id="L535" title="All 2 branches covered.">      return next != header;</span>
+    }
+
+    final Node&lt;K, V&gt; nextNode() {
+<span class="fc" id="L539">      Node&lt;K, V&gt; e = next;</span>
+<span class="pc bpc" id="L540" title="1 of 2 branches missed.">      if (e == header) {</span>
+<span class="nc" id="L541">        throw new NoSuchElementException();</span>
+      }
+<span class="pc bpc" id="L543" title="1 of 2 branches missed.">      if (modCount != expectedModCount) {</span>
+<span class="nc" id="L544">        throw new ConcurrentModificationException();</span>
+      }
+<span class="fc" id="L546">      next = e.next;</span>
+<span class="fc" id="L547">      return lastReturned = e;</span>
+    }
+
+    public final void remove() {
+<span class="pc bpc" id="L551" title="1 of 2 branches missed.">      if (lastReturned == null) {</span>
+<span class="nc" id="L552">        throw new IllegalStateException();</span>
+      }
+<span class="fc" id="L554">      removeInternal(lastReturned, true);</span>
+<span class="fc" id="L555">      lastReturned = null;</span>
+<span class="fc" id="L556">      expectedModCount = modCount;</span>
+<span class="fc" id="L557">    }</span>
+  }
+
+<span class="fc" id="L560">  class EntrySet extends AbstractSet&lt;Entry&lt;K, V&gt;&gt; {</span>
+    @Override public int size() {
+<span class="fc" id="L562">      return size;</span>
+    }
+
+    @Override public Iterator&lt;Entry&lt;K, V&gt;&gt; iterator() {
+<span class="fc" id="L566">      return new LinkedTreeMapIterator&lt;Entry&lt;K, V&gt;&gt;() {</span>
+        public Entry&lt;K, V&gt; next() {
+<span class="fc" id="L568">          return nextNode();</span>
+        }
+      };
+    }
+
+    @Override public boolean contains(Object o) {
+<span class="nc bnc" id="L574" title="All 4 branches missed.">      return o instanceof Entry &amp;&amp; findByEntry((Entry&lt;?, ?&gt;) o) != null;</span>
+    }
+
+    @Override public boolean remove(Object o) {
+<span class="nc bnc" id="L578" title="All 2 branches missed.">      if (!(o instanceof Entry)) {</span>
+<span class="nc" id="L579">        return false;</span>
+      }
+
+<span class="nc" id="L582">      Node&lt;K, V&gt; node = findByEntry((Entry&lt;?, ?&gt;) o);</span>
+<span class="nc bnc" id="L583" title="All 2 branches missed.">      if (node == null) {</span>
+<span class="nc" id="L584">        return false;</span>
+      }
+<span class="nc" id="L586">      removeInternal(node, true);</span>
+<span class="nc" id="L587">      return true;</span>
+    }
+
+    @Override public void clear() {
+<span class="nc" id="L591">      LinkedTreeMap.this.clear();</span>
+<span class="nc" id="L592">    }</span>
+  }
+
+<span class="fc" id="L595">  final class KeySet extends AbstractSet&lt;K&gt; {</span>
+    @Override public int size() {
+<span class="fc" id="L597">      return size;</span>
+    }
+
+    @Override public Iterator&lt;K&gt; iterator() {
+<span class="fc" id="L601">      return new LinkedTreeMapIterator&lt;K&gt;() {</span>
+        public K next() {
+<span class="fc" id="L603">          return nextNode().key;</span>
+        }
+      };
+    }
+
+    @Override public boolean contains(Object o) {
+<span class="fc" id="L609">      return containsKey(o);</span>
+    }
+
+    @Override public boolean remove(Object key) {
+<span class="nc bnc" id="L613" title="All 2 branches missed.">      return removeInternalByKey(key) != null;</span>
+    }
+
+    @Override public void clear() {
+<span class="nc" id="L617">      LinkedTreeMap.this.clear();</span>
+<span class="nc" id="L618">    }</span>
+  }
+
+  /**
+   * If somebody is unlucky enough to have to serialize one of these, serialize
+   * it as a LinkedHashMap so that they won't need Gson on the other side to
+   * deserialize it. Using serialization defeats our DoS defence, so most apps
+   * shouldn't use it.
+   */
+  private Object writeReplace() throws ObjectStreamException {
+<span class="fc" id="L628">    return new LinkedHashMap&lt;K, V&gt;(this);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

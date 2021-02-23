@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TreeTypeAdaptersTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">TreeTypeAdaptersTest.java</span></div><h1>TreeTypeAdaptersTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2011 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import junit.framework.TestCase;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.reflect.TypeToken;
+
+/**
+ * Collection of functional tests for DOM tree based type adapters.
+ */
+<span class="fc" id="L41">public class TreeTypeAdaptersTest extends TestCase {</span>
+<span class="fc" id="L42">  private static final Id&lt;Student&gt; STUDENT1_ID = new Id&lt;Student&gt;(&quot;5&quot;, Student.class);</span>
+<span class="fc" id="L43">  private static final Id&lt;Student&gt; STUDENT2_ID = new Id&lt;Student&gt;(&quot;6&quot;, Student.class);</span>
+<span class="fc" id="L44">  private static final Student STUDENT1 = new Student(STUDENT1_ID, &quot;first&quot;);</span>
+<span class="fc" id="L45">  private static final Student STUDENT2 = new Student(STUDENT2_ID, &quot;second&quot;);</span>
+<span class="fc" id="L46">  private static final Type TYPE_COURSE_HISTORY =</span>
+<span class="fc" id="L47">    new TypeToken&lt;Course&lt;HistoryCourse&gt;&gt;(){}.getType(); </span>
+<span class="fc" id="L48">  private static final Id&lt;Course&lt;HistoryCourse&gt;&gt; COURSE_ID =</span>
+      new Id&lt;Course&lt;HistoryCourse&gt;&gt;(&quot;10&quot;, TYPE_COURSE_HISTORY);
+
+  private Gson gson;
+  private Course&lt;HistoryCourse&gt; course;
+
+  @Override
+  protected void setUp() {
+<span class="fc" id="L56">    gson = new GsonBuilder()</span>
+<span class="fc" id="L57">        .registerTypeAdapter(Id.class, new IdTreeTypeAdapter())</span>
+<span class="fc" id="L58">        .create();</span>
+<span class="fc" id="L59">    course = new Course&lt;HistoryCourse&gt;(COURSE_ID, 4,</span>
+<span class="fc" id="L60">        new Assignment&lt;HistoryCourse&gt;(null, null), createList(STUDENT1, STUDENT2));</span>
+<span class="fc" id="L61">  }</span>
+
+  public void testSerializeId() {
+<span class="fc" id="L64">    String json = gson.toJson(course, TYPE_COURSE_HISTORY);</span>
+<span class="fc" id="L65">    assertTrue(json.contains(String.valueOf(COURSE_ID.getValue())));</span>
+<span class="fc" id="L66">    assertTrue(json.contains(String.valueOf(STUDENT1_ID.getValue())));</span>
+<span class="fc" id="L67">    assertTrue(json.contains(String.valueOf(STUDENT2_ID.getValue())));</span>
+<span class="fc" id="L68">  }</span>
+
+  public void testDeserializeId() {
+<span class="fc" id="L71">    String json = &quot;{courseId:1,students:[{id:1,name:'first'},{id:6,name:'second'}],&quot;</span>
+      + &quot;numAssignments:4,assignment:{}}&quot;;
+<span class="fc" id="L73">    Course&lt;HistoryCourse&gt; target = gson.fromJson(json, TYPE_COURSE_HISTORY);</span>
+<span class="fc" id="L74">    assertEquals(&quot;1&quot;, target.getStudents().get(0).id.getValue());</span>
+<span class="fc" id="L75">    assertEquals(&quot;6&quot;, target.getStudents().get(1).id.getValue());</span>
+<span class="fc" id="L76">    assertEquals(&quot;1&quot;, target.getId().getValue());</span>
+<span class="fc" id="L77">  }</span>
+
+  private static final class Id&lt;R&gt; {
+    final String value;
+    @SuppressWarnings(&quot;unused&quot;)
+    final Type typeOfId;
+
+<span class="fc" id="L84">    private Id(String value, Type typeOfId) {</span>
+<span class="fc" id="L85">      this.value = value;</span>
+<span class="fc" id="L86">      this.typeOfId = typeOfId;</span>
+<span class="fc" id="L87">    }</span>
+    public String getValue() {
+<span class="fc" id="L89">      return value;</span>
+    }
+  }
+
+  private static final class IdTreeTypeAdapter implements JsonSerializer&lt;Id&lt;?&gt;&gt;,
+      JsonDeserializer&lt;Id&lt;?&gt;&gt; {
+
+    @SuppressWarnings(&quot;rawtypes&quot;)
+    @Override
+    public Id&lt;?&gt; deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">      if (!(typeOfT instanceof ParameterizedType)) {</span>
+<span class="nc" id="L101">        throw new JsonParseException(&quot;Id of unknown type: &quot; + typeOfT);</span>
+      }
+<span class="fc" id="L103">      ParameterizedType parameterizedType = (ParameterizedType) typeOfT;</span>
+      // Since Id takes only one TypeVariable, the actual type corresponding to the first
+      // TypeVariable is the Type we are looking for
+<span class="fc" id="L106">      Type typeOfId = parameterizedType.getActualTypeArguments()[0];</span>
+<span class="fc" id="L107">      return new Id(json.getAsString(), typeOfId);</span>
+    }
+
+    @Override
+    public JsonElement serialize(Id&lt;?&gt; src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L112">      return new JsonPrimitive(src.getValue());</span>
+    }
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class Student {
+    Id&lt;Student&gt; id;
+    String name;
+
+    private Student() {
+<span class="fc" id="L122">      this(null, null);</span>
+<span class="fc" id="L123">    }</span>
+<span class="fc" id="L124">    public Student(Id&lt;Student&gt; id, String name) {</span>
+<span class="fc" id="L125">      this.id = id;</span>
+<span class="fc" id="L126">      this.name = name;</span>
+<span class="fc" id="L127">    }</span>
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class Course&lt;T&gt; {
+    final List&lt;Student&gt; students;
+    private final Id&lt;Course&lt;T&gt;&gt; courseId;
+    private final int numAssignments;
+    private final Assignment&lt;T&gt; assignment;
+
+    private Course() {
+<span class="fc" id="L138">      this(null, 0, null, new ArrayList&lt;Student&gt;());</span>
+<span class="fc" id="L139">    }</span>
+
+    public Course(Id&lt;Course&lt;T&gt;&gt; courseId, int numAssignments,
+<span class="fc" id="L142">        Assignment&lt;T&gt; assignment, List&lt;Student&gt; players) {</span>
+<span class="fc" id="L143">      this.courseId = courseId;</span>
+<span class="fc" id="L144">      this.numAssignments = numAssignments;</span>
+<span class="fc" id="L145">      this.assignment = assignment;</span>
+<span class="fc" id="L146">      this.students = players;</span>
+<span class="fc" id="L147">    }</span>
+    public Id&lt;Course&lt;T&gt;&gt; getId() {
+<span class="fc" id="L149">      return courseId;</span>
+    }
+    List&lt;Student&gt; getStudents() {
+<span class="fc" id="L152">      return students;</span>
+    }
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class Assignment&lt;T&gt; {
+    private final Id&lt;Assignment&lt;T&gt;&gt; id;
+    private final T data;
+
+    private Assignment() {
+<span class="fc" id="L162">      this(null, null);</span>
+<span class="fc" id="L163">    }</span>
+<span class="fc" id="L164">    public Assignment(Id&lt;Assignment&lt;T&gt;&gt; id, T data) {</span>
+<span class="fc" id="L165">      this.id = id;</span>
+<span class="fc" id="L166">      this.data = data;</span>
+<span class="fc" id="L167">    }</span>
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class HistoryCourse {
+    int numClasses;
+  }
+
+  private static &lt;T&gt; List&lt;T&gt; createList(T ...items) {
+<span class="fc" id="L176">    return Arrays.asList(items);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

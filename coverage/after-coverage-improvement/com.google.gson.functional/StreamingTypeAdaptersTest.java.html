@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StreamingTypeAdaptersTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">StreamingTypeAdaptersTest.java</span></div><h1>StreamingTypeAdaptersTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2011 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import junit.framework.TestCase;
+
+<span class="fc" id="L38">public final class StreamingTypeAdaptersTest extends TestCase {</span>
+<span class="fc" id="L39">  private Gson miniGson = new GsonBuilder().create();</span>
+<span class="fc" id="L40">  private TypeAdapter&lt;Truck&gt; truckAdapter = miniGson.getAdapter(Truck.class);</span>
+<span class="fc" id="L41">  private TypeAdapter&lt;Map&lt;String, Double&gt;&gt; mapAdapter</span>
+<span class="fc" id="L42">      = miniGson.getAdapter(new TypeToken&lt;Map&lt;String, Double&gt;&gt;() {});</span>
+
+  public void testSerialize() {
+<span class="fc" id="L45">    Truck truck = new Truck();</span>
+<span class="fc" id="L46">    truck.passengers = Arrays.asList(new Person(&quot;Jesse&quot;, 29), new Person(&quot;Jodie&quot;, 29));</span>
+<span class="fc" id="L47">    truck.horsePower = 300;</span>
+
+<span class="fc" id="L49">    assertEquals(&quot;{'horsePower':300.0,&quot;</span>
+        + &quot;'passengers':[{'age':29,'name':'Jesse'},{'age':29,'name':'Jodie'}]}&quot;,
+<span class="fc" id="L51">        truckAdapter.toJson(truck).replace('\&quot;', '\''));</span>
+<span class="fc" id="L52">  }</span>
+
+  public void testDeserialize() throws IOException {
+<span class="fc" id="L55">    String json = &quot;{'horsePower':300.0,&quot;</span>
+        + &quot;'passengers':[{'age':29,'name':'Jesse'},{'age':29,'name':'Jodie'}]}&quot;;
+<span class="fc" id="L57">    Truck truck = truckAdapter.fromJson(json.replace('\'', '\&quot;'));</span>
+<span class="fc" id="L58">    assertEquals(300.0, truck.horsePower);</span>
+<span class="fc" id="L59">    assertEquals(Arrays.asList(new Person(&quot;Jesse&quot;, 29), new Person(&quot;Jodie&quot;, 29)), truck.passengers);</span>
+<span class="fc" id="L60">  }</span>
+
+  public void testSerializeNullField() {
+<span class="fc" id="L63">    Truck truck = new Truck();</span>
+<span class="fc" id="L64">    truck.passengers = null;</span>
+<span class="fc" id="L65">    assertEquals(&quot;{'horsePower':0.0,'passengers':null}&quot;,</span>
+<span class="fc" id="L66">        truckAdapter.toJson(truck).replace('\&quot;', '\''));</span>
+<span class="fc" id="L67">  }</span>
+
+  public void testDeserializeNullField() throws IOException {
+<span class="fc" id="L70">    Truck truck = truckAdapter.fromJson(&quot;{'horsePower':0.0,'passengers':null}&quot;.replace('\'', '\&quot;'));</span>
+<span class="fc" id="L71">    assertNull(truck.passengers);</span>
+<span class="fc" id="L72">  }</span>
+
+  public void testSerializeNullObject() {
+<span class="fc" id="L75">    Truck truck = new Truck();</span>
+<span class="fc" id="L76">    truck.passengers = Arrays.asList((Person) null);</span>
+<span class="fc" id="L77">    assertEquals(&quot;{'horsePower':0.0,'passengers':[null]}&quot;,</span>
+<span class="fc" id="L78">        truckAdapter.toJson(truck).replace('\&quot;', '\''));</span>
+<span class="fc" id="L79">  }</span>
+
+  public void testDeserializeNullObject() throws IOException {
+<span class="fc" id="L82">    Truck truck = truckAdapter.fromJson(&quot;{'horsePower':0.0,'passengers':[null]}&quot;.replace('\'', '\&quot;'));</span>
+<span class="fc" id="L83">    assertEquals(Arrays.asList((Person) null), truck.passengers);</span>
+<span class="fc" id="L84">  }</span>
+
+  public void testSerializeWithCustomTypeAdapter() {
+<span class="fc" id="L87">    usePersonNameAdapter();</span>
+<span class="fc" id="L88">    Truck truck = new Truck();</span>
+<span class="fc" id="L89">    truck.passengers = Arrays.asList(new Person(&quot;Jesse&quot;, 29), new Person(&quot;Jodie&quot;, 29));</span>
+<span class="fc" id="L90">    assertEquals(&quot;{'horsePower':0.0,'passengers':['Jesse','Jodie']}&quot;,</span>
+<span class="fc" id="L91">        truckAdapter.toJson(truck).replace('\&quot;', '\''));</span>
+<span class="fc" id="L92">  }</span>
+
+  public void testDeserializeWithCustomTypeAdapter() throws IOException {
+<span class="fc" id="L95">    usePersonNameAdapter();</span>
+<span class="fc" id="L96">    Truck truck = truckAdapter.fromJson(&quot;{'horsePower':0.0,'passengers':['Jesse','Jodie']}&quot;.replace('\'', '\&quot;'));</span>
+<span class="fc" id="L97">    assertEquals(Arrays.asList(new Person(&quot;Jesse&quot;, -1), new Person(&quot;Jodie&quot;, -1)), truck.passengers);</span>
+<span class="fc" id="L98">  }</span>
+
+  private void usePersonNameAdapter() {
+<span class="fc" id="L101">    TypeAdapter&lt;Person&gt; personNameAdapter = new TypeAdapter&lt;Person&gt;() {</span>
+      @Override public Person read(JsonReader in) throws IOException {
+<span class="fc" id="L103">        String name = in.nextString();</span>
+<span class="fc" id="L104">        return new Person(name, -1);</span>
+      }
+      @Override public void write(JsonWriter out, Person value) throws IOException {
+<span class="fc" id="L107">        out.value(value.name);</span>
+<span class="fc" id="L108">      }</span>
+    };
+<span class="fc" id="L110">    miniGson = new GsonBuilder().registerTypeAdapter(Person.class, personNameAdapter).create();</span>
+<span class="fc" id="L111">    truckAdapter = miniGson.getAdapter(Truck.class);</span>
+<span class="fc" id="L112">  }</span>
+
+  public void testSerializeMap() {
+<span class="fc" id="L115">    Map&lt;String, Double&gt; map = new LinkedHashMap&lt;String, Double&gt;();</span>
+<span class="fc" id="L116">    map.put(&quot;a&quot;, 5.0);</span>
+<span class="fc" id="L117">    map.put(&quot;b&quot;, 10.0);</span>
+<span class="fc" id="L118">    assertEquals(&quot;{'a':5.0,'b':10.0}&quot;, mapAdapter.toJson(map).replace('&quot;', '\''));</span>
+<span class="fc" id="L119">  }</span>
+
+  public void testDeserializeMap() throws IOException {
+<span class="fc" id="L122">    Map&lt;String, Double&gt; map = new LinkedHashMap&lt;String, Double&gt;();</span>
+<span class="fc" id="L123">    map.put(&quot;a&quot;, 5.0);</span>
+<span class="fc" id="L124">    map.put(&quot;b&quot;, 10.0);</span>
+<span class="fc" id="L125">    assertEquals(map, mapAdapter.fromJson(&quot;{'a':5.0,'b':10.0}&quot;.replace('\'', '\&quot;')));</span>
+<span class="fc" id="L126">  }</span>
+
+  public void testSerialize1dArray() {
+<span class="fc" id="L129">    TypeAdapter&lt;double[]&gt; arrayAdapter = miniGson.getAdapter(new TypeToken&lt;double[]&gt;() {});</span>
+<span class="fc" id="L130">    assertEquals(&quot;[1.0,2.0,3.0]&quot;, arrayAdapter.toJson(new double[]{ 1.0, 2.0, 3.0 }));</span>
+<span class="fc" id="L131">  }</span>
+
+  public void testDeserialize1dArray() throws IOException {
+<span class="fc" id="L134">    TypeAdapter&lt;double[]&gt; arrayAdapter = miniGson.getAdapter(new TypeToken&lt;double[]&gt;() {});</span>
+<span class="fc" id="L135">    double[] array = arrayAdapter.fromJson(&quot;[1.0,2.0,3.0]&quot;);</span>
+<span class="fc" id="L136">    assertTrue(Arrays.toString(array), Arrays.equals(new double[]{1.0, 2.0, 3.0}, array));</span>
+<span class="fc" id="L137">  }</span>
+
+  public void testSerialize2dArray() {
+<span class="fc" id="L140">    TypeAdapter&lt;double[][]&gt; arrayAdapter = miniGson.getAdapter(new TypeToken&lt;double[][]&gt;() {});</span>
+<span class="fc" id="L141">    double[][] array = { {1.0, 2.0 }, { 3.0 } };</span>
+<span class="fc" id="L142">    assertEquals(&quot;[[1.0,2.0],[3.0]]&quot;, arrayAdapter.toJson(array));</span>
+<span class="fc" id="L143">  }</span>
+
+  public void testDeserialize2dArray() throws IOException {
+<span class="fc" id="L146">    TypeAdapter&lt;double[][]&gt; arrayAdapter = miniGson.getAdapter(new TypeToken&lt;double[][]&gt;() {});</span>
+<span class="fc" id="L147">    double[][] array = arrayAdapter.fromJson(&quot;[[1.0,2.0],[3.0]]&quot;);</span>
+<span class="fc" id="L148">    double[][] expected = { {1.0, 2.0 }, { 3.0 } };</span>
+<span class="fc" id="L149">    assertTrue(Arrays.toString(array), Arrays.deepEquals(expected, array));</span>
+<span class="fc" id="L150">  }</span>
+
+  public void testNullSafe() {
+<span class="fc" id="L153">    TypeAdapter&lt;Person&gt; typeAdapter = new TypeAdapter&lt;Person&gt;() {</span>
+      @Override public Person read(JsonReader in) throws IOException {
+<span class="fc" id="L155">        String[] values = in.nextString().split(&quot;,&quot;);</span>
+<span class="fc" id="L156">        return new Person(values[0], Integer.parseInt(values[1]));</span>
+      }
+      public void write(JsonWriter out, Person person) throws IOException {
+<span class="fc" id="L159">        out.value(person.name + &quot;,&quot; + person.age);</span>
+<span class="fc" id="L160">      }</span>
+    };
+<span class="fc" id="L162">    Gson gson = new GsonBuilder().registerTypeAdapter(</span>
+<span class="fc" id="L163">        Person.class, typeAdapter).create();</span>
+<span class="fc" id="L164">    Truck truck = new Truck();</span>
+<span class="fc" id="L165">    truck.horsePower = 1.0D;</span>
+<span class="fc" id="L166">    truck.passengers = new ArrayList&lt;Person&gt;();</span>
+<span class="fc" id="L167">    truck.passengers.add(null);</span>
+<span class="fc" id="L168">    truck.passengers.add(new Person(&quot;jesse&quot;, 30));</span>
+    try {
+<span class="nc" id="L170">      gson.toJson(truck, Truck.class);</span>
+<span class="nc" id="L171">      fail();</span>
+<span class="pc" id="L172">    } catch (NullPointerException expected) {}</span>
+<span class="fc" id="L173">    String json = &quot;{horsePower:1.0,passengers:[null,'jesse,30']}&quot;;</span>
+    try {
+<span class="nc" id="L175">      gson.fromJson(json, Truck.class);</span>
+<span class="nc" id="L176">      fail();</span>
+<span class="pc" id="L177">    } catch (JsonSyntaxException expected) {}</span>
+<span class="fc" id="L178">    gson = new GsonBuilder().registerTypeAdapter(Person.class, typeAdapter.nullSafe()).create();</span>
+<span class="fc" id="L179">    assertEquals(&quot;{\&quot;horsePower\&quot;:1.0,\&quot;passengers\&quot;:[null,\&quot;jesse,30\&quot;]}&quot;,</span>
+<span class="fc" id="L180">        gson.toJson(truck, Truck.class));</span>
+<span class="fc" id="L181">    truck = gson.fromJson(json, Truck.class);</span>
+<span class="fc" id="L182">    assertEquals(1.0D, truck.horsePower);</span>
+<span class="fc" id="L183">    assertNull(truck.passengers.get(0));</span>
+<span class="fc" id="L184">    assertEquals(&quot;jesse&quot;, truck.passengers.get(1).name);</span>
+<span class="fc" id="L185">  }</span>
+
+  public void testSerializeRecursive() {
+<span class="fc" id="L188">    TypeAdapter&lt;Node&gt; nodeAdapter = miniGson.getAdapter(Node.class);</span>
+<span class="fc" id="L189">    Node root = new Node(&quot;root&quot;);</span>
+<span class="fc" id="L190">    root.left = new Node(&quot;left&quot;);</span>
+<span class="fc" id="L191">    root.right = new Node(&quot;right&quot;);</span>
+<span class="fc" id="L192">    assertEquals(&quot;{'label':'root',&quot;</span>
+        + &quot;'left':{'label':'left','left':null,'right':null},&quot;
+        + &quot;'right':{'label':'right','left':null,'right':null}}&quot;,
+<span class="fc" id="L195">        nodeAdapter.toJson(root).replace('&quot;', '\''));</span>
+<span class="fc" id="L196">  }</span>
+  
+  public void testFromJsonTree() {
+<span class="fc" id="L199">    JsonObject truckObject = new JsonObject();</span>
+<span class="fc" id="L200">    truckObject.add(&quot;horsePower&quot;, new JsonPrimitive(300));</span>
+<span class="fc" id="L201">    JsonArray passengersArray = new JsonArray();</span>
+<span class="fc" id="L202">    JsonObject jesseObject = new JsonObject();</span>
+<span class="fc" id="L203">    jesseObject.add(&quot;age&quot;, new JsonPrimitive(30));</span>
+<span class="fc" id="L204">    jesseObject.add(&quot;name&quot;, new JsonPrimitive(&quot;Jesse&quot;));</span>
+<span class="fc" id="L205">    passengersArray.add(jesseObject);</span>
+<span class="fc" id="L206">    truckObject.add(&quot;passengers&quot;, passengersArray);</span>
+
+<span class="fc" id="L208">    Truck truck = truckAdapter.fromJsonTree(truckObject);</span>
+<span class="fc" id="L209">    assertEquals(300.0, truck.horsePower);</span>
+<span class="fc" id="L210">    assertEquals(Arrays.asList(new Person(&quot;Jesse&quot;, 30)), truck.passengers);</span>
+<span class="fc" id="L211">  }</span>
+
+<span class="fc" id="L213">  static class Truck {</span>
+    double horsePower;
+<span class="fc" id="L215">    List&lt;Person&gt; passengers = Collections.emptyList();</span>
+  }
+
+  static class Person {
+    int age;
+    String name;
+<span class="fc" id="L221">    Person(String name, int age) {</span>
+<span class="fc" id="L222">      this.name = name;</span>
+<span class="fc" id="L223">      this.age = age;</span>
+<span class="fc" id="L224">    }</span>
+
+    @Override public boolean equals(Object o) {
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">      return o instanceof Person</span>
+<span class="pc bpc" id="L228" title="2 of 4 branches missed.">          &amp;&amp; ((Person) o).name.equals(name)</span>
+          &amp;&amp; ((Person) o).age == age;
+    }
+    @Override public int hashCode() {
+<span class="nc" id="L232">      return name.hashCode() ^ age;</span>
+    }
+  }
+
+  static class Node {
+    String label;
+    Node left;
+    Node right;
+<span class="fc" id="L240">    Node(String label) {</span>
+<span class="fc" id="L241">      this.label = label;</span>
+<span class="fc" id="L242">    }</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

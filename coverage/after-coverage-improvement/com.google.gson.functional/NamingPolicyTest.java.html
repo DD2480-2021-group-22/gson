@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NamingPolicyTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">NamingPolicyTest.java</span></div><h1>NamingPolicyTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.FieldNamingStrategy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.common.TestTypes.ClassWithSerializedNameFields;
+import com.google.gson.common.TestTypes.StringWrapper;
+
+import junit.framework.TestCase;
+
+import java.lang.reflect.Field;
+
+/**
+ * Functional tests for naming policies.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L36">public class NamingPolicyTest extends TestCase {</span>
+  private GsonBuilder builder;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L41">    super.setUp();</span>
+<span class="fc" id="L42">    builder = new GsonBuilder();</span>
+<span class="fc" id="L43">  }</span>
+
+  public void testGsonWithNonDefaultFieldNamingPolicySerialization() {
+<span class="fc" id="L46">    Gson gson = builder.setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).create();</span>
+<span class="fc" id="L47">    StringWrapper target = new StringWrapper(&quot;blah&quot;);</span>
+<span class="fc" id="L48">    assertEquals(&quot;{\&quot;SomeConstantStringInstanceField\&quot;:\&quot;&quot;</span>
+<span class="fc" id="L49">        + target.someConstantStringInstanceField + &quot;\&quot;}&quot;, gson.toJson(target));</span>
+<span class="fc" id="L50">  }</span>
+
+  public void testGsonWithNonDefaultFieldNamingPolicyDeserialiation() {
+<span class="fc" id="L53">    Gson gson = builder.setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).create();</span>
+<span class="fc" id="L54">    String target = &quot;{\&quot;SomeConstantStringInstanceField\&quot;:\&quot;someValue\&quot;}&quot;;</span>
+<span class="fc" id="L55">    StringWrapper deserializedObject = gson.fromJson(target, StringWrapper.class);</span>
+<span class="fc" id="L56">    assertEquals(&quot;someValue&quot;, deserializedObject.someConstantStringInstanceField);</span>
+<span class="fc" id="L57">  }</span>
+
+  public void testGsonWithLowerCaseDashPolicySerialization() {
+<span class="fc" id="L60">    Gson gson = builder.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES).create();</span>
+<span class="fc" id="L61">    StringWrapper target = new StringWrapper(&quot;blah&quot;);</span>
+<span class="fc" id="L62">    assertEquals(&quot;{\&quot;some-constant-string-instance-field\&quot;:\&quot;&quot;</span>
+<span class="fc" id="L63">        + target.someConstantStringInstanceField + &quot;\&quot;}&quot;, gson.toJson(target));</span>
+<span class="fc" id="L64">  }</span>
+
+  public void testGsonWithLowerCaseDotPolicySerialization() {
+<span class="fc" id="L67">    Gson gson = builder.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DOTS).create();</span>
+<span class="fc" id="L68">    StringWrapper target = new StringWrapper(&quot;blah&quot;);</span>
+<span class="fc" id="L69">    assertEquals(&quot;{\&quot;some.constant.string.instance.field\&quot;:\&quot;&quot;</span>
+<span class="fc" id="L70">          + target.someConstantStringInstanceField + &quot;\&quot;}&quot;, gson.toJson(target));</span>
+<span class="fc" id="L71">  }</span>
+
+  public void testGsonWithLowerCaseDotPolicyDeserialiation() {
+<span class="fc" id="L74">    Gson gson = builder.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DOTS).create();</span>
+<span class="fc" id="L75">    String target = &quot;{\&quot;some.constant.string.instance.field\&quot;:\&quot;someValue\&quot;}&quot;;</span>
+<span class="fc" id="L76">    StringWrapper deserializedObject = gson.fromJson(target, StringWrapper.class);</span>
+<span class="fc" id="L77">    assertEquals(&quot;someValue&quot;, deserializedObject.someConstantStringInstanceField);</span>
+<span class="fc" id="L78">  }</span>
+
+  public void testGsonWithLowerCaseDashPolicyDeserialiation() {
+<span class="fc" id="L81">    Gson gson = builder.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES).create();</span>
+<span class="fc" id="L82">    String target = &quot;{\&quot;some-constant-string-instance-field\&quot;:\&quot;someValue\&quot;}&quot;;</span>
+<span class="fc" id="L83">    StringWrapper deserializedObject = gson.fromJson(target, StringWrapper.class);</span>
+<span class="fc" id="L84">    assertEquals(&quot;someValue&quot;, deserializedObject.someConstantStringInstanceField);</span>
+<span class="fc" id="L85">  }</span>
+
+  public void testGsonWithLowerCaseUnderscorePolicySerialization() {
+<span class="fc" id="L88">    Gson gson = builder.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)</span>
+<span class="fc" id="L89">        .create();</span>
+<span class="fc" id="L90">    StringWrapper target = new StringWrapper(&quot;blah&quot;);</span>
+<span class="fc" id="L91">    assertEquals(&quot;{\&quot;some_constant_string_instance_field\&quot;:\&quot;&quot;</span>
+<span class="fc" id="L92">        + target.someConstantStringInstanceField + &quot;\&quot;}&quot;, gson.toJson(target));</span>
+<span class="fc" id="L93">  }</span>
+
+  public void testGsonWithLowerCaseUnderscorePolicyDeserialiation() {
+<span class="fc" id="L96">    Gson gson = builder.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)</span>
+<span class="fc" id="L97">        .create();</span>
+<span class="fc" id="L98">    String target = &quot;{\&quot;some_constant_string_instance_field\&quot;:\&quot;someValue\&quot;}&quot;;</span>
+<span class="fc" id="L99">    StringWrapper deserializedObject = gson.fromJson(target, StringWrapper.class);</span>
+<span class="fc" id="L100">    assertEquals(&quot;someValue&quot;, deserializedObject.someConstantStringInstanceField);</span>
+<span class="fc" id="L101">  }</span>
+
+  public void testGsonWithSerializedNameFieldNamingPolicySerialization() {
+<span class="fc" id="L104">    Gson gson = builder.create();</span>
+<span class="fc" id="L105">    ClassWithSerializedNameFields expected = new ClassWithSerializedNameFields(5, 6);</span>
+<span class="fc" id="L106">    String actual = gson.toJson(expected);</span>
+<span class="fc" id="L107">    assertEquals(expected.getExpectedJson(), actual);</span>
+<span class="fc" id="L108">  }</span>
+
+  public void testGsonWithSerializedNameFieldNamingPolicyDeserialization() {
+<span class="fc" id="L111">    Gson gson = builder.create();</span>
+<span class="fc" id="L112">    ClassWithSerializedNameFields expected = new ClassWithSerializedNameFields(5, 7);</span>
+<span class="fc" id="L113">    ClassWithSerializedNameFields actual =</span>
+<span class="fc" id="L114">        gson.fromJson(expected.getExpectedJson(), ClassWithSerializedNameFields.class);</span>
+<span class="fc" id="L115">    assertEquals(expected.f, actual.f);</span>
+<span class="fc" id="L116">  }</span>
+
+  public void testGsonDuplicateNameUsingSerializedNameFieldNamingPolicySerialization() {
+<span class="fc" id="L119">    Gson gson = builder.create();</span>
+    try {
+<span class="fc" id="L121">      ClassWithDuplicateFields target = new ClassWithDuplicateFields(10);</span>
+<span class="nc" id="L122">      gson.toJson(target);</span>
+<span class="nc" id="L123">      fail();</span>
+<span class="fc" id="L124">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L125">    }</span>
+<span class="fc" id="L126">  }</span>
+
+  public void testGsonWithUpperCamelCaseSpacesPolicySerialiation() {
+<span class="fc" id="L129">    Gson gson = builder.setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE_WITH_SPACES)</span>
+<span class="fc" id="L130">        .create();</span>
+<span class="fc" id="L131">    StringWrapper target = new StringWrapper(&quot;blah&quot;);</span>
+<span class="fc" id="L132">    assertEquals(&quot;{\&quot;Some Constant String Instance Field\&quot;:\&quot;&quot;</span>
+<span class="fc" id="L133">        + target.someConstantStringInstanceField + &quot;\&quot;}&quot;, gson.toJson(target));</span>
+<span class="fc" id="L134">  }</span>
+
+  public void testGsonWithUpperCamelCaseSpacesPolicyDeserialiation() {
+<span class="fc" id="L137">    Gson gson = builder.setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE_WITH_SPACES)</span>
+<span class="fc" id="L138">        .create();</span>
+<span class="fc" id="L139">    String target = &quot;{\&quot;Some Constant String Instance Field\&quot;:\&quot;someValue\&quot;}&quot;;</span>
+<span class="fc" id="L140">    StringWrapper deserializedObject = gson.fromJson(target, StringWrapper.class);</span>
+<span class="fc" id="L141">    assertEquals(&quot;someValue&quot;, deserializedObject.someConstantStringInstanceField);</span>
+<span class="fc" id="L142">  }</span>
+
+  public void testDeprecatedNamingStrategy() throws Exception {
+<span class="fc" id="L145">    Gson gson = builder.setFieldNamingStrategy(new UpperCaseNamingStrategy()).create();</span>
+<span class="fc" id="L146">    ClassWithDuplicateFields target = new ClassWithDuplicateFields(10);</span>
+<span class="fc" id="L147">    String actual = gson.toJson(target);</span>
+<span class="fc" id="L148">    assertEquals(&quot;{\&quot;A\&quot;:10}&quot;, actual);</span>
+<span class="fc" id="L149">  }</span>
+
+  public void testComplexFieldNameStrategy() throws Exception {
+<span class="fc" id="L152">    Gson gson = new Gson();</span>
+<span class="fc" id="L153">    String json = gson.toJson(new ClassWithComplexFieldName(10));</span>
+<span class="fc" id="L154">    String escapedFieldName = &quot;@value\\\&quot;_s$\\\\&quot;;</span>
+<span class="fc" id="L155">    assertEquals(&quot;{\&quot;&quot; + escapedFieldName + &quot;\&quot;:10}&quot;, json);</span>
+
+<span class="fc" id="L157">    ClassWithComplexFieldName obj = gson.fromJson(json, ClassWithComplexFieldName.class);</span>
+<span class="fc" id="L158">    assertEquals(10, obj.value);</span>
+<span class="fc" id="L159">  }</span>
+
+  /** http://code.google.com/p/google-gson/issues/detail?id=349 */
+  public void testAtSignInSerializedName() {
+<span class="fc" id="L163">    assertEquals(&quot;{\&quot;@foo\&quot;:\&quot;bar\&quot;}&quot;, new Gson().toJson(new AtName()));</span>
+<span class="fc" id="L164">  }</span>
+
+<span class="fc" id="L166">  static final class AtName {</span>
+<span class="fc" id="L167">    @SerializedName(&quot;@foo&quot;) String f = &quot;bar&quot;;</span>
+  }
+
+  private static final class UpperCaseNamingStrategy implements FieldNamingStrategy {
+    @Override
+    public String translateName(Field f) {
+<span class="fc" id="L173">      return f.getName().toUpperCase();</span>
+    }
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class ClassWithDuplicateFields {
+    public Integer a;
+    @SerializedName(&quot;a&quot;) public Double b;
+
+    public ClassWithDuplicateFields(Integer a) {
+<span class="fc" id="L183">      this(a, null);</span>
+<span class="fc" id="L184">    }</span>
+
+    public ClassWithDuplicateFields(Double b) {
+<span class="nc" id="L187">      this(null, b);</span>
+<span class="nc" id="L188">    }</span>
+
+<span class="fc" id="L190">    public ClassWithDuplicateFields(Integer a, Double b) {</span>
+<span class="fc" id="L191">      this.a = a;</span>
+<span class="fc" id="L192">      this.b = b;</span>
+<span class="fc" id="L193">    }</span>
+  }
+
+  private static class ClassWithComplexFieldName {
+    @SerializedName(&quot;@value\&quot;_s$\\&quot;) public final long value;
+
+<span class="fc" id="L199">    ClassWithComplexFieldName(long value) {</span>
+<span class="fc" id="L200">      this.value = value;</span>
+<span class="fc" id="L201">    }</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

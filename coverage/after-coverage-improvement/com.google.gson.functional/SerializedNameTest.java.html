@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SerializedNameTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">SerializedNameTest.java</span></div><h1>SerializedNameTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2015 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
+
+import junit.framework.TestCase;
+
+<span class="fc" id="L23">public final class SerializedNameTest extends TestCase {</span>
+<span class="fc" id="L24">  private final Gson gson = new Gson();</span>
+
+  public void testFirstNameIsChosenForSerialization() {
+<span class="fc" id="L27">    MyClass target = new MyClass(&quot;v1&quot;, &quot;v2&quot;);</span>
+    // Ensure name1 occurs exactly once, and name2 and name3 don't appear
+<span class="fc" id="L29">    assertEquals(&quot;{\&quot;name\&quot;:\&quot;v1\&quot;,\&quot;name1\&quot;:\&quot;v2\&quot;}&quot;, gson.toJson(target));</span>
+<span class="fc" id="L30">  }</span>
+
+  public void testMultipleNamesDeserializedCorrectly() {
+<span class="fc" id="L33">    assertEquals(&quot;v1&quot;, gson.fromJson(&quot;{'name':'v1'}&quot;, MyClass.class).a);</span>
+
+    // Both name1 and name2 gets deserialized to b
+<span class="fc" id="L36">    assertEquals(&quot;v11&quot;, gson.fromJson(&quot;{'name1':'v11'}&quot;, MyClass.class).b);</span>
+<span class="fc" id="L37">    assertEquals(&quot;v2&quot;, gson.fromJson(&quot;{'name2':'v2'}&quot;, MyClass.class).b);</span>
+<span class="fc" id="L38">    assertEquals(&quot;v3&quot;, gson.fromJson(&quot;{'name3':'v3'}&quot;, MyClass.class).b);</span>
+<span class="fc" id="L39">  }</span>
+
+  public void testMultipleNamesInTheSameString() {
+    // The last value takes precedence
+<span class="fc" id="L43">    assertEquals(&quot;v3&quot;, gson.fromJson(&quot;{'name1':'v1','name2':'v2','name3':'v3'}&quot;, MyClass.class).b);</span>
+<span class="fc" id="L44">  }</span>
+
+  private static final class MyClass {
+    @SerializedName(&quot;name&quot;) String a;
+    @SerializedName(value=&quot;name1&quot;, alternate={&quot;name2&quot;, &quot;name3&quot;}) String b;
+<span class="fc" id="L49">    MyClass(String a, String b) {</span>
+<span class="fc" id="L50">      this.a = a;</span>
+<span class="fc" id="L51">      this.b = b;</span>
+<span class="fc" id="L52">    }</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

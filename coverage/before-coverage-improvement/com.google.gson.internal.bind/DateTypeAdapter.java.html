@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DateTypeAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal.bind</a> &gt; <span class="el_source">DateTypeAdapter.java</span></div><h1>DateTypeAdapter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2011 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.internal.bind;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.internal.JavaVersion;
+import com.google.gson.internal.PreJava9DateFormatProvider;
+import com.google.gson.internal.bind.util.ISO8601Utils;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * Adapter for Date. Although this class appears stateless, it is not.
+ * DateFormat captures its time zone and locale when it is created, which gives
+ * this class state. DateFormat isn't thread safe either, so this class has
+ * to synchronize its read and write methods.
+ */
+public final class DateTypeAdapter extends TypeAdapter&lt;Date&gt; {
+<span class="fc" id="L47">  public static final TypeAdapterFactory FACTORY = new TypeAdapterFactory() {</span>
+    @SuppressWarnings(&quot;unchecked&quot;) // we use a runtime check to make sure the 'T's equal
+    @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">      return typeToken.getRawType() == Date.class ? (TypeAdapter&lt;T&gt;) new DateTypeAdapter() : null;</span>
+    }
+  };
+
+  /**
+   * List of 1 or more different date formats used for de-serialization attempts.
+   * The first of them (default US format) is used for serialization as well.
+   */
+<span class="fc" id="L58">  private final List&lt;DateFormat&gt; dateFormats = new ArrayList&lt;DateFormat&gt;();</span>
+
+<span class="fc" id="L60">  public DateTypeAdapter() {</span>
+<span class="fc" id="L61">    dateFormats.add(DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US));</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">    if (!Locale.getDefault().equals(Locale.US)) {</span>
+<span class="nc" id="L63">      dateFormats.add(DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT));</span>
+    }
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">    if (JavaVersion.isJava9OrLater()) {</span>
+<span class="fc" id="L66">      dateFormats.add(PreJava9DateFormatProvider.getUSDateTimeFormat(DateFormat.DEFAULT, DateFormat.DEFAULT));</span>
+    }
+<span class="fc" id="L68">  }</span>
+
+  @Override public Date read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">    if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L72">      in.nextNull();</span>
+<span class="fc" id="L73">      return null;</span>
+    }
+<span class="fc" id="L75">    return deserializeToDate(in.nextString());</span>
+  }
+
+  private synchronized Date deserializeToDate(String json) {
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">    for (DateFormat dateFormat : dateFormats) {</span>
+      try {
+<span class="fc" id="L81">        return dateFormat.parse(json);</span>
+<span class="fc" id="L82">      } catch (ParseException ignored) {}</span>
+<span class="fc" id="L83">    }</span>
+    try {
+<span class="nc" id="L85">    	return ISO8601Utils.parse(json, new ParsePosition(0));</span>
+<span class="nc" id="L86">    } catch (ParseException e) {</span>
+<span class="nc" id="L87">      throw new JsonSyntaxException(json, e);</span>
+    }
+  }
+
+  @Override public synchronized void write(JsonWriter out, Date value) throws IOException {
+<span class="fc bfc" id="L92" title="All 2 branches covered.">    if (value == null) {</span>
+<span class="fc" id="L93">      out.nullValue();</span>
+<span class="fc" id="L94">      return;</span>
+    }
+<span class="fc" id="L96">    String dateFormatAsString = dateFormats.get(0).format(value);</span>
+<span class="fc" id="L97">    out.value(dateFormatAsString);</span>
+<span class="fc" id="L98">  }</span>
+  
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

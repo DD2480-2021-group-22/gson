@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MapTypeAdapterFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal.bind</a> &gt; <span class="el_source">MapTypeAdapterFactory.java</span></div><h1>MapTypeAdapterFactory.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2011 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.internal.bind;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.internal.$Gson$Types;
+import com.google.gson.internal.ConstructorConstructor;
+import com.google.gson.internal.JsonReaderInternalAccess;
+import com.google.gson.internal.ObjectConstructor;
+import com.google.gson.internal.Streams;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Adapts maps to either JSON objects or JSON arrays.
+ *
+ * &lt;h3&gt;Maps as JSON objects&lt;/h3&gt;
+ * For primitive keys or when complex map key serialization is not enabled, this
+ * converts Java {@link Map Maps} to JSON Objects. This requires that map keys
+ * can be serialized as strings; this is insufficient for some key types. For
+ * example, consider a map whose keys are points on a grid. The default JSON
+ * form encodes reasonably: &lt;pre&gt;   {@code
+ *   Map&lt;Point, String&gt; original = new LinkedHashMap&lt;Point, String&gt;();
+ *   original.put(new Point(5, 6), &quot;a&quot;);
+ *   original.put(new Point(8, 8), &quot;b&quot;);
+ *   System.out.println(gson.toJson(original, type));
+ * }&lt;/pre&gt;
+ * The above code prints this JSON object:&lt;pre&gt;   {@code
+ *   {
+ *     &quot;(5,6)&quot;: &quot;a&quot;,
+ *     &quot;(8,8)&quot;: &quot;b&quot;
+ *   }
+ * }&lt;/pre&gt;
+ * But GSON is unable to deserialize this value because the JSON string name is
+ * just the {@link Object#toString() toString()} of the map key. Attempting to
+ * convert the above JSON to an object fails with a parse exception:
+ * &lt;pre&gt;com.google.gson.JsonParseException: Expecting object found: &quot;(5,6)&quot;
+ *   at com.google.gson.JsonObjectDeserializationVisitor.visitFieldUsingCustomHandler
+ *   at com.google.gson.ObjectNavigator.navigateClassFields
+ *   ...&lt;/pre&gt;
+ *
+ * &lt;h3&gt;Maps as JSON arrays&lt;/h3&gt;
+ * An alternative approach taken by this type adapter when it is required and
+ * complex map key serialization is enabled is to encode maps as arrays of map
+ * entries. Each map entry is a two element array containing a key and a value.
+ * This approach is more flexible because any type can be used as the map's key;
+ * not just strings. But it's also less portable because the receiver of such
+ * JSON must be aware of the map entry convention.
+ *
+ * &lt;p&gt;Register this adapter when you are creating your GSON instance.
+ * &lt;pre&gt;   {@code
+ *   Gson gson = new GsonBuilder()
+ *     .registerTypeAdapter(Map.class, new MapAsArrayTypeAdapter())
+ *     .create();
+ * }&lt;/pre&gt;
+ * This will change the structure of the JSON emitted by the code above. Now we
+ * get an array. In this case the arrays elements are map entries:
+ * &lt;pre&gt;   {@code
+ *   [
+ *     [
+ *       {
+ *         &quot;x&quot;: 5,
+ *         &quot;y&quot;: 6
+ *       },
+ *       &quot;a&quot;,
+ *     ],
+ *     [
+ *       {
+ *         &quot;x&quot;: 8,
+ *         &quot;y&quot;: 8
+ *       },
+ *       &quot;b&quot;
+ *     ]
+ *   ]
+ * }&lt;/pre&gt;
+ * This format will serialize and deserialize just fine as long as this adapter
+ * is registered.
+ */
+public final class MapTypeAdapterFactory implements TypeAdapterFactory {
+  private final ConstructorConstructor constructorConstructor;
+  final boolean complexMapKeySerialization;
+
+  public MapTypeAdapterFactory(ConstructorConstructor constructorConstructor,
+<span class="fc" id="L110">      boolean complexMapKeySerialization) {</span>
+<span class="fc" id="L111">    this.constructorConstructor = constructorConstructor;</span>
+<span class="fc" id="L112">    this.complexMapKeySerialization = complexMapKeySerialization;</span>
+<span class="fc" id="L113">  }</span>
+
+  @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {
+<span class="fc" id="L116">    Type type = typeToken.getType();</span>
+
+<span class="fc" id="L118">    Class&lt;? super T&gt; rawType = typeToken.getRawType();</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">    if (!Map.class.isAssignableFrom(rawType)) {</span>
+<span class="fc" id="L120">      return null;</span>
+    }
+
+<span class="fc" id="L123">    Class&lt;?&gt; rawTypeOfSrc = $Gson$Types.getRawType(type);</span>
+<span class="fc" id="L124">    Type[] keyAndValueTypes = $Gson$Types.getMapKeyAndValueTypes(type, rawTypeOfSrc);</span>
+<span class="fc" id="L125">    TypeAdapter&lt;?&gt; keyAdapter = getKeyAdapter(gson, keyAndValueTypes[0]);</span>
+<span class="fc" id="L126">    TypeAdapter&lt;?&gt; valueAdapter = gson.getAdapter(TypeToken.get(keyAndValueTypes[1]));</span>
+<span class="fc" id="L127">    ObjectConstructor&lt;T&gt; constructor = constructorConstructor.get(typeToken);</span>
+
+    @SuppressWarnings({&quot;unchecked&quot;, &quot;rawtypes&quot;})
+    // we don't define a type parameter for the key or value types
+<span class="fc" id="L131">    TypeAdapter&lt;T&gt; result = new Adapter(gson, keyAndValueTypes[0], keyAdapter,</span>
+        keyAndValueTypes[1], valueAdapter, constructor);
+<span class="fc" id="L133">    return result;</span>
+  }
+
+  /**
+   * Returns a type adapter that writes the value as a string.
+   */
+  private TypeAdapter&lt;?&gt; getKeyAdapter(Gson context, Type keyType) {
+<span class="pc bpc" id="L140" title="1 of 4 branches missed.">    return (keyType == boolean.class || keyType == Boolean.class)</span>
+<span class="fc" id="L141">        ? TypeAdapters.BOOLEAN_AS_STRING</span>
+<span class="fc" id="L142">        : context.getAdapter(TypeToken.get(keyType));</span>
+  }
+
+  private final class Adapter&lt;K, V&gt; extends TypeAdapter&lt;Map&lt;K, V&gt;&gt; {
+    private final TypeAdapter&lt;K&gt; keyTypeAdapter;
+    private final TypeAdapter&lt;V&gt; valueTypeAdapter;
+    private final ObjectConstructor&lt;? extends Map&lt;K, V&gt;&gt; constructor;
+
+    public Adapter(Gson context, Type keyType, TypeAdapter&lt;K&gt; keyTypeAdapter,
+        Type valueType, TypeAdapter&lt;V&gt; valueTypeAdapter,
+<span class="fc" id="L152">        ObjectConstructor&lt;? extends Map&lt;K, V&gt;&gt; constructor) {</span>
+<span class="fc" id="L153">      this.keyTypeAdapter =</span>
+        new TypeAdapterRuntimeTypeWrapper&lt;K&gt;(context, keyTypeAdapter, keyType);
+<span class="fc" id="L155">      this.valueTypeAdapter =</span>
+        new TypeAdapterRuntimeTypeWrapper&lt;V&gt;(context, valueTypeAdapter, valueType);
+<span class="fc" id="L157">      this.constructor = constructor;</span>
+<span class="fc" id="L158">    }</span>
+
+    @Override public Map&lt;K, V&gt; read(JsonReader in) throws IOException {
+<span class="fc" id="L161">      JsonToken peek = in.peek();</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">      if (peek == JsonToken.NULL) {</span>
+<span class="fc" id="L163">        in.nextNull();</span>
+<span class="fc" id="L164">        return null;</span>
+      }
+
+<span class="fc" id="L167">      Map&lt;K, V&gt; map = constructor.construct();</span>
+
+<span class="fc bfc" id="L169" title="All 2 branches covered.">      if (peek == JsonToken.BEGIN_ARRAY) {</span>
+<span class="fc" id="L170">        in.beginArray();</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        while (in.hasNext()) {</span>
+<span class="fc" id="L172">          in.beginArray(); // entry array</span>
+<span class="fc" id="L173">          K key = keyTypeAdapter.read(in);</span>
+<span class="fc" id="L174">          V value = valueTypeAdapter.read(in);</span>
+<span class="fc" id="L175">          V replaced = map.put(key, value);</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">          if (replaced != null) {</span>
+<span class="fc" id="L177">            throw new JsonSyntaxException(&quot;duplicate key: &quot; + key);</span>
+          }
+<span class="fc" id="L179">          in.endArray();</span>
+<span class="fc" id="L180">        }</span>
+<span class="fc" id="L181">        in.endArray();</span>
+      } else {
+<span class="fc" id="L183">        in.beginObject();</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        while (in.hasNext()) {</span>
+<span class="fc" id="L185">          JsonReaderInternalAccess.INSTANCE.promoteNameToValue(in);</span>
+<span class="fc" id="L186">          K key = keyTypeAdapter.read(in);</span>
+<span class="fc" id="L187">          V value = valueTypeAdapter.read(in);</span>
+<span class="fc" id="L188">          V replaced = map.put(key, value);</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">          if (replaced != null) {</span>
+<span class="fc" id="L190">            throw new JsonSyntaxException(&quot;duplicate key: &quot; + key);</span>
+          }
+<span class="fc" id="L192">        }</span>
+<span class="fc" id="L193">        in.endObject();</span>
+      }
+<span class="fc" id="L195">      return map;</span>
+    }
+
+    @Override public void write(JsonWriter out, Map&lt;K, V&gt; map) throws IOException {
+<span class="fc bfc" id="L199" title="All 2 branches covered.">      if (map == null) {</span>
+<span class="fc" id="L200">        out.nullValue();</span>
+<span class="fc" id="L201">        return;</span>
+      }
+
+<span class="fc bfc" id="L204" title="All 2 branches covered.">      if (!complexMapKeySerialization) {</span>
+<span class="fc" id="L205">        out.beginObject();</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        for (Map.Entry&lt;K, V&gt; entry : map.entrySet()) {</span>
+<span class="fc" id="L207">          out.name(String.valueOf(entry.getKey()));</span>
+<span class="fc" id="L208">          valueTypeAdapter.write(out, entry.getValue());</span>
+<span class="fc" id="L209">        }</span>
+<span class="fc" id="L210">        out.endObject();</span>
+<span class="fc" id="L211">        return;</span>
+      }
+
+<span class="fc" id="L214">      boolean hasComplexKeys = false;</span>
+<span class="fc" id="L215">      List&lt;JsonElement&gt; keys = new ArrayList&lt;JsonElement&gt;(map.size());</span>
+
+<span class="fc" id="L217">      List&lt;V&gt; values = new ArrayList&lt;V&gt;(map.size());</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">      for (Map.Entry&lt;K, V&gt; entry : map.entrySet()) {</span>
+<span class="fc" id="L219">        JsonElement keyElement = keyTypeAdapter.toJsonTree(entry.getKey());</span>
+<span class="fc" id="L220">        keys.add(keyElement);</span>
+<span class="fc" id="L221">        values.add(entry.getValue());</span>
+<span class="pc bpc" id="L222" title="1 of 4 branches missed.">        hasComplexKeys |= keyElement.isJsonArray() || keyElement.isJsonObject();</span>
+<span class="fc" id="L223">      }</span>
+
+<span class="fc bfc" id="L225" title="All 2 branches covered.">      if (hasComplexKeys) {</span>
+<span class="fc" id="L226">        out.beginArray();</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        for (int i = 0, size = keys.size(); i &lt; size; i++) {</span>
+<span class="fc" id="L228">          out.beginArray(); // entry array</span>
+<span class="fc" id="L229">          Streams.write(keys.get(i), out);</span>
+<span class="fc" id="L230">          valueTypeAdapter.write(out, values.get(i));</span>
+<span class="fc" id="L231">          out.endArray();</span>
+        }
+<span class="fc" id="L233">        out.endArray();</span>
+      } else {
+<span class="fc" id="L235">        out.beginObject();</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        for (int i = 0, size = keys.size(); i &lt; size; i++) {</span>
+<span class="fc" id="L237">          JsonElement keyElement = keys.get(i);</span>
+<span class="fc" id="L238">          out.name(keyToString(keyElement));</span>
+<span class="fc" id="L239">          valueTypeAdapter.write(out, values.get(i));</span>
+        }
+<span class="fc" id="L241">        out.endObject();</span>
+      }
+<span class="fc" id="L243">    }</span>
+
+    private String keyToString(JsonElement keyElement) {
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">      if (keyElement.isJsonPrimitive()) {</span>
+<span class="fc" id="L247">        JsonPrimitive primitive = keyElement.getAsJsonPrimitive();</span>
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">        if (primitive.isNumber()) {</span>
+<span class="nc" id="L249">          return String.valueOf(primitive.getAsNumber());</span>
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">        } else if (primitive.isBoolean()) {</span>
+<span class="nc" id="L251">          return Boolean.toString(primitive.getAsBoolean());</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">        } else if (primitive.isString()) {</span>
+<span class="fc" id="L253">          return primitive.getAsString();</span>
+        } else {
+<span class="nc" id="L255">          throw new AssertionError();</span>
+        }
+<span class="nc bnc" id="L257" title="All 2 branches missed.">      } else if (keyElement.isJsonNull()) {</span>
+<span class="nc" id="L258">        return &quot;null&quot;;</span>
+      } else {
+<span class="nc" id="L260">        throw new AssertionError();</span>
+      }
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

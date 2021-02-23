@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RawSerializationTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">RawSerializationTest.java</span></div><h1>RawSerializationTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2010 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import junit.framework.TestCase;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+/**
+ * Unit tests to validate serialization of parameterized types without explicit types
+ *
+ * @author Inderjeet Singh
+ */
+<span class="fc" id="L31">public class RawSerializationTest extends TestCase {</span>
+
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L37">    super.setUp();</span>
+<span class="fc" id="L38">    gson = new Gson();</span>
+<span class="fc" id="L39">  }</span>
+
+  public void testCollectionOfPrimitives() {
+<span class="fc" id="L42">    Collection&lt;Integer&gt; ints = Arrays.asList(1, 2, 3, 4, 5);</span>
+<span class="fc" id="L43">    String json = gson.toJson(ints);</span>
+<span class="fc" id="L44">    assertEquals(&quot;[1,2,3,4,5]&quot;, json);</span>
+<span class="fc" id="L45">  }</span>
+
+  public void testCollectionOfObjects() {
+<span class="fc" id="L48">    Collection&lt;Foo&gt; foos = Arrays.asList(new Foo(1), new Foo(2));</span>
+<span class="fc" id="L49">    String json = gson.toJson(foos);</span>
+<span class="fc" id="L50">    assertEquals(&quot;[{\&quot;b\&quot;:1},{\&quot;b\&quot;:2}]&quot;, json);</span>
+<span class="fc" id="L51">  }</span>
+
+  public void testParameterizedObject() {
+<span class="fc" id="L54">    Bar&lt;Foo&gt; bar = new Bar&lt;Foo&gt;(new Foo(1));</span>
+<span class="fc" id="L55">    String expectedJson = &quot;{\&quot;t\&quot;:{\&quot;b\&quot;:1}}&quot;;</span>
+    // Ensure that serialization works without specifying the type explicitly
+<span class="fc" id="L57">    String json = gson.toJson(bar);</span>
+<span class="fc" id="L58">    assertEquals(expectedJson, json);</span>
+    // Ensure that serialization also works when the type is specified explicitly
+<span class="fc" id="L60">    json = gson.toJson(bar, new TypeToken&lt;Bar&lt;Foo&gt;&gt;(){}.getType());</span>
+<span class="fc" id="L61">    assertEquals(expectedJson, json);</span>
+<span class="fc" id="L62">  }</span>
+
+  public void testTwoLevelParameterizedObject() {
+<span class="fc" id="L65">    Bar&lt;Bar&lt;Foo&gt;&gt; bar = new Bar&lt;Bar&lt;Foo&gt;&gt;(new Bar&lt;Foo&gt;(new Foo(1)));</span>
+<span class="fc" id="L66">    String expectedJson = &quot;{\&quot;t\&quot;:{\&quot;t\&quot;:{\&quot;b\&quot;:1}}}&quot;;</span>
+    // Ensure that serialization works without specifying the type explicitly
+<span class="fc" id="L68">    String json = gson.toJson(bar);</span>
+<span class="fc" id="L69">    assertEquals(expectedJson, json);</span>
+    // Ensure that serialization also works when the type is specified explicitly
+<span class="fc" id="L71">    json = gson.toJson(bar, new TypeToken&lt;Bar&lt;Bar&lt;Foo&gt;&gt;&gt;(){}.getType());</span>
+<span class="fc" id="L72">    assertEquals(expectedJson, json);</span>
+<span class="fc" id="L73">  }</span>
+
+  public void testThreeLevelParameterizedObject() {
+<span class="fc" id="L76">    Bar&lt;Bar&lt;Bar&lt;Foo&gt;&gt;&gt; bar = new Bar&lt;Bar&lt;Bar&lt;Foo&gt;&gt;&gt;(new Bar&lt;Bar&lt;Foo&gt;&gt;(new Bar&lt;Foo&gt;(new Foo(1))));</span>
+<span class="fc" id="L77">    String expectedJson = &quot;{\&quot;t\&quot;:{\&quot;t\&quot;:{\&quot;t\&quot;:{\&quot;b\&quot;:1}}}}&quot;;</span>
+    // Ensure that serialization works without specifying the type explicitly
+<span class="fc" id="L79">    String json = gson.toJson(bar);</span>
+<span class="fc" id="L80">    assertEquals(expectedJson, json);</span>
+    // Ensure that serialization also works when the type is specified explicitly
+<span class="fc" id="L82">    json = gson.toJson(bar, new TypeToken&lt;Bar&lt;Bar&lt;Bar&lt;Foo&gt;&gt;&gt;&gt;(){}.getType());</span>
+<span class="fc" id="L83">    assertEquals(expectedJson, json);</span>
+<span class="fc" id="L84">  }</span>
+
+  private static class Foo {
+    @SuppressWarnings(&quot;unused&quot;)
+    int b;
+<span class="fc" id="L89">    Foo(int b) {</span>
+<span class="fc" id="L90">      this.b = b;</span>
+<span class="fc" id="L91">    }</span>
+  }
+
+  private static class Bar&lt;T&gt; {
+    @SuppressWarnings(&quot;unused&quot;)
+    T t;
+<span class="fc" id="L97">    Bar(T t) {</span>
+<span class="fc" id="L98">      this.t = t;</span>
+<span class="fc" id="L99">    }</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

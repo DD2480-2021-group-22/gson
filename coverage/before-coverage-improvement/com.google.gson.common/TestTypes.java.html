@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TestTypes.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.common</a> &gt; <span class="el_source">TestTypes.java</span></div><h1>TestTypes.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.common;
+
+import java.lang.reflect.Type;
+import java.util.Collection;
+
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.annotations.SerializedName;
+
+/**
+ * Types used for testing JSON serialization and deserialization
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="nc" id="L38">public class TestTypes {</span>
+  
+<span class="fc" id="L40">  public static class Base {</span>
+<span class="fc" id="L41">    public static final String BASE_NAME = Base.class.getSimpleName();</span>
+    public static final String BASE_FIELD_KEY = &quot;baseName&quot;;
+    public static final String SERIALIZER_KEY = &quot;serializerName&quot;;
+<span class="fc" id="L44">    public String baseName = BASE_NAME;</span>
+    public String serializerName;
+  }
+
+<span class="fc" id="L48">  public static class Sub extends Base {</span>
+<span class="fc" id="L49">    public static final String SUB_NAME = Sub.class.getSimpleName();</span>
+    public static final String SUB_FIELD_KEY = &quot;subName&quot;;
+<span class="fc" id="L51">    public final String subName = SUB_NAME;</span>
+  }
+
+  public static class ClassWithBaseField {
+    public static final String FIELD_KEY = &quot;base&quot;;
+    public final Base base;
+<span class="fc" id="L57">    public ClassWithBaseField(Base base) {</span>
+<span class="fc" id="L58">      this.base = base;</span>
+<span class="fc" id="L59">    }</span>
+  }
+
+  public static class ClassWithBaseArrayField {
+    public static final String FIELD_KEY = &quot;base&quot;;
+    public final Base[] base;
+<span class="fc" id="L65">    public ClassWithBaseArrayField(Base[] base) {</span>
+<span class="fc" id="L66">      this.base = base;</span>
+<span class="fc" id="L67">    }</span>
+  }
+
+  public static class ClassWithBaseCollectionField {
+    public static final String FIELD_KEY = &quot;base&quot;;
+    public final Collection&lt;Base&gt; base;
+<span class="fc" id="L73">    public ClassWithBaseCollectionField(Collection&lt;Base&gt; base) {</span>
+<span class="fc" id="L74">      this.base = base;</span>
+<span class="fc" id="L75">    }</span>
+  }
+
+<span class="fc" id="L78">  public static class BaseSerializer implements JsonSerializer&lt;Base&gt; {</span>
+<span class="fc" id="L79">    public static final String NAME = BaseSerializer.class.getSimpleName(); </span>
+    @Override
+    public JsonElement serialize(Base src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L82">      JsonObject obj = new JsonObject();</span>
+<span class="fc" id="L83">      obj.addProperty(Base.SERIALIZER_KEY, NAME);</span>
+<span class="fc" id="L84">      return obj;</span>
+    }
+  }
+<span class="fc" id="L87">  public static class SubSerializer implements JsonSerializer&lt;Sub&gt; {</span>
+<span class="fc" id="L88">    public static final String NAME = SubSerializer.class.getSimpleName(); </span>
+    @Override
+    public JsonElement serialize(Sub src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L91">      JsonObject obj = new JsonObject();</span>
+<span class="fc" id="L92">      obj.addProperty(Base.SERIALIZER_KEY, NAME);</span>
+<span class="fc" id="L93">      return obj;</span>
+    }    
+  }
+
+  public static class StringWrapper {
+    public final String someConstantStringInstanceField;
+
+<span class="fc" id="L100">    public StringWrapper(String value) {</span>
+<span class="fc" id="L101">      someConstantStringInstanceField = value;</span>
+<span class="fc" id="L102">    }</span>
+  }
+
+  public static class BagOfPrimitives {
+    public static final long DEFAULT_VALUE = 0;
+    public long longValue;
+    public int intValue;
+    public boolean booleanValue;
+    public String stringValue;
+
+    public BagOfPrimitives() {
+<span class="fc" id="L113">      this(DEFAULT_VALUE, 0, false, &quot;&quot;);</span>
+<span class="fc" id="L114">    }</span>
+
+<span class="fc" id="L116">    public BagOfPrimitives(long longValue, int intValue, boolean booleanValue, String stringValue) {</span>
+<span class="fc" id="L117">      this.longValue = longValue;</span>
+<span class="fc" id="L118">      this.intValue = intValue;</span>
+<span class="fc" id="L119">      this.booleanValue = booleanValue;</span>
+<span class="fc" id="L120">      this.stringValue = stringValue;</span>
+<span class="fc" id="L121">    }</span>
+
+    public int getIntValue() {
+<span class="fc" id="L124">      return intValue;</span>
+    }
+
+    public String getExpectedJson() {
+<span class="fc" id="L128">      StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L129">      sb.append(&quot;{&quot;);</span>
+<span class="fc" id="L130">      sb.append(&quot;\&quot;longValue\&quot;:&quot;).append(longValue).append(&quot;,&quot;);</span>
+<span class="fc" id="L131">      sb.append(&quot;\&quot;intValue\&quot;:&quot;).append(intValue).append(&quot;,&quot;);</span>
+<span class="fc" id="L132">      sb.append(&quot;\&quot;booleanValue\&quot;:&quot;).append(booleanValue).append(&quot;,&quot;);</span>
+<span class="fc" id="L133">      sb.append(&quot;\&quot;stringValue\&quot;:\&quot;&quot;).append(stringValue).append(&quot;\&quot;&quot;);</span>
+<span class="fc" id="L134">      sb.append(&quot;}&quot;);</span>
+<span class="fc" id="L135">      return sb.toString();</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L140">      final int prime = 31;</span>
+<span class="nc" id="L141">      int result = 1;</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">      result = prime * result + (booleanValue ? 1231 : 1237);</span>
+<span class="nc" id="L143">      result = prime * result + intValue;</span>
+<span class="nc" id="L144">      result = prime * result + (int) (longValue ^ (longValue &gt;&gt;&gt; 32));</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">      result = prime * result + ((stringValue == null) ? 0 : stringValue.hashCode());</span>
+<span class="nc" id="L146">      return result;</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">      if (this == obj)</span>
+<span class="nc" id="L152">        return true;</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">      if (obj == null)</span>
+<span class="nc" id="L154">        return false;</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">      if (getClass() != obj.getClass())</span>
+<span class="nc" id="L156">        return false;</span>
+<span class="fc" id="L157">      BagOfPrimitives other = (BagOfPrimitives) obj;</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">      if (booleanValue != other.booleanValue)</span>
+<span class="fc" id="L159">        return false;</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">      if (intValue != other.intValue)</span>
+<span class="nc" id="L161">        return false;</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">      if (longValue != other.longValue)</span>
+<span class="nc" id="L163">        return false;</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">      if (stringValue == null) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (other.stringValue != null)</span>
+<span class="nc" id="L166">          return false;</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">      } else if (!stringValue.equals(other.stringValue))</span>
+<span class="nc" id="L168">        return false;</span>
+<span class="fc" id="L169">      return true;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L174">      return String.format(&quot;(longValue=%d,intValue=%d,booleanValue=%b,stringValue=%s)&quot;,</span>
+<span class="nc" id="L175">          longValue, intValue, booleanValue, stringValue);</span>
+    }
+  }
+
+  public static class BagOfPrimitiveWrappers {
+    private final Long longValue;
+    private final Integer intValue;
+    private final Boolean booleanValue;
+
+<span class="fc" id="L184">    public BagOfPrimitiveWrappers(Long longValue, Integer intValue, Boolean booleanValue) {</span>
+<span class="fc" id="L185">      this.longValue = longValue;</span>
+<span class="fc" id="L186">      this.intValue = intValue;</span>
+<span class="fc" id="L187">      this.booleanValue = booleanValue;</span>
+<span class="fc" id="L188">    }</span>
+
+    public String getExpectedJson() {
+<span class="fc" id="L191">      StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L192">      sb.append(&quot;{&quot;);</span>
+<span class="fc" id="L193">      sb.append(&quot;\&quot;longValue\&quot;:&quot;).append(longValue).append(&quot;,&quot;);</span>
+<span class="fc" id="L194">      sb.append(&quot;\&quot;intValue\&quot;:&quot;).append(intValue).append(&quot;,&quot;);</span>
+<span class="fc" id="L195">      sb.append(&quot;\&quot;booleanValue\&quot;:&quot;).append(booleanValue);</span>
+<span class="fc" id="L196">      sb.append(&quot;}&quot;);</span>
+<span class="fc" id="L197">      return sb.toString();</span>
+    }
+  }
+
+  public static class PrimitiveArray {
+    private final long[] longArray;
+
+    public PrimitiveArray() {
+<span class="fc" id="L205">      this(new long[0]);</span>
+<span class="fc" id="L206">    }</span>
+
+<span class="fc" id="L208">    public PrimitiveArray(long[] longArray) {</span>
+<span class="fc" id="L209">      this.longArray = longArray;</span>
+<span class="fc" id="L210">    }</span>
+
+    public String getExpectedJson() {
+<span class="fc" id="L213">      StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L214">      sb.append(&quot;{\&quot;longArray\&quot;:[&quot;);</span>
+
+<span class="fc" id="L216">      boolean first = true;</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">      for (long l : longArray) {</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        if (!first) {</span>
+<span class="fc" id="L219">          sb.append(&quot;,&quot;);</span>
+        } else {
+<span class="fc" id="L221">          first = false;</span>
+        }
+<span class="fc" id="L223">        sb.append(l);</span>
+      }
+
+<span class="fc" id="L226">      sb.append(&quot;]}&quot;);</span>
+<span class="fc" id="L227">      return sb.toString();</span>
+    }
+  }
+
+<span class="fc" id="L231">  public static class ClassWithNoFields {</span>
+    // Nothing here..
+    @Override
+    public boolean equals(Object other) {
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">      return other.getClass() == ClassWithNoFields.class;</span>
+    }
+  }
+
+  public static class Nested {
+    private final BagOfPrimitives primitive1;
+    private final BagOfPrimitives primitive2;
+
+    public Nested() {
+<span class="fc" id="L244">      this(null, null);</span>
+<span class="fc" id="L245">    }</span>
+
+<span class="fc" id="L247">    public Nested(BagOfPrimitives primitive1, BagOfPrimitives primitive2) {</span>
+<span class="fc" id="L248">      this.primitive1 = primitive1;</span>
+<span class="fc" id="L249">      this.primitive2 = primitive2;</span>
+<span class="fc" id="L250">    }</span>
+
+    public String getExpectedJson() {
+<span class="fc" id="L253">      StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L254">      sb.append(&quot;{&quot;);</span>
+<span class="fc" id="L255">      appendFields(sb);</span>
+<span class="fc" id="L256">      sb.append(&quot;}&quot;);</span>
+<span class="fc" id="L257">      return sb.toString();</span>
+    }
+
+    public void appendFields(StringBuilder sb) {
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">      if (primitive1 != null) {</span>
+<span class="fc" id="L262">        sb.append(&quot;\&quot;primitive1\&quot;:&quot;).append(primitive1.getExpectedJson());</span>
+      }
+<span class="pc bpc" id="L264" title="1 of 4 branches missed.">      if (primitive1 != null &amp;&amp; primitive2 != null) {</span>
+<span class="fc" id="L265">        sb.append(&quot;,&quot;);</span>
+      }
+<span class="fc bfc" id="L267" title="All 2 branches covered.">      if (primitive2 != null) {</span>
+<span class="fc" id="L268">        sb.append(&quot;\&quot;primitive2\&quot;:&quot;).append(primitive2.getExpectedJson());</span>
+      }
+<span class="fc" id="L270">    }</span>
+  }
+
+  public static class ClassWithTransientFields&lt;T&gt; {
+    public transient T transientT; 
+    public final transient long transientLongValue;
+    private final long[] longValue;
+
+    public ClassWithTransientFields() {
+<span class="fc" id="L279">      this(0L);</span>
+<span class="fc" id="L280">    }</span>
+
+<span class="fc" id="L282">    public ClassWithTransientFields(long value) {</span>
+<span class="fc" id="L283">      longValue = new long[] { value };</span>
+<span class="fc" id="L284">      transientLongValue = value + 1;</span>
+<span class="fc" id="L285">    }</span>
+
+    public String getExpectedJson() {
+<span class="fc" id="L288">      StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L289">      sb.append(&quot;{&quot;);</span>
+<span class="fc" id="L290">      sb.append(&quot;\&quot;longValue\&quot;:[&quot;).append(longValue[0]).append(&quot;]&quot;);</span>
+<span class="fc" id="L291">      sb.append(&quot;}&quot;);</span>
+<span class="fc" id="L292">      return sb.toString();</span>
+    }
+  }
+
+  public static class ClassWithCustomTypeConverter {
+    private final BagOfPrimitives bag;
+    private final int value;
+
+    public ClassWithCustomTypeConverter() {
+<span class="fc" id="L301">      this(new BagOfPrimitives(), 10);</span>
+<span class="fc" id="L302">    }</span>
+
+    public ClassWithCustomTypeConverter(int value) {
+<span class="nc" id="L305">      this(new BagOfPrimitives(value, value, false, &quot;&quot;), value);</span>
+<span class="nc" id="L306">    }</span>
+
+<span class="fc" id="L308">    public ClassWithCustomTypeConverter(BagOfPrimitives bag, int value) {</span>
+<span class="fc" id="L309">      this.bag = bag;</span>
+<span class="fc" id="L310">      this.value = value;</span>
+<span class="fc" id="L311">    }</span>
+
+    public BagOfPrimitives getBag() {
+<span class="fc" id="L314">      return bag;</span>
+    }
+
+    public String getExpectedJson() {
+<span class="nc" id="L318">      return &quot;{\&quot;url\&quot;:\&quot;&quot; + bag.getExpectedJson() + &quot;\&quot;,\&quot;value\&quot;:&quot; + value + &quot;}&quot;;</span>
+    }
+
+    public int getValue() {
+<span class="nc" id="L322">      return value;</span>
+    }
+  }
+
+  public static class ArrayOfObjects {
+    private final BagOfPrimitives[] elements;
+<span class="fc" id="L328">    public ArrayOfObjects() {</span>
+<span class="fc" id="L329">      elements = new BagOfPrimitives[3];</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">      for (int i = 0; i &lt; elements.length; ++i) {</span>
+<span class="fc" id="L331">        elements[i] = new BagOfPrimitives(i, i+2, false, &quot;i&quot;+i);</span>
+      }
+<span class="fc" id="L333">    }</span>
+    public String getExpectedJson() {
+<span class="fc" id="L335">      StringBuilder sb = new StringBuilder(&quot;{\&quot;elements\&quot;:[&quot;);</span>
+<span class="fc" id="L336">      boolean first = true;</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">      for (BagOfPrimitives element : elements) {</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        if (first) {</span>
+<span class="fc" id="L339">          first = false;</span>
+        } else {
+<span class="fc" id="L341">          sb.append(&quot;,&quot;);</span>
+        }
+<span class="fc" id="L343">        sb.append(element.getExpectedJson());</span>
+      }
+<span class="fc" id="L345">      sb.append(&quot;]}&quot;);</span>
+<span class="fc" id="L346">      return sb.toString();</span>
+    }
+  }
+
+<span class="fc" id="L350">  public static class ClassOverridingEquals {</span>
+    public ClassOverridingEquals ref;
+
+    public String getExpectedJson() {
+<span class="fc bfc" id="L354" title="All 2 branches covered.">      if (ref == null) {</span>
+<span class="fc" id="L355">        return &quot;{}&quot;;</span>
+      }
+<span class="fc" id="L357">      return &quot;{\&quot;ref\&quot;:&quot; + ref.getExpectedJson() + &quot;}&quot;;</span>
+    }
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc" id="L361">      return true;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L366">      return 1;</span>
+    }
+  }
+
+  public static class ClassWithArray {
+    public final Object[] array;
+<span class="fc" id="L372">    public ClassWithArray() {</span>
+<span class="fc" id="L373">      array = null;</span>
+<span class="fc" id="L374">    }</span>
+
+<span class="fc" id="L376">    public ClassWithArray(Object[] array) {</span>
+<span class="fc" id="L377">      this.array = array;</span>
+<span class="fc" id="L378">    }</span>
+  }
+
+  public static class ClassWithObjects {
+    public final BagOfPrimitives bag;
+    public ClassWithObjects() {
+<span class="fc" id="L384">      this(new BagOfPrimitives());</span>
+<span class="fc" id="L385">    }</span>
+<span class="fc" id="L386">    public ClassWithObjects(BagOfPrimitives bag) {</span>
+<span class="fc" id="L387">      this.bag = bag;</span>
+<span class="fc" id="L388">    }</span>
+  }
+
+  public static class ClassWithSerializedNameFields {
+    @SerializedName(&quot;fooBar&quot;) public final int f;
+    @SerializedName(&quot;Another Foo&quot;) public final int g;
+
+    public ClassWithSerializedNameFields() {
+<span class="fc" id="L396">      this(1, 4);</span>
+<span class="fc" id="L397">    }</span>
+<span class="fc" id="L398">    public ClassWithSerializedNameFields(int f, int g) {</span>
+<span class="fc" id="L399">      this.f = f;</span>
+<span class="fc" id="L400">      this.g = g;</span>
+<span class="fc" id="L401">    }</span>
+
+    public String getExpectedJson() {
+<span class="fc" id="L404">      return '{' + &quot;\&quot;fooBar\&quot;:&quot; + f + &quot;,\&quot;Another Foo\&quot;:&quot; + g + '}';</span>
+    }
+  }
+
+<span class="nc" id="L408">  public static class CrazyLongTypeAdapter</span>
+      implements JsonSerializer&lt;Long&gt;, JsonDeserializer&lt;Long&gt; {
+    public static final long DIFFERENCE = 5L;
+    @Override
+    public JsonElement serialize(Long src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="nc" id="L413">      return new JsonPrimitive(src + DIFFERENCE);</span>
+    }
+    @Override
+    public Long deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="nc" id="L418">      return json.getAsLong() - DIFFERENCE;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

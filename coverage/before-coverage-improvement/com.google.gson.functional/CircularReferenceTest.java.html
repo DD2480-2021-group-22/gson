@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CircularReferenceTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">CircularReferenceTest.java</span></div><h1>CircularReferenceTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import junit.framework.TestCase;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.common.TestTypes.ClassOverridingEquals;
+
+/**
+ * Functional tests related to circular reference detection and error reporting.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L38">public class CircularReferenceTest extends TestCase {</span>
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L43">    super.setUp();</span>
+<span class="fc" id="L44">    gson = new Gson();</span>
+<span class="fc" id="L45">  }</span>
+
+  public void testCircularSerialization() throws Exception {
+<span class="fc" id="L48">    ContainsReferenceToSelfType a = new ContainsReferenceToSelfType();</span>
+<span class="fc" id="L49">    ContainsReferenceToSelfType b = new ContainsReferenceToSelfType();</span>
+<span class="fc" id="L50">    a.children.add(b);</span>
+<span class="fc" id="L51">    b.children.add(a);</span>
+    try {
+<span class="nc" id="L53">      gson.toJson(a);</span>
+<span class="nc" id="L54">      fail(&quot;Circular types should not get printed!&quot;);</span>
+<span class="fc" id="L55">    } catch (StackOverflowError expected) {</span>
+<span class="nc" id="L56">    }</span>
+<span class="fc" id="L57">  }</span>
+
+  public void testSelfReferenceIgnoredInSerialization() throws Exception {
+<span class="fc" id="L60">    ClassOverridingEquals objA = new ClassOverridingEquals();</span>
+<span class="fc" id="L61">    objA.ref = objA;</span>
+
+<span class="fc" id="L63">    String json = gson.toJson(objA);</span>
+<span class="fc" id="L64">    assertFalse(json.contains(&quot;ref&quot;)); // self-reference is ignored</span>
+<span class="fc" id="L65">  }</span>
+
+  public void testSelfReferenceArrayFieldSerialization() throws Exception {
+<span class="fc" id="L68">    ClassWithSelfReferenceArray objA = new ClassWithSelfReferenceArray();</span>
+<span class="fc" id="L69">    objA.children = new ClassWithSelfReferenceArray[]{objA};</span>
+
+    try {
+<span class="nc" id="L72">      gson.toJson(objA);</span>
+<span class="nc" id="L73">      fail(&quot;Circular reference to self can not be serialized!&quot;);</span>
+<span class="fc" id="L74">    } catch (StackOverflowError expected) {</span>
+<span class="nc" id="L75">    }</span>
+<span class="fc" id="L76">  }</span>
+
+  public void testSelfReferenceCustomHandlerSerialization() throws Exception {
+<span class="fc" id="L79">    ClassWithSelfReference obj = new ClassWithSelfReference();</span>
+<span class="fc" id="L80">    obj.child = obj;</span>
+<span class="fc" id="L81">    Gson gson = new GsonBuilder().registerTypeAdapter(ClassWithSelfReference.class, new JsonSerializer&lt;ClassWithSelfReference&gt;() {</span>
+      public JsonElement serialize(ClassWithSelfReference src, Type typeOfSrc,
+          JsonSerializationContext context) {
+<span class="fc" id="L84">        JsonObject obj = new JsonObject();</span>
+<span class="fc" id="L85">        obj.addProperty(&quot;property&quot;, &quot;value&quot;);</span>
+<span class="nc" id="L86">        obj.add(&quot;child&quot;, context.serialize(src.child));</span>
+<span class="nc" id="L87">        return obj;</span>
+      }
+<span class="fc" id="L89">    }).create();</span>
+    try {
+<span class="nc" id="L91">      gson.toJson(obj);</span>
+<span class="nc" id="L92">      fail(&quot;Circular reference to self can not be serialized!&quot;);</span>
+<span class="fc" id="L93">    } catch (StackOverflowError expected) {</span>
+<span class="nc" id="L94">    }</span>
+<span class="fc" id="L95">  }</span>
+
+  public void testDirectedAcyclicGraphSerialization() throws Exception {
+<span class="fc" id="L98">    ContainsReferenceToSelfType a = new ContainsReferenceToSelfType();</span>
+<span class="fc" id="L99">    ContainsReferenceToSelfType b = new ContainsReferenceToSelfType();</span>
+<span class="fc" id="L100">    ContainsReferenceToSelfType c = new ContainsReferenceToSelfType();</span>
+<span class="fc" id="L101">    a.children.add(b);</span>
+<span class="fc" id="L102">    a.children.add(c);</span>
+<span class="fc" id="L103">    b.children.add(c);</span>
+<span class="fc" id="L104">    assertNotNull(gson.toJson(a));</span>
+<span class="fc" id="L105">  }</span>
+
+  public void testDirectedAcyclicGraphDeserialization() throws Exception {
+<span class="fc" id="L108">    String json = &quot;{\&quot;children\&quot;:[{\&quot;children\&quot;:[{\&quot;children\&quot;:[]}]},{\&quot;children\&quot;:[]}]}&quot;;</span>
+<span class="fc" id="L109">    ContainsReferenceToSelfType target = gson.fromJson(json, ContainsReferenceToSelfType.class);</span>
+<span class="fc" id="L110">    assertNotNull(target);</span>
+<span class="fc" id="L111">    assertEquals(2, target.children.size());</span>
+<span class="fc" id="L112">  }</span>
+
+<span class="fc" id="L114">  private static class ContainsReferenceToSelfType {</span>
+<span class="fc" id="L115">    Collection&lt;ContainsReferenceToSelfType&gt; children = new ArrayList&lt;ContainsReferenceToSelfType&gt;();</span>
+  }
+
+  private static class ClassWithSelfReference {
+    ClassWithSelfReference child;
+  }
+
+  private static class ClassWithSelfReferenceArray {
+    @SuppressWarnings(&quot;unused&quot;)
+    ClassWithSelfReferenceArray[] children;
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

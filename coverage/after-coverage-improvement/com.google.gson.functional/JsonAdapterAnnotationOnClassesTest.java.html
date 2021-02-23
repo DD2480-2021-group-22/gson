@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonAdapterAnnotationOnClassesTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">JsonAdapterAnnotationOnClassesTest.java</span></div><h1>JsonAdapterAnnotationOnClassesTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2014 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.Locale;
+import junit.framework.TestCase;
+
+/**
+ * Functional tests for the {@link com.google.gson.annotations.JsonAdapter} annotation on classes.
+ */
+<span class="fc" id="L42">public final class JsonAdapterAnnotationOnClassesTest extends TestCase {</span>
+
+  public void testJsonAdapterInvoked() {
+<span class="fc" id="L45">    Gson gson = new Gson();</span>
+<span class="fc" id="L46">    String json = gson.toJson(new A(&quot;bar&quot;));</span>
+<span class="fc" id="L47">    assertEquals(&quot;\&quot;jsonAdapter\&quot;&quot;, json);</span>
+
+   // Also invoke the JsonAdapter javadoc sample
+<span class="fc" id="L50">    json = gson.toJson(new User(&quot;Inderjeet&quot;, &quot;Singh&quot;));</span>
+<span class="fc" id="L51">    assertEquals(&quot;{\&quot;name\&quot;:\&quot;Inderjeet Singh\&quot;}&quot;, json);</span>
+<span class="fc" id="L52">    User user = gson.fromJson(&quot;{'name':'Joel Leitch'}&quot;, User.class);</span>
+<span class="fc" id="L53">    assertEquals(&quot;Joel&quot;, user.firstName);</span>
+<span class="fc" id="L54">    assertEquals(&quot;Leitch&quot;, user.lastName);</span>
+
+<span class="fc" id="L56">    json = gson.toJson(Foo.BAR);</span>
+<span class="fc" id="L57">    assertEquals(&quot;\&quot;bar\&quot;&quot;, json);</span>
+<span class="fc" id="L58">    Foo baz = gson.fromJson(&quot;\&quot;baz\&quot;&quot;, Foo.class);</span>
+<span class="fc" id="L59">    assertEquals(Foo.BAZ, baz);</span>
+<span class="fc" id="L60">  }</span>
+
+  public void testJsonAdapterFactoryInvoked() {
+<span class="fc" id="L63">    Gson gson = new Gson();</span>
+<span class="fc" id="L64">    String json = gson.toJson(new C(&quot;bar&quot;));</span>
+<span class="fc" id="L65">    assertEquals(&quot;\&quot;jsonAdapterFactory\&quot;&quot;, json);</span>
+<span class="fc" id="L66">    C c = gson.fromJson(&quot;\&quot;bar\&quot;&quot;, C.class);</span>
+<span class="fc" id="L67">    assertEquals(&quot;jsonAdapterFactory&quot;, c.value);</span>
+<span class="fc" id="L68">  }</span>
+
+  public void testRegisteredAdapterOverridesJsonAdapter() {
+<span class="fc" id="L71">    TypeAdapter&lt;A&gt; typeAdapter = new TypeAdapter&lt;A&gt;() {</span>
+      @Override public void write(JsonWriter out, A value) throws IOException {
+<span class="fc" id="L73">        out.value(&quot;registeredAdapter&quot;);</span>
+<span class="fc" id="L74">      }</span>
+      @Override public A read(JsonReader in) throws IOException {
+<span class="nc" id="L76">        return new A(in.nextString());</span>
+      }
+    };
+<span class="fc" id="L79">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L80">      .registerTypeAdapter(A.class, typeAdapter)</span>
+<span class="fc" id="L81">      .create();</span>
+<span class="fc" id="L82">    String json = gson.toJson(new A(&quot;abcd&quot;));</span>
+<span class="fc" id="L83">    assertEquals(&quot;\&quot;registeredAdapter\&quot;&quot;, json);</span>
+<span class="fc" id="L84">  }</span>
+
+  /**
+   * The serializer overrides field adapter, but for deserializer the fieldAdapter is used.
+   */
+  public void testRegisteredSerializerOverridesJsonAdapter() {
+<span class="fc" id="L90">    JsonSerializer&lt;A&gt; serializer = new JsonSerializer&lt;A&gt;() {</span>
+      public JsonElement serialize(A src, Type typeOfSrc,
+          JsonSerializationContext context) {
+<span class="fc" id="L93">        return new JsonPrimitive(&quot;registeredSerializer&quot;);</span>
+      }
+    };
+<span class="fc" id="L96">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L97">      .registerTypeAdapter(A.class, serializer)</span>
+<span class="fc" id="L98">      .create();</span>
+<span class="fc" id="L99">    String json = gson.toJson(new A(&quot;abcd&quot;));</span>
+<span class="fc" id="L100">    assertEquals(&quot;\&quot;registeredSerializer\&quot;&quot;, json);</span>
+<span class="fc" id="L101">    A target = gson.fromJson(&quot;abcd&quot;, A.class);</span>
+<span class="fc" id="L102">    assertEquals(&quot;jsonAdapter&quot;, target.value);</span>
+<span class="fc" id="L103">  }</span>
+
+  /**
+   * The deserializer overrides Json adapter, but for serializer the jsonAdapter is used.
+   */
+  public void testRegisteredDeserializerOverridesJsonAdapter() {
+<span class="fc" id="L109">    JsonDeserializer&lt;A&gt; deserializer = new JsonDeserializer&lt;A&gt;() {</span>
+      public A deserialize(JsonElement json, Type typeOfT,
+          JsonDeserializationContext context) throws JsonParseException {
+<span class="fc" id="L112">        return new A(&quot;registeredDeserializer&quot;);</span>
+      }
+    };
+<span class="fc" id="L115">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L116">      .registerTypeAdapter(A.class, deserializer)</span>
+<span class="fc" id="L117">      .create();</span>
+<span class="fc" id="L118">    String json = gson.toJson(new A(&quot;abcd&quot;));</span>
+<span class="fc" id="L119">    assertEquals(&quot;\&quot;jsonAdapter\&quot;&quot;, json);</span>
+<span class="fc" id="L120">    A target = gson.fromJson(&quot;abcd&quot;, A.class);</span>
+<span class="fc" id="L121">    assertEquals(&quot;registeredDeserializer&quot;, target.value);</span>
+<span class="fc" id="L122">  }</span>
+
+  public void testIncorrectTypeAdapterFails() {
+    try {
+<span class="nc" id="L126">      String json = new Gson().toJson(new ClassWithIncorrectJsonAdapter(&quot;bar&quot;));</span>
+<span class="nc" id="L127">      fail(json);</span>
+<span class="pc" id="L128">    } catch (ClassCastException expected) {}</span>
+<span class="fc" id="L129">  }</span>
+
+  public void testSuperclassTypeAdapterNotInvoked() {
+<span class="fc" id="L132">    String json = new Gson().toJson(new B(&quot;bar&quot;));</span>
+<span class="fc" id="L133">    assertFalse(json.contains(&quot;jsonAdapter&quot;));</span>
+<span class="fc" id="L134">  }</span>
+
+  public void testNullSafeObjectFromJson() {
+<span class="fc" id="L137">    Gson gson = new Gson();</span>
+<span class="fc" id="L138">    NullableClass fromJson = gson.fromJson(&quot;null&quot;, NullableClass.class);</span>
+<span class="fc" id="L139">    assertNull(fromJson);</span>
+<span class="fc" id="L140">  }</span>
+
+  @JsonAdapter(A.JsonAdapter.class)
+  private static class A {
+    final String value;
+<span class="fc" id="L145">    A(String value) {</span>
+<span class="fc" id="L146">      this.value = value;</span>
+<span class="fc" id="L147">    }</span>
+<span class="fc" id="L148">    static final class JsonAdapter extends TypeAdapter&lt;A&gt; {</span>
+      @Override public void write(JsonWriter out, A value) throws IOException {
+<span class="fc" id="L150">        out.value(&quot;jsonAdapter&quot;);</span>
+<span class="fc" id="L151">      }</span>
+      @Override public A read(JsonReader in) throws IOException {
+<span class="fc" id="L153">        in.nextString();</span>
+<span class="fc" id="L154">        return new A(&quot;jsonAdapter&quot;);</span>
+      }
+    }
+  }
+
+  @JsonAdapter(C.JsonAdapterFactory.class)
+  private static class C {
+    final String value;
+<span class="fc" id="L162">    C(String value) {</span>
+<span class="fc" id="L163">      this.value = value;</span>
+<span class="fc" id="L164">    }</span>
+<span class="fc" id="L165">    static final class JsonAdapterFactory implements TypeAdapterFactory {</span>
+      @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, final TypeToken&lt;T&gt; type) {
+<span class="fc" id="L167">        return new TypeAdapter&lt;T&gt;() {</span>
+          @Override public void write(JsonWriter out, T value) throws IOException {
+<span class="fc" id="L169">            out.value(&quot;jsonAdapterFactory&quot;);</span>
+<span class="fc" id="L170">          }</span>
+          @SuppressWarnings(&quot;unchecked&quot;)
+          @Override public T read(JsonReader in) throws IOException {
+<span class="fc" id="L173">            in.nextString();</span>
+<span class="fc" id="L174">            return (T) new C(&quot;jsonAdapterFactory&quot;);</span>
+          }
+        };
+      }
+    }
+  }
+
+  private static final class B extends A {
+    B(String value) {
+<span class="fc" id="L183">      super(value);</span>
+<span class="fc" id="L184">    }</span>
+  }
+  // Note that the type is NOT TypeAdapter&lt;ClassWithIncorrectJsonAdapter&gt; so this
+  // should cause error
+  @JsonAdapter(A.JsonAdapter.class)
+  private static final class ClassWithIncorrectJsonAdapter {
+    @SuppressWarnings(&quot;unused&quot;) final String value;
+<span class="fc" id="L191">    ClassWithIncorrectJsonAdapter(String value) {</span>
+<span class="fc" id="L192">      this.value = value;</span>
+<span class="fc" id="L193">    }</span>
+  }
+
+  // This class is used in JsonAdapter Javadoc as an example
+  @JsonAdapter(UserJsonAdapter.class)
+  private static class User {
+    final String firstName, lastName;
+<span class="fc" id="L200">    User(String firstName, String lastName) {</span>
+<span class="fc" id="L201">      this.firstName = firstName;</span>
+<span class="fc" id="L202">      this.lastName = lastName;</span>
+<span class="fc" id="L203">    }</span>
+  }
+  private static class UserJsonAdapter extends TypeAdapter&lt;User&gt; {
+    @Override public void write(JsonWriter out, User user) throws IOException {
+      // implement write: combine firstName and lastName into name
+<span class="fc" id="L208">      out.beginObject();</span>
+<span class="fc" id="L209">      out.name(&quot;name&quot;);</span>
+<span class="fc" id="L210">      out.value(user.firstName + &quot; &quot; + user.lastName);</span>
+<span class="fc" id="L211">      out.endObject();</span>
+      // implement the write method
+<span class="fc" id="L213">    }</span>
+    @Override public User read(JsonReader in) throws IOException {
+      // implement read: split name into firstName and lastName
+<span class="fc" id="L216">      in.beginObject();</span>
+<span class="fc" id="L217">      in.nextName();</span>
+<span class="fc" id="L218">      String[] nameParts = in.nextString().split(&quot; &quot;);</span>
+<span class="fc" id="L219">      in.endObject();</span>
+<span class="fc" id="L220">      return new User(nameParts[0], nameParts[1]);</span>
+    }
+  }
+
+  @JsonAdapter(value = NullableClassJsonAdapter.class)
+  private static class NullableClass {
+  }
+
+  private static class NullableClassJsonAdapter extends TypeAdapter&lt;NullableClass&gt; {
+    @Override
+    public void write(JsonWriter out, NullableClass value) throws IOException {
+<span class="nc" id="L231">      out.value(&quot;nullable&quot;);</span>
+<span class="nc" id="L232">    }</span>
+
+    @Override
+    public NullableClass read(JsonReader in) throws IOException {
+<span class="nc" id="L236">      in.nextString();</span>
+<span class="nc" id="L237">      return new NullableClass();</span>
+    }
+  }
+
+<span class="fc" id="L241">  @JsonAdapter(FooJsonAdapter.class)</span>
+<span class="fc" id="L242">  private static enum Foo { BAR, BAZ }</span>
+  private static class FooJsonAdapter extends TypeAdapter&lt;Foo&gt; {
+    @Override public void write(JsonWriter out, Foo value) throws IOException {
+<span class="fc" id="L245">      out.value(value.name().toLowerCase(Locale.US));</span>
+<span class="fc" id="L246">    }</span>
+
+    @Override public Foo read(JsonReader in) throws IOException {
+<span class="fc" id="L249">      return Foo.valueOf(in.nextString().toUpperCase(Locale.US));</span>
+    }
+  }
+
+  public void testIncorrectJsonAdapterType() {
+    try {
+<span class="nc" id="L255">      new Gson().toJson(new D());</span>
+<span class="nc" id="L256">      fail();</span>
+<span class="pc" id="L257">    } catch (IllegalArgumentException expected) {}</span>
+<span class="fc" id="L258">  }</span>
+  @JsonAdapter(Integer.class)
+<span class="fc" id="L260">  private static final class D {</span>
+<span class="fc" id="L261">    @SuppressWarnings(&quot;unused&quot;) final String value = &quot;a&quot;;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

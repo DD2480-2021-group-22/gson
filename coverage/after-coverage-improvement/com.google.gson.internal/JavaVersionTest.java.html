@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JavaVersionTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal</a> &gt; <span class="el_source">JavaVersionTest.java</span></div><h1>JavaVersionTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2017 The Gson authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.internal;
+
+import static org.junit.Assert.*;
+
+import org.junit.Test;
+
+import com.google.gson.internal.JavaVersion;
+
+/**
+ * Unit and functional tests for {@link JavaVersion}
+ *
+ * @author Inderjeet Singh
+ */
+<span class="fc" id="L29">public class JavaVersionTest {</span>
+  // Borrowed some of test strings from https://github.com/prestodb/presto/blob/master/presto-main/src/test/java/com/facebook/presto/server/TestJavaVersion.java
+
+  @Test
+  public void testGetMajorJavaVersion() {
+<span class="fc" id="L34">    JavaVersion.getMajorJavaVersion();</span>
+<span class="fc" id="L35">  }</span>
+
+  @Test
+  public void testJava6() {
+<span class="fc" id="L39">    assertEquals(6, JavaVersion.getMajorJavaVersion(&quot;1.6.0&quot;)); // http://www.oracle.com/technetwork/java/javase/version-6-141920.html</span>
+<span class="fc" id="L40">  }</span>
+
+  @Test
+  public void testJava7() {
+<span class="fc" id="L44">    assertEquals(7, JavaVersion.getMajorJavaVersion(&quot;1.7.0&quot;)); // http://www.oracle.com/technetwork/java/javase/jdk7-naming-418744.html</span>
+<span class="fc" id="L45">  }</span>
+
+  @Test
+  public void testJava8() {
+<span class="fc" id="L49">    assertEquals(8, JavaVersion.getMajorJavaVersion(&quot;1.8&quot;));</span>
+<span class="fc" id="L50">    assertEquals(8, JavaVersion.getMajorJavaVersion(&quot;1.8.0&quot;));</span>
+<span class="fc" id="L51">    assertEquals(8, JavaVersion.getMajorJavaVersion(&quot;1.8.0_131&quot;));</span>
+<span class="fc" id="L52">    assertEquals(8, JavaVersion.getMajorJavaVersion(&quot;1.8.0_60-ea&quot;));</span>
+<span class="fc" id="L53">    assertEquals(8, JavaVersion.getMajorJavaVersion(&quot;1.8.0_111-internal&quot;));</span>
+
+    // openjdk8 per https://github.com/AdoptOpenJDK/openjdk-build/issues/93
+<span class="fc" id="L56">    assertEquals(8, JavaVersion.getMajorJavaVersion(&quot;1.8.0-internal&quot;));</span>
+<span class="fc" id="L57">    assertEquals(8, JavaVersion.getMajorJavaVersion(&quot;1.8.0_131-adoptopenjdk&quot;));</span>
+<span class="fc" id="L58">  }</span>
+
+  @Test
+  public void testJava9() {
+    // Legacy style
+<span class="fc" id="L63">    assertEquals(9, JavaVersion.getMajorJavaVersion(&quot;9.0.4&quot;)); // Oracle JDK 9</span>
+<span class="fc" id="L64">    assertEquals(9, JavaVersion.getMajorJavaVersion(&quot;9-Debian&quot;)); // Debian as reported in https://github.com/google/gson/issues/1310</span>
+    // New style
+<span class="fc" id="L66">    assertEquals(9, JavaVersion.getMajorJavaVersion(&quot;9-ea+19&quot;));</span>
+<span class="fc" id="L67">    assertEquals(9, JavaVersion.getMajorJavaVersion(&quot;9+100&quot;));</span>
+<span class="fc" id="L68">    assertEquals(9, JavaVersion.getMajorJavaVersion(&quot;9.0.1+20&quot;));</span>
+<span class="fc" id="L69">    assertEquals(9, JavaVersion.getMajorJavaVersion(&quot;9.1.1+20&quot;));</span>
+<span class="fc" id="L70">  }</span>
+
+  @Test
+  public void testJava10() {
+<span class="fc" id="L74">    assertEquals(10, JavaVersion.getMajorJavaVersion(&quot;10.0.1&quot;)); // Oracle JDK 10.0.1</span>
+<span class="fc" id="L75">  }</span>
+
+  @Test
+  public void testUnknownVersionFormat() {
+<span class="fc" id="L79">    assertEquals(6, JavaVersion.getMajorJavaVersion(&quot;Java9&quot;)); // unknown format</span>
+<span class="fc" id="L80">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

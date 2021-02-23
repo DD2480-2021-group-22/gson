@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExposeFieldsTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">ExposeFieldsTest.java</span></div><h1>ExposeFieldsTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import java.lang.reflect.Type;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.InstanceCreator;
+import com.google.gson.annotations.Expose;
+
+import junit.framework.TestCase;
+
+/**
+ * Unit tests for the regarding functional &quot;@Expose&quot; type tests.
+ *
+ * @author Joel Leitch
+ */
+<span class="fc" id="L33">public class ExposeFieldsTest extends TestCase {</span>
+
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L39">    super.setUp();</span>
+<span class="fc" id="L40">    gson = new GsonBuilder()</span>
+<span class="fc" id="L41">        .excludeFieldsWithoutExposeAnnotation()</span>
+<span class="fc" id="L42">        .registerTypeAdapter(SomeInterface.class, new SomeInterfaceInstanceCreator())</span>
+<span class="fc" id="L43">        .create();</span>
+<span class="fc" id="L44">  }</span>
+
+  public void testNullExposeFieldSerialization() throws Exception {
+<span class="fc" id="L47">    ClassWithExposedFields object = new ClassWithExposedFields(null, 1);</span>
+<span class="fc" id="L48">    String json = gson.toJson(object);</span>
+
+<span class="fc" id="L50">    assertEquals(object.getExpectedJson(), json);</span>
+<span class="fc" id="L51">  }</span>
+
+  public void testArrayWithOneNullExposeFieldObjectSerialization() throws Exception {
+<span class="fc" id="L54">    ClassWithExposedFields object1 = new ClassWithExposedFields(1, 1);</span>
+<span class="fc" id="L55">    ClassWithExposedFields object2 = new ClassWithExposedFields(null, 1);</span>
+<span class="fc" id="L56">    ClassWithExposedFields object3 = new ClassWithExposedFields(2, 2);</span>
+<span class="fc" id="L57">    ClassWithExposedFields[] objects = { object1, object2, object3 };</span>
+
+<span class="fc" id="L59">    String json = gson.toJson(objects);</span>
+<span class="fc" id="L60">    String expected = new StringBuilder()</span>
+<span class="fc" id="L61">        .append('[').append(object1.getExpectedJson()).append(',')</span>
+<span class="fc" id="L62">        .append(object2.getExpectedJson()).append(',')</span>
+<span class="fc" id="L63">        .append(object3.getExpectedJson()).append(']')</span>
+<span class="fc" id="L64">        .toString();</span>
+
+<span class="fc" id="L66">    assertEquals(expected, json);</span>
+<span class="fc" id="L67">  }</span>
+
+  public void testExposeAnnotationSerialization() throws Exception {
+<span class="fc" id="L70">    ClassWithExposedFields target = new ClassWithExposedFields(1, 2);</span>
+<span class="fc" id="L71">    assertEquals(target.getExpectedJson(), gson.toJson(target));</span>
+<span class="fc" id="L72">  }</span>
+
+  public void testExposeAnnotationDeserialization() throws Exception {
+<span class="fc" id="L75">    String json = &quot;{a:3,b:4,d:20.0}&quot;;</span>
+<span class="fc" id="L76">    ClassWithExposedFields target = gson.fromJson(json, ClassWithExposedFields.class);</span>
+
+<span class="fc" id="L78">    assertEquals(3, (int) target.a);</span>
+<span class="fc" id="L79">    assertNull(target.b);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">    assertFalse(target.d == 20);</span>
+<span class="fc" id="L81">  }</span>
+
+  public void testNoExposedFieldSerialization() throws Exception {
+<span class="fc" id="L84">    ClassWithNoExposedFields obj = new ClassWithNoExposedFields();</span>
+<span class="fc" id="L85">    String json = gson.toJson(obj);</span>
+
+<span class="fc" id="L87">    assertEquals(&quot;{}&quot;, json);</span>
+<span class="fc" id="L88">  }</span>
+
+  public void testNoExposedFieldDeserialization() throws Exception {
+<span class="fc" id="L91">    String json = &quot;{a:4,b:5}&quot;;</span>
+<span class="fc" id="L92">    ClassWithNoExposedFields obj = gson.fromJson(json, ClassWithNoExposedFields.class);</span>
+
+<span class="fc" id="L94">    assertEquals(0, obj.a);</span>
+<span class="fc" id="L95">    assertEquals(1, obj.b);</span>
+<span class="fc" id="L96">  }</span>
+  
+  public void testExposedInterfaceFieldSerialization() throws Exception {
+<span class="fc" id="L99">    String expected = &quot;{\&quot;interfaceField\&quot;:{}}&quot;;</span>
+<span class="fc" id="L100">    ClassWithInterfaceField target = new ClassWithInterfaceField(new SomeObject());</span>
+<span class="fc" id="L101">    String actual = gson.toJson(target);</span>
+    
+<span class="fc" id="L103">    assertEquals(expected, actual);</span>
+<span class="fc" id="L104">  }</span>
+  
+  public void testExposedInterfaceFieldDeserialization() throws Exception {
+<span class="fc" id="L107">    String json = &quot;{\&quot;interfaceField\&quot;:{}}&quot;;</span>
+<span class="fc" id="L108">    ClassWithInterfaceField obj = gson.fromJson(json, ClassWithInterfaceField.class);</span>
+
+<span class="fc" id="L110">    assertNotNull(obj.interfaceField);</span>
+<span class="fc" id="L111">  }</span>
+
+  private static class ClassWithExposedFields {
+    @Expose private final Integer a;
+    private final Integer b;
+    @Expose(serialize = false) final long c;
+    @Expose(deserialize = false) final double d;
+    @Expose(serialize = false, deserialize = false) final char e;
+
+    public ClassWithExposedFields(Integer a, Integer b) {
+<span class="fc" id="L121">      this(a, b, 1L, 2.0, 'a');</span>
+<span class="fc" id="L122">    }</span>
+<span class="fc" id="L123">    public ClassWithExposedFields(Integer a, Integer b, long c, double d, char e) {</span>
+<span class="fc" id="L124">      this.a = a;</span>
+<span class="fc" id="L125">      this.b = b;</span>
+<span class="fc" id="L126">      this.c = c;</span>
+<span class="fc" id="L127">      this.d = d;</span>
+<span class="fc" id="L128">      this.e = e;</span>
+<span class="fc" id="L129">    }</span>
+
+    public String getExpectedJson() {
+<span class="fc" id="L132">      StringBuilder sb = new StringBuilder(&quot;{&quot;);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">      if (a != null) {</span>
+<span class="fc" id="L134">        sb.append(&quot;\&quot;a\&quot;:&quot;).append(a).append(&quot;,&quot;);</span>
+      }
+<span class="fc" id="L136">      sb.append(&quot;\&quot;d\&quot;:&quot;).append(d);</span>
+<span class="fc" id="L137">      sb.append(&quot;}&quot;);</span>
+<span class="fc" id="L138">      return sb.toString();</span>
+    }
+  }
+
+<span class="fc" id="L142">  private static class ClassWithNoExposedFields {</span>
+<span class="fc" id="L143">    private final int a = 0;</span>
+<span class="fc" id="L144">    private final int b = 1;</span>
+  }
+  
+  private static interface SomeInterface {
+    // Empty interface
+  }
+  
+  private static class SomeObject implements SomeInterface {
+    // Do nothing
+  }
+  
+  private static class SomeInterfaceInstanceCreator implements InstanceCreator&lt;SomeInterface&gt; {
+    @Override public SomeInterface createInstance(Type type) {
+<span class="fc" id="L157">      return new SomeObject();</span>
+    }
+  }
+  
+  private static class ClassWithInterfaceField {
+    @Expose
+    private final SomeInterface interfaceField;
+
+<span class="fc" id="L165">    public ClassWithInterfaceField(SomeInterface interfaceField) {</span>
+<span class="fc" id="L166">      this.interfaceField = interfaceField;</span>
+<span class="fc" id="L167">    }</span>
+  }  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

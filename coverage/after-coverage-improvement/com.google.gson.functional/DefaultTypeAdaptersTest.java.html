@@ -1,0 +1,749 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultTypeAdaptersTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">DefaultTypeAdaptersTest.java</span></div><h1>DefaultTypeAdaptersTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.internal.JavaVersion;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URL;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Properties;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.UUID;
+
+import junit.framework.TestCase;
+
+/**
+ * Functional test for Json serialization and deserialization for common classes for which default
+ * support is provided in Gson. The tests for Map types are available in {@link MapTest}.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L69">public class DefaultTypeAdaptersTest extends TestCase {</span>
+  private Gson gson;
+  private TimeZone oldTimeZone;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L75">    super.setUp();</span>
+<span class="fc" id="L76">    this.oldTimeZone = TimeZone.getDefault();</span>
+<span class="fc" id="L77">    TimeZone.setDefault(TimeZone.getTimeZone(&quot;America/Los_Angeles&quot;));</span>
+<span class="fc" id="L78">    Locale.setDefault(Locale.US);</span>
+<span class="fc" id="L79">    gson = new Gson();</span>
+<span class="fc" id="L80">  }</span>
+
+  @Override
+  protected void tearDown() throws Exception {
+<span class="fc" id="L84">    TimeZone.setDefault(oldTimeZone);</span>
+<span class="fc" id="L85">    super.tearDown();</span>
+<span class="fc" id="L86">  }</span>
+
+  public void testClassSerialization() {
+    try {
+<span class="nc" id="L90">      gson.toJson(String.class);</span>
+<span class="pc" id="L91">    } catch (UnsupportedOperationException expected) {}</span>
+    // Override with a custom type adapter for class.
+<span class="fc" id="L93">    gson = new GsonBuilder().registerTypeAdapter(Class.class, new MyClassTypeAdapter()).create();</span>
+<span class="fc" id="L94">    assertEquals(&quot;\&quot;java.lang.String\&quot;&quot;, gson.toJson(String.class));</span>
+<span class="fc" id="L95">  }</span>
+
+  public void testClassDeserialization() {
+    try {
+<span class="nc" id="L99">      gson.fromJson(&quot;String.class&quot;, String.class.getClass());</span>
+<span class="pc" id="L100">    } catch (UnsupportedOperationException expected) {}</span>
+    // Override with a custom type adapter for class.
+<span class="fc" id="L102">    gson = new GsonBuilder().registerTypeAdapter(Class.class, new MyClassTypeAdapter()).create();</span>
+<span class="fc" id="L103">    assertEquals(String.class, gson.fromJson(&quot;java.lang.String&quot;, Class.class));</span>
+<span class="fc" id="L104">  }</span>
+
+  public void testUrlSerialization() throws Exception {
+<span class="fc" id="L107">    String urlValue = &quot;http://google.com/&quot;;</span>
+<span class="fc" id="L108">    URL url = new URL(urlValue);</span>
+<span class="fc" id="L109">    assertEquals(&quot;\&quot;http://google.com/\&quot;&quot;, gson.toJson(url));</span>
+<span class="fc" id="L110">  }</span>
+
+  public void testUrlDeserialization() {
+<span class="fc" id="L113">    String urlValue = &quot;http://google.com/&quot;;</span>
+<span class="fc" id="L114">    String json = &quot;'http:\\/\\/google.com\\/'&quot;;</span>
+<span class="fc" id="L115">    URL target = gson.fromJson(json, URL.class);</span>
+<span class="fc" id="L116">    assertEquals(urlValue, target.toExternalForm());</span>
+
+<span class="fc" id="L118">    gson.fromJson('&quot;' + urlValue + '&quot;', URL.class);</span>
+<span class="fc" id="L119">    assertEquals(urlValue, target.toExternalForm());</span>
+<span class="fc" id="L120">  }</span>
+
+  public void testUrlNullSerialization() throws Exception {
+<span class="fc" id="L123">    ClassWithUrlField target = new ClassWithUrlField();</span>
+<span class="fc" id="L124">    assertEquals(&quot;{}&quot;, gson.toJson(target));</span>
+<span class="fc" id="L125">  }</span>
+
+  public void testUrlNullDeserialization() {
+<span class="fc" id="L128">    String json = &quot;{}&quot;;</span>
+<span class="fc" id="L129">    ClassWithUrlField target = gson.fromJson(json, ClassWithUrlField.class);</span>
+<span class="fc" id="L130">    assertNull(target.url);</span>
+<span class="fc" id="L131">  }</span>
+
+  private static class ClassWithUrlField {
+    URL url;
+  }
+
+  public void testUriSerialization() throws Exception {
+<span class="fc" id="L138">    String uriValue = &quot;http://google.com/&quot;;</span>
+<span class="fc" id="L139">    URI uri = new URI(uriValue);</span>
+<span class="fc" id="L140">    assertEquals(&quot;\&quot;http://google.com/\&quot;&quot;, gson.toJson(uri));</span>
+<span class="fc" id="L141">  }</span>
+
+  public void testUriDeserialization() {
+<span class="fc" id="L144">    String uriValue = &quot;http://google.com/&quot;;</span>
+<span class="fc" id="L145">    String json = '&quot;' + uriValue + '&quot;';</span>
+<span class="fc" id="L146">    URI target = gson.fromJson(json, URI.class);</span>
+<span class="fc" id="L147">    assertEquals(uriValue, target.toASCIIString());</span>
+<span class="fc" id="L148">  }</span>
+  
+  public void testNullSerialization() throws Exception {
+<span class="fc" id="L151">    testNullSerializationAndDeserialization(Boolean.class);</span>
+<span class="fc" id="L152">    testNullSerializationAndDeserialization(Byte.class);</span>
+<span class="fc" id="L153">    testNullSerializationAndDeserialization(Short.class);</span>
+<span class="fc" id="L154">    testNullSerializationAndDeserialization(Integer.class);</span>
+<span class="fc" id="L155">    testNullSerializationAndDeserialization(Long.class);</span>
+<span class="fc" id="L156">    testNullSerializationAndDeserialization(Double.class);</span>
+<span class="fc" id="L157">    testNullSerializationAndDeserialization(Float.class);</span>
+<span class="fc" id="L158">    testNullSerializationAndDeserialization(Number.class);</span>
+<span class="fc" id="L159">    testNullSerializationAndDeserialization(Character.class);</span>
+<span class="fc" id="L160">    testNullSerializationAndDeserialization(String.class);</span>
+<span class="fc" id="L161">    testNullSerializationAndDeserialization(StringBuilder.class);</span>
+<span class="fc" id="L162">    testNullSerializationAndDeserialization(StringBuffer.class);</span>
+<span class="fc" id="L163">    testNullSerializationAndDeserialization(BigDecimal.class);</span>
+<span class="fc" id="L164">    testNullSerializationAndDeserialization(BigInteger.class);</span>
+<span class="fc" id="L165">    testNullSerializationAndDeserialization(TreeSet.class);</span>
+<span class="fc" id="L166">    testNullSerializationAndDeserialization(ArrayList.class);</span>
+<span class="fc" id="L167">    testNullSerializationAndDeserialization(HashSet.class);</span>
+<span class="fc" id="L168">    testNullSerializationAndDeserialization(Properties.class);</span>
+<span class="fc" id="L169">    testNullSerializationAndDeserialization(URL.class);</span>
+<span class="fc" id="L170">    testNullSerializationAndDeserialization(URI.class);</span>
+<span class="fc" id="L171">    testNullSerializationAndDeserialization(UUID.class);</span>
+<span class="fc" id="L172">    testNullSerializationAndDeserialization(Locale.class);</span>
+<span class="fc" id="L173">    testNullSerializationAndDeserialization(InetAddress.class);</span>
+<span class="fc" id="L174">    testNullSerializationAndDeserialization(BitSet.class);</span>
+<span class="fc" id="L175">    testNullSerializationAndDeserialization(Date.class);</span>
+<span class="fc" id="L176">    testNullSerializationAndDeserialization(GregorianCalendar.class);</span>
+<span class="fc" id="L177">    testNullSerializationAndDeserialization(Calendar.class);</span>
+<span class="fc" id="L178">    testNullSerializationAndDeserialization(Time.class);</span>
+<span class="fc" id="L179">    testNullSerializationAndDeserialization(Timestamp.class);</span>
+<span class="fc" id="L180">    testNullSerializationAndDeserialization(java.sql.Date.class);</span>
+<span class="fc" id="L181">    testNullSerializationAndDeserialization(Enum.class);</span>
+<span class="fc" id="L182">    testNullSerializationAndDeserialization(Class.class);</span>
+<span class="fc" id="L183">  }</span>
+
+  private void testNullSerializationAndDeserialization(Class&lt;?&gt; c) {
+<span class="fc" id="L186">    assertEquals(&quot;null&quot;, gson.toJson(null, c));</span>
+<span class="fc" id="L187">    assertEquals(null, gson.fromJson(&quot;null&quot;, c));</span>
+<span class="fc" id="L188">  }</span>
+
+  public void testUuidSerialization() throws Exception {
+<span class="fc" id="L191">    String uuidValue = &quot;c237bec1-19ef-4858-a98e-521cf0aad4c0&quot;;</span>
+<span class="fc" id="L192">    UUID uuid = UUID.fromString(uuidValue);</span>
+<span class="fc" id="L193">    assertEquals('&quot;' + uuidValue + '&quot;', gson.toJson(uuid));</span>
+<span class="fc" id="L194">  }</span>
+
+  public void testUuidDeserialization() {
+<span class="fc" id="L197">    String uuidValue = &quot;c237bec1-19ef-4858-a98e-521cf0aad4c0&quot;;</span>
+<span class="fc" id="L198">    String json = '&quot;' + uuidValue + '&quot;';</span>
+<span class="fc" id="L199">    UUID target = gson.fromJson(json, UUID.class);</span>
+<span class="fc" id="L200">    assertEquals(uuidValue, target.toString());</span>
+<span class="fc" id="L201">  }</span>
+
+  public void testLocaleSerializationWithLanguage() {
+<span class="fc" id="L204">    Locale target = new Locale(&quot;en&quot;);</span>
+<span class="fc" id="L205">    assertEquals(&quot;\&quot;en\&quot;&quot;, gson.toJson(target));</span>
+<span class="fc" id="L206">  }</span>
+
+  public void testLocaleDeserializationWithLanguage() {
+<span class="fc" id="L209">    String json = &quot;\&quot;en\&quot;&quot;;</span>
+<span class="fc" id="L210">    Locale locale = gson.fromJson(json, Locale.class);</span>
+<span class="fc" id="L211">    assertEquals(&quot;en&quot;, locale.getLanguage());</span>
+<span class="fc" id="L212">  }</span>
+
+  public void testLocaleSerializationWithLanguageCountry() {
+<span class="fc" id="L215">    Locale target = Locale.CANADA_FRENCH;</span>
+<span class="fc" id="L216">    assertEquals(&quot;\&quot;fr_CA\&quot;&quot;, gson.toJson(target));</span>
+<span class="fc" id="L217">  }</span>
+
+  public void testLocaleDeserializationWithLanguageCountry() {
+<span class="fc" id="L220">    String json = &quot;\&quot;fr_CA\&quot;&quot;;</span>
+<span class="fc" id="L221">    Locale locale = gson.fromJson(json, Locale.class);</span>
+<span class="fc" id="L222">    assertEquals(Locale.CANADA_FRENCH, locale);</span>
+<span class="fc" id="L223">  }</span>
+
+  public void testLocaleSerializationWithLanguageCountryVariant() {
+<span class="fc" id="L226">    Locale target = new Locale(&quot;de&quot;, &quot;DE&quot;, &quot;EURO&quot;);</span>
+<span class="fc" id="L227">    String json = gson.toJson(target);</span>
+<span class="fc" id="L228">    assertEquals(&quot;\&quot;de_DE_EURO\&quot;&quot;, json);</span>
+<span class="fc" id="L229">  }</span>
+
+  public void testLocaleDeserializationWithLanguageCountryVariant() {
+<span class="fc" id="L232">    String json = &quot;\&quot;de_DE_EURO\&quot;&quot;;</span>
+<span class="fc" id="L233">    Locale locale = gson.fromJson(json, Locale.class);</span>
+<span class="fc" id="L234">    assertEquals(&quot;de&quot;, locale.getLanguage());</span>
+<span class="fc" id="L235">    assertEquals(&quot;DE&quot;, locale.getCountry());</span>
+<span class="fc" id="L236">    assertEquals(&quot;EURO&quot;, locale.getVariant());</span>
+<span class="fc" id="L237">  }</span>
+
+  public void testBigDecimalFieldSerialization() {
+<span class="fc" id="L240">    ClassWithBigDecimal target = new ClassWithBigDecimal(&quot;-122.01e-21&quot;);</span>
+<span class="fc" id="L241">    String json = gson.toJson(target);</span>
+<span class="fc" id="L242">    String actual = json.substring(json.indexOf(':') + 1, json.indexOf('}'));</span>
+<span class="fc" id="L243">    assertEquals(target.value, new BigDecimal(actual));</span>
+<span class="fc" id="L244">  }</span>
+
+  public void testBigDecimalFieldDeserialization() {
+<span class="fc" id="L247">    ClassWithBigDecimal expected = new ClassWithBigDecimal(&quot;-122.01e-21&quot;);</span>
+<span class="fc" id="L248">    String json = expected.getExpectedJson();</span>
+<span class="fc" id="L249">    ClassWithBigDecimal actual = gson.fromJson(json, ClassWithBigDecimal.class);</span>
+<span class="fc" id="L250">    assertEquals(expected.value, actual.value);</span>
+<span class="fc" id="L251">  }</span>
+
+  public void testBadValueForBigDecimalDeserialization() {
+    try {
+<span class="nc" id="L255">      gson.fromJson(&quot;{\&quot;value\&quot;=1.5e-1.0031}&quot;, ClassWithBigDecimal.class);</span>
+<span class="nc" id="L256">      fail(&quot;Exponent of a BigDecimal must be an integer value.&quot;);</span>
+<span class="pc" id="L257">    } catch (JsonParseException expected) { }</span>
+<span class="fc" id="L258">  }</span>
+
+  public void testBigIntegerFieldSerialization() {
+<span class="fc" id="L261">    ClassWithBigInteger target = new ClassWithBigInteger(&quot;23232323215323234234324324324324324324&quot;);</span>
+<span class="fc" id="L262">    String json = gson.toJson(target);</span>
+<span class="fc" id="L263">    assertEquals(target.getExpectedJson(), json);</span>
+<span class="fc" id="L264">  }</span>
+
+  public void testBigIntegerFieldDeserialization() {
+<span class="fc" id="L267">    ClassWithBigInteger expected = new ClassWithBigInteger(&quot;879697697697697697697697697697697697&quot;);</span>
+<span class="fc" id="L268">    String json = expected.getExpectedJson();</span>
+<span class="fc" id="L269">    ClassWithBigInteger actual = gson.fromJson(json, ClassWithBigInteger.class);</span>
+<span class="fc" id="L270">    assertEquals(expected.value, actual.value);</span>
+<span class="fc" id="L271">  }</span>
+  
+  public void testOverrideBigIntegerTypeAdapter() throws Exception {
+<span class="fc" id="L274">    gson = new GsonBuilder()</span>
+<span class="fc" id="L275">        .registerTypeAdapter(BigInteger.class, new NumberAsStringAdapter(BigInteger.class))</span>
+<span class="fc" id="L276">        .create();</span>
+<span class="fc" id="L277">    assertEquals(&quot;\&quot;123\&quot;&quot;, gson.toJson(new BigInteger(&quot;123&quot;), BigInteger.class));</span>
+<span class="fc" id="L278">    assertEquals(new BigInteger(&quot;123&quot;), gson.fromJson(&quot;\&quot;123\&quot;&quot;, BigInteger.class));</span>
+<span class="fc" id="L279">  }</span>
+
+  public void testOverrideBigDecimalTypeAdapter() throws Exception {
+<span class="fc" id="L282">    gson = new GsonBuilder()</span>
+<span class="fc" id="L283">        .registerTypeAdapter(BigDecimal.class, new NumberAsStringAdapter(BigDecimal.class))</span>
+<span class="fc" id="L284">        .create();</span>
+<span class="fc" id="L285">    assertEquals(&quot;\&quot;1.1\&quot;&quot;, gson.toJson(new BigDecimal(&quot;1.1&quot;), BigDecimal.class));</span>
+<span class="fc" id="L286">    assertEquals(new BigDecimal(&quot;1.1&quot;), gson.fromJson(&quot;\&quot;1.1\&quot;&quot;, BigDecimal.class));</span>
+<span class="fc" id="L287">  }</span>
+
+  public void testSetSerialization() throws Exception {
+<span class="fc" id="L290">    Gson gson = new Gson();</span>
+<span class="fc" id="L291">    HashSet&lt;String&gt; s = new HashSet&lt;String&gt;();</span>
+<span class="fc" id="L292">    s.add(&quot;blah&quot;);</span>
+<span class="fc" id="L293">    String json = gson.toJson(s);</span>
+<span class="fc" id="L294">    assertEquals(&quot;[\&quot;blah\&quot;]&quot;, json);</span>
+
+<span class="fc" id="L296">    json = gson.toJson(s, Set.class);</span>
+<span class="fc" id="L297">    assertEquals(&quot;[\&quot;blah\&quot;]&quot;, json);</span>
+<span class="fc" id="L298">  }</span>
+
+  public void testBitSetSerialization() throws Exception {
+<span class="fc" id="L301">    Gson gson = new Gson();</span>
+<span class="fc" id="L302">    BitSet bits = new BitSet();</span>
+<span class="fc" id="L303">    bits.set(1);</span>
+<span class="fc" id="L304">    bits.set(3, 6);</span>
+<span class="fc" id="L305">    bits.set(9);</span>
+<span class="fc" id="L306">    String json = gson.toJson(bits);</span>
+<span class="fc" id="L307">    assertEquals(&quot;[0,1,0,1,1,1,0,0,0,1]&quot;, json);</span>
+<span class="fc" id="L308">  }</span>
+
+  public void testBitSetDeserialization() throws Exception {
+<span class="fc" id="L311">    BitSet expected = new BitSet();</span>
+<span class="fc" id="L312">    expected.set(0);</span>
+<span class="fc" id="L313">    expected.set(2, 6);</span>
+<span class="fc" id="L314">    expected.set(8);</span>
+
+<span class="fc" id="L316">    Gson gson = new Gson();</span>
+<span class="fc" id="L317">    String json = gson.toJson(expected);</span>
+<span class="fc" id="L318">    assertEquals(expected, gson.fromJson(json, BitSet.class));</span>
+
+<span class="fc" id="L320">    json = &quot;[1,0,1,1,1,1,0,0,1,0,0,0]&quot;;</span>
+<span class="fc" id="L321">    assertEquals(expected, gson.fromJson(json, BitSet.class));</span>
+
+<span class="fc" id="L323">    json = &quot;[\&quot;1\&quot;,\&quot;0\&quot;,\&quot;1\&quot;,\&quot;1\&quot;,\&quot;1\&quot;,\&quot;1\&quot;,\&quot;0\&quot;,\&quot;0\&quot;,\&quot;1\&quot;]&quot;;</span>
+<span class="fc" id="L324">    assertEquals(expected, gson.fromJson(json, BitSet.class));</span>
+
+<span class="fc" id="L326">    json = &quot;[true,false,true,true,true,true,false,false,true,false,false]&quot;;</span>
+<span class="fc" id="L327">    assertEquals(expected, gson.fromJson(json, BitSet.class));</span>
+<span class="fc" id="L328">  }</span>
+
+  public void testDefaultDateSerialization() {
+<span class="fc" id="L331">    Date now = new Date(1315806903103L);</span>
+<span class="fc" id="L332">    String json = gson.toJson(now);</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">    if (JavaVersion.isJava9OrLater()) {</span>
+<span class="fc" id="L334">      assertEquals(&quot;\&quot;Sep 11, 2011, 10:55:03 PM\&quot;&quot;, json);</span>
+    } else {
+<span class="nc" id="L336">      assertEquals(&quot;\&quot;Sep 11, 2011 10:55:03 PM\&quot;&quot;, json);</span>
+    }
+<span class="fc" id="L338">  }</span>
+
+  public void testDefaultDateDeserialization() {
+<span class="fc" id="L341">    String json = &quot;'Dec 13, 2009 07:18:02 AM'&quot;;</span>
+<span class="fc" id="L342">    Date extracted = gson.fromJson(json, Date.class);</span>
+<span class="fc" id="L343">    assertEqualsDate(extracted, 2009, 11, 13);</span>
+<span class="fc" id="L344">    assertEqualsTime(extracted, 7, 18, 2);</span>
+<span class="fc" id="L345">  }</span>
+
+  // Date can not directly be compared with another instance since the deserialization loses the
+  // millisecond portion.
+  @SuppressWarnings(&quot;deprecation&quot;)
+  private void assertEqualsDate(Date date, int year, int month, int day) {
+<span class="fc" id="L351">    assertEquals(year-1900, date.getYear());</span>
+<span class="fc" id="L352">    assertEquals(month, date.getMonth());</span>
+<span class="fc" id="L353">    assertEquals(day, date.getDate());</span>
+<span class="fc" id="L354">  }</span>
+
+  @SuppressWarnings(&quot;deprecation&quot;)
+  private void assertEqualsTime(Date date, int hours, int minutes, int seconds) {
+<span class="fc" id="L358">    assertEquals(hours, date.getHours());</span>
+<span class="fc" id="L359">    assertEquals(minutes, date.getMinutes());</span>
+<span class="fc" id="L360">    assertEquals(seconds, date.getSeconds());</span>
+<span class="fc" id="L361">  }</span>
+
+  public void testDefaultJavaSqlDateSerialization() {
+<span class="fc" id="L364">    java.sql.Date instant = new java.sql.Date(1259875082000L);</span>
+<span class="fc" id="L365">    String json = gson.toJson(instant);</span>
+<span class="fc" id="L366">    assertEquals(&quot;\&quot;Dec 3, 2009\&quot;&quot;, json);</span>
+<span class="fc" id="L367">  }</span>
+
+  public void testDefaultJavaSqlDateDeserialization() {
+<span class="fc" id="L370">    String json = &quot;'Dec 3, 2009'&quot;;</span>
+<span class="fc" id="L371">    java.sql.Date extracted = gson.fromJson(json, java.sql.Date.class);</span>
+<span class="fc" id="L372">    assertEqualsDate(extracted, 2009, 11, 3);</span>
+<span class="fc" id="L373">  }</span>
+
+  public void testDefaultJavaSqlTimestampSerialization() {
+<span class="fc" id="L376">    Timestamp now = new java.sql.Timestamp(1259875082000L);</span>
+<span class="fc" id="L377">    String json = gson.toJson(now);</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">    if (JavaVersion.isJava9OrLater()) {</span>
+<span class="fc" id="L379">      assertEquals(&quot;\&quot;Dec 3, 2009, 1:18:02 PM\&quot;&quot;, json);</span>
+    } else {
+<span class="nc" id="L381">      assertEquals(&quot;\&quot;Dec 3, 2009 1:18:02 PM\&quot;&quot;, json);</span>
+    }
+<span class="fc" id="L383">  }</span>
+
+  public void testDefaultJavaSqlTimestampDeserialization() {
+<span class="fc" id="L386">    String json = &quot;'Dec 3, 2009 1:18:02 PM'&quot;;</span>
+<span class="fc" id="L387">    Timestamp extracted = gson.fromJson(json, Timestamp.class);</span>
+<span class="fc" id="L388">    assertEqualsDate(extracted, 2009, 11, 3);</span>
+<span class="fc" id="L389">    assertEqualsTime(extracted, 13, 18, 2);</span>
+<span class="fc" id="L390">  }</span>
+
+  public void testDefaultJavaSqlTimeSerialization() {
+<span class="fc" id="L393">    Time now = new Time(1259875082000L);</span>
+<span class="fc" id="L394">    String json = gson.toJson(now);</span>
+<span class="fc" id="L395">    assertEquals(&quot;\&quot;01:18:02 PM\&quot;&quot;, json);</span>
+<span class="fc" id="L396">  }</span>
+
+  public void testDefaultJavaSqlTimeDeserialization() {
+<span class="fc" id="L399">    String json = &quot;'1:18:02 PM'&quot;;</span>
+<span class="fc" id="L400">    Time extracted = gson.fromJson(json, Time.class);</span>
+<span class="fc" id="L401">    assertEqualsTime(extracted, 13, 18, 2);</span>
+<span class="fc" id="L402">  }</span>
+
+  public void testDefaultDateSerializationUsingBuilder() throws Exception {
+<span class="fc" id="L405">    Gson gson = new GsonBuilder().create();</span>
+<span class="fc" id="L406">    Date now = new Date(1315806903103L);</span>
+<span class="fc" id="L407">    String json = gson.toJson(now);</span>
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">    if (JavaVersion.isJava9OrLater()) {</span>
+<span class="fc" id="L409">      assertEquals(&quot;\&quot;Sep 11, 2011, 10:55:03 PM\&quot;&quot;, json);</span>
+    } else {
+<span class="nc" id="L411">      assertEquals(&quot;\&quot;Sep 11, 2011 10:55:03 PM\&quot;&quot;, json);</span>
+    }
+<span class="fc" id="L413">  }</span>
+
+  public void testDefaultDateDeserializationUsingBuilder() throws Exception {
+<span class="fc" id="L416">    Gson gson = new GsonBuilder().create();</span>
+<span class="fc" id="L417">    Date now = new Date(1315806903103L);</span>
+<span class="fc" id="L418">    String json = gson.toJson(now);</span>
+<span class="fc" id="L419">    Date extracted = gson.fromJson(json, Date.class);</span>
+<span class="fc" id="L420">    assertEquals(now.toString(), extracted.toString());</span>
+<span class="fc" id="L421">  }</span>
+
+  public void testDefaultCalendarSerialization() throws Exception {
+<span class="fc" id="L424">    Gson gson = new GsonBuilder().create();</span>
+<span class="fc" id="L425">    String json = gson.toJson(Calendar.getInstance());</span>
+<span class="fc" id="L426">    assertTrue(json.contains(&quot;year&quot;));</span>
+<span class="fc" id="L427">    assertTrue(json.contains(&quot;month&quot;));</span>
+<span class="fc" id="L428">    assertTrue(json.contains(&quot;dayOfMonth&quot;));</span>
+<span class="fc" id="L429">    assertTrue(json.contains(&quot;hourOfDay&quot;));</span>
+<span class="fc" id="L430">    assertTrue(json.contains(&quot;minute&quot;));</span>
+<span class="fc" id="L431">    assertTrue(json.contains(&quot;second&quot;));</span>
+<span class="fc" id="L432">  }</span>
+
+  public void testDefaultCalendarDeserialization() throws Exception {
+<span class="fc" id="L435">    Gson gson = new GsonBuilder().create();</span>
+<span class="fc" id="L436">    String json = &quot;{year:2009,month:2,dayOfMonth:11,hourOfDay:14,minute:29,second:23}&quot;;</span>
+<span class="fc" id="L437">    Calendar cal = gson.fromJson(json, Calendar.class);</span>
+<span class="fc" id="L438">    assertEquals(2009, cal.get(Calendar.YEAR));</span>
+<span class="fc" id="L439">    assertEquals(2, cal.get(Calendar.MONTH));</span>
+<span class="fc" id="L440">    assertEquals(11, cal.get(Calendar.DAY_OF_MONTH));</span>
+<span class="fc" id="L441">    assertEquals(14, cal.get(Calendar.HOUR_OF_DAY));</span>
+<span class="fc" id="L442">    assertEquals(29, cal.get(Calendar.MINUTE));</span>
+<span class="fc" id="L443">    assertEquals(23, cal.get(Calendar.SECOND));</span>
+<span class="fc" id="L444">  }</span>
+
+  public void testDefaultGregorianCalendarSerialization() throws Exception {
+<span class="fc" id="L447">    Gson gson = new GsonBuilder().create();</span>
+<span class="fc" id="L448">    GregorianCalendar cal = new GregorianCalendar();</span>
+<span class="fc" id="L449">    String json = gson.toJson(cal);</span>
+<span class="fc" id="L450">    assertTrue(json.contains(&quot;year&quot;));</span>
+<span class="fc" id="L451">    assertTrue(json.contains(&quot;month&quot;));</span>
+<span class="fc" id="L452">    assertTrue(json.contains(&quot;dayOfMonth&quot;));</span>
+<span class="fc" id="L453">    assertTrue(json.contains(&quot;hourOfDay&quot;));</span>
+<span class="fc" id="L454">    assertTrue(json.contains(&quot;minute&quot;));</span>
+<span class="fc" id="L455">    assertTrue(json.contains(&quot;second&quot;));</span>
+<span class="fc" id="L456">  }</span>
+
+  public void testDefaultGregorianCalendarDeserialization() throws Exception {
+<span class="fc" id="L459">    Gson gson = new GsonBuilder().create();</span>
+<span class="fc" id="L460">    String json = &quot;{year:2009,month:2,dayOfMonth:11,hourOfDay:14,minute:29,second:23}&quot;;</span>
+<span class="fc" id="L461">    GregorianCalendar cal = gson.fromJson(json, GregorianCalendar.class);</span>
+<span class="fc" id="L462">    assertEquals(2009, cal.get(Calendar.YEAR));</span>
+<span class="fc" id="L463">    assertEquals(2, cal.get(Calendar.MONTH));</span>
+<span class="fc" id="L464">    assertEquals(11, cal.get(Calendar.DAY_OF_MONTH));</span>
+<span class="fc" id="L465">    assertEquals(14, cal.get(Calendar.HOUR_OF_DAY));</span>
+<span class="fc" id="L466">    assertEquals(29, cal.get(Calendar.MINUTE));</span>
+<span class="fc" id="L467">    assertEquals(23, cal.get(Calendar.SECOND));</span>
+<span class="fc" id="L468">  }</span>
+
+  public void testDateSerializationWithPattern() throws Exception {
+<span class="fc" id="L471">    String pattern = &quot;yyyy-MM-dd&quot;;</span>
+<span class="fc" id="L472">    Gson gson = new GsonBuilder().setDateFormat(DateFormat.FULL).setDateFormat(pattern).create();</span>
+<span class="fc" id="L473">    Date now = new Date(1315806903103L);</span>
+<span class="fc" id="L474">    String json = gson.toJson(now);</span>
+<span class="fc" id="L475">    assertEquals(&quot;\&quot;2011-09-11\&quot;&quot;, json);</span>
+<span class="fc" id="L476">  }</span>
+
+  @SuppressWarnings(&quot;deprecation&quot;)
+  public void testDateDeserializationWithPattern() throws Exception {
+<span class="fc" id="L480">    String pattern = &quot;yyyy-MM-dd&quot;;</span>
+<span class="fc" id="L481">    Gson gson = new GsonBuilder().setDateFormat(DateFormat.FULL).setDateFormat(pattern).create();</span>
+<span class="fc" id="L482">    Date now = new Date(1315806903103L);</span>
+<span class="fc" id="L483">    String json = gson.toJson(now);</span>
+<span class="fc" id="L484">    Date extracted = gson.fromJson(json, Date.class);</span>
+<span class="fc" id="L485">    assertEquals(now.getYear(), extracted.getYear());</span>
+<span class="fc" id="L486">    assertEquals(now.getMonth(), extracted.getMonth());</span>
+<span class="fc" id="L487">    assertEquals(now.getDay(), extracted.getDay());</span>
+<span class="fc" id="L488">  }</span>
+
+  public void testDateSerializationWithPatternNotOverridenByTypeAdapter() throws Exception {
+<span class="fc" id="L491">    String pattern = &quot;yyyy-MM-dd&quot;;</span>
+<span class="fc" id="L492">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L493">        .setDateFormat(pattern)</span>
+<span class="fc" id="L494">        .registerTypeAdapter(Date.class, new JsonDeserializer&lt;Date&gt;() {</span>
+          public Date deserialize(JsonElement json, Type typeOfT,
+              JsonDeserializationContext context)
+              throws JsonParseException {
+<span class="nc" id="L498">            return new Date(1315806903103L);</span>
+          }
+        })
+<span class="fc" id="L501">        .create();</span>
+
+<span class="fc" id="L503">    Date now = new Date(1315806903103L);</span>
+<span class="fc" id="L504">    String json = gson.toJson(now);</span>
+<span class="fc" id="L505">    assertEquals(&quot;\&quot;2011-09-11\&quot;&quot;, json);</span>
+<span class="fc" id="L506">  }</span>
+
+  // http://code.google.com/p/google-gson/issues/detail?id=230
+  public void testDateSerializationInCollection() throws Exception {
+<span class="fc" id="L510">    Type listOfDates = new TypeToken&lt;List&lt;Date&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L511">    TimeZone defaultTimeZone = TimeZone.getDefault();</span>
+<span class="fc" id="L512">    TimeZone.setDefault(TimeZone.getTimeZone(&quot;UTC&quot;));</span>
+<span class="fc" id="L513">    Locale defaultLocale = Locale.getDefault();</span>
+<span class="fc" id="L514">    Locale.setDefault(Locale.US);</span>
+    try {
+<span class="fc" id="L516">      Gson gson = new GsonBuilder().setDateFormat(&quot;yyyy-MM-dd&quot;).create();</span>
+<span class="fc" id="L517">      List&lt;Date&gt; dates = Arrays.asList(new Date(0));</span>
+<span class="fc" id="L518">      String json = gson.toJson(dates, listOfDates);</span>
+<span class="fc" id="L519">      assertEquals(&quot;[\&quot;1970-01-01\&quot;]&quot;, json);</span>
+<span class="fc" id="L520">      assertEquals(0L, gson.&lt;List&lt;Date&gt;&gt;fromJson(&quot;[\&quot;1970-01-01\&quot;]&quot;, listOfDates).get(0).getTime());</span>
+    } finally {
+<span class="fc" id="L522">      TimeZone.setDefault(defaultTimeZone);</span>
+<span class="fc" id="L523">      Locale.setDefault(defaultLocale);</span>
+    }
+<span class="fc" id="L525">  }</span>
+
+  // http://code.google.com/p/google-gson/issues/detail?id=230
+  public void testTimestampSerialization() throws Exception {
+<span class="fc" id="L529">    TimeZone defaultTimeZone = TimeZone.getDefault();</span>
+<span class="fc" id="L530">    TimeZone.setDefault(TimeZone.getTimeZone(&quot;UTC&quot;));</span>
+<span class="fc" id="L531">    Locale defaultLocale = Locale.getDefault();</span>
+<span class="fc" id="L532">    Locale.setDefault(Locale.US);</span>
+    try {
+<span class="fc" id="L534">      Timestamp timestamp = new Timestamp(0L);</span>
+<span class="fc" id="L535">      Gson gson = new GsonBuilder().setDateFormat(&quot;yyyy-MM-dd&quot;).create();</span>
+<span class="fc" id="L536">      String json = gson.toJson(timestamp, Timestamp.class);</span>
+<span class="fc" id="L537">      assertEquals(&quot;\&quot;1970-01-01\&quot;&quot;, json);</span>
+<span class="fc" id="L538">      assertEquals(0, gson.fromJson(&quot;\&quot;1970-01-01\&quot;&quot;, Timestamp.class).getTime());</span>
+    } finally {
+<span class="fc" id="L540">      TimeZone.setDefault(defaultTimeZone);</span>
+<span class="fc" id="L541">      Locale.setDefault(defaultLocale);</span>
+    }
+<span class="fc" id="L543">  }</span>
+
+  // http://code.google.com/p/google-gson/issues/detail?id=230
+  public void testSqlDateSerialization() throws Exception {
+<span class="fc" id="L547">    TimeZone defaultTimeZone = TimeZone.getDefault();</span>
+<span class="fc" id="L548">    TimeZone.setDefault(TimeZone.getTimeZone(&quot;UTC&quot;));</span>
+<span class="fc" id="L549">    Locale defaultLocale = Locale.getDefault();</span>
+<span class="fc" id="L550">    Locale.setDefault(Locale.US);</span>
+    try {
+<span class="fc" id="L552">      java.sql.Date sqlDate = new java.sql.Date(0L);</span>
+<span class="fc" id="L553">      Gson gson = new GsonBuilder().setDateFormat(&quot;yyyy-MM-dd&quot;).create();</span>
+<span class="fc" id="L554">      String json = gson.toJson(sqlDate, Timestamp.class);</span>
+<span class="fc" id="L555">      assertEquals(&quot;\&quot;1970-01-01\&quot;&quot;, json);</span>
+<span class="fc" id="L556">      assertEquals(0, gson.fromJson(&quot;\&quot;1970-01-01\&quot;&quot;, java.sql.Date.class).getTime());</span>
+    } finally {
+<span class="fc" id="L558">      TimeZone.setDefault(defaultTimeZone);</span>
+<span class="fc" id="L559">      Locale.setDefault(defaultLocale);</span>
+    }
+<span class="fc" id="L561">  }</span>
+
+  public void testJsonPrimitiveSerialization() {
+<span class="fc" id="L564">    assertEquals(&quot;5&quot;, gson.toJson(new JsonPrimitive(5), JsonElement.class));</span>
+<span class="fc" id="L565">    assertEquals(&quot;true&quot;, gson.toJson(new JsonPrimitive(true), JsonElement.class));</span>
+<span class="fc" id="L566">    assertEquals(&quot;\&quot;foo\&quot;&quot;, gson.toJson(new JsonPrimitive(&quot;foo&quot;), JsonElement.class));</span>
+<span class="fc" id="L567">    assertEquals(&quot;\&quot;a\&quot;&quot;, gson.toJson(new JsonPrimitive('a'), JsonElement.class));</span>
+<span class="fc" id="L568">  }</span>
+
+  public void testJsonPrimitiveDeserialization() {
+<span class="fc" id="L571">    assertEquals(new JsonPrimitive(5), gson.fromJson(&quot;5&quot;, JsonElement.class));</span>
+<span class="fc" id="L572">    assertEquals(new JsonPrimitive(5), gson.fromJson(&quot;5&quot;, JsonPrimitive.class));</span>
+<span class="fc" id="L573">    assertEquals(new JsonPrimitive(true), gson.fromJson(&quot;true&quot;, JsonElement.class));</span>
+<span class="fc" id="L574">    assertEquals(new JsonPrimitive(true), gson.fromJson(&quot;true&quot;, JsonPrimitive.class));</span>
+<span class="fc" id="L575">    assertEquals(new JsonPrimitive(&quot;foo&quot;), gson.fromJson(&quot;\&quot;foo\&quot;&quot;, JsonElement.class));</span>
+<span class="fc" id="L576">    assertEquals(new JsonPrimitive(&quot;foo&quot;), gson.fromJson(&quot;\&quot;foo\&quot;&quot;, JsonPrimitive.class));</span>
+<span class="fc" id="L577">    assertEquals(new JsonPrimitive('a'), gson.fromJson(&quot;\&quot;a\&quot;&quot;, JsonElement.class));</span>
+<span class="fc" id="L578">    assertEquals(new JsonPrimitive('a'), gson.fromJson(&quot;\&quot;a\&quot;&quot;, JsonPrimitive.class));</span>
+<span class="fc" id="L579">  }</span>
+
+  public void testJsonNullSerialization() {
+<span class="fc" id="L582">    assertEquals(&quot;null&quot;, gson.toJson(JsonNull.INSTANCE, JsonElement.class));</span>
+<span class="fc" id="L583">    assertEquals(&quot;null&quot;, gson.toJson(JsonNull.INSTANCE, JsonNull.class));</span>
+<span class="fc" id="L584">  }</span>
+
+  public void testNullJsonElementSerialization() {
+<span class="fc" id="L587">    assertEquals(&quot;null&quot;, gson.toJson(null, JsonElement.class));</span>
+<span class="fc" id="L588">    assertEquals(&quot;null&quot;, gson.toJson(null, JsonNull.class));</span>
+<span class="fc" id="L589">  }</span>
+
+  public void testJsonArraySerialization() {
+<span class="fc" id="L592">    JsonArray array = new JsonArray();</span>
+<span class="fc" id="L593">    array.add(new JsonPrimitive(1));</span>
+<span class="fc" id="L594">    array.add(new JsonPrimitive(2));</span>
+<span class="fc" id="L595">    array.add(new JsonPrimitive(3));</span>
+<span class="fc" id="L596">    assertEquals(&quot;[1,2,3]&quot;, gson.toJson(array, JsonElement.class));</span>
+<span class="fc" id="L597">  }</span>
+
+  public void testJsonArrayDeserialization() {
+<span class="fc" id="L600">    JsonArray array = new JsonArray();</span>
+<span class="fc" id="L601">    array.add(new JsonPrimitive(1));</span>
+<span class="fc" id="L602">    array.add(new JsonPrimitive(2));</span>
+<span class="fc" id="L603">    array.add(new JsonPrimitive(3));</span>
+
+<span class="fc" id="L605">    String json = &quot;[1,2,3]&quot;;</span>
+<span class="fc" id="L606">    assertEquals(array, gson.fromJson(json, JsonElement.class));</span>
+<span class="fc" id="L607">    assertEquals(array, gson.fromJson(json, JsonArray.class));</span>
+<span class="fc" id="L608">  }</span>
+
+  public void testJsonObjectSerialization() {
+<span class="fc" id="L611">    JsonObject object = new JsonObject();</span>
+<span class="fc" id="L612">    object.add(&quot;foo&quot;, new JsonPrimitive(1));</span>
+<span class="fc" id="L613">    object.add(&quot;bar&quot;, new JsonPrimitive(2));</span>
+<span class="fc" id="L614">    assertEquals(&quot;{\&quot;foo\&quot;:1,\&quot;bar\&quot;:2}&quot;, gson.toJson(object, JsonElement.class));</span>
+<span class="fc" id="L615">  }</span>
+
+  public void testJsonObjectDeserialization() {
+<span class="fc" id="L618">    JsonObject object = new JsonObject();</span>
+<span class="fc" id="L619">    object.add(&quot;foo&quot;, new JsonPrimitive(1));</span>
+<span class="fc" id="L620">    object.add(&quot;bar&quot;, new JsonPrimitive(2));</span>
+
+<span class="fc" id="L622">    String json = &quot;{\&quot;foo\&quot;:1,\&quot;bar\&quot;:2}&quot;;</span>
+<span class="fc" id="L623">    JsonElement actual = gson.fromJson(json, JsonElement.class);</span>
+<span class="fc" id="L624">    assertEquals(object, actual);</span>
+
+<span class="fc" id="L626">    JsonObject actualObj = gson.fromJson(json, JsonObject.class);</span>
+<span class="fc" id="L627">    assertEquals(object, actualObj);</span>
+<span class="fc" id="L628">  }</span>
+
+  public void testJsonNullDeserialization() {
+<span class="fc" id="L631">    assertEquals(JsonNull.INSTANCE, gson.fromJson(&quot;null&quot;, JsonElement.class));</span>
+<span class="fc" id="L632">    assertEquals(JsonNull.INSTANCE, gson.fromJson(&quot;null&quot;, JsonNull.class));</span>
+<span class="fc" id="L633">  }</span>
+
+  public void testJsonElementTypeMismatch() {
+    try {
+<span class="nc" id="L637">      gson.fromJson(&quot;\&quot;abc\&quot;&quot;, JsonObject.class);</span>
+<span class="nc" id="L638">      fail();</span>
+<span class="fc" id="L639">    } catch (JsonSyntaxException expected) {</span>
+<span class="fc" id="L640">      assertEquals(&quot;Expected a com.google.gson.JsonObject but was com.google.gson.JsonPrimitive&quot;,</span>
+<span class="fc" id="L641">          expected.getMessage());</span>
+<span class="nc" id="L642">    }</span>
+<span class="fc" id="L643">  }</span>
+
+  private static class ClassWithBigDecimal {
+    BigDecimal value;
+<span class="fc" id="L647">    ClassWithBigDecimal(String value) {</span>
+<span class="fc" id="L648">      this.value = new BigDecimal(value);</span>
+<span class="fc" id="L649">    }</span>
+    String getExpectedJson() {
+<span class="fc" id="L651">      return &quot;{\&quot;value\&quot;:&quot; + value.toEngineeringString() + &quot;}&quot;;</span>
+    }
+  }
+
+  private static class ClassWithBigInteger {
+    BigInteger value;
+<span class="fc" id="L657">    ClassWithBigInteger(String value) {</span>
+<span class="fc" id="L658">      this.value = new BigInteger(value);</span>
+<span class="fc" id="L659">    }</span>
+    String getExpectedJson() {
+<span class="fc" id="L661">      return &quot;{\&quot;value\&quot;:&quot; + value + &quot;}&quot;;</span>
+    }
+  }
+
+  public void testPropertiesSerialization() {
+<span class="fc" id="L666">    Properties props = new Properties();</span>
+<span class="fc" id="L667">    props.setProperty(&quot;foo&quot;, &quot;bar&quot;);</span>
+<span class="fc" id="L668">    String json = gson.toJson(props);</span>
+<span class="fc" id="L669">    String expected = &quot;{\&quot;foo\&quot;:\&quot;bar\&quot;}&quot;;</span>
+<span class="fc" id="L670">    assertEquals(expected, json);</span>
+<span class="fc" id="L671">  }</span>
+
+  public void testPropertiesDeserialization() {
+<span class="fc" id="L674">    String json = &quot;{foo:'bar'}&quot;;</span>
+<span class="fc" id="L675">    Properties props = gson.fromJson(json, Properties.class);</span>
+<span class="fc" id="L676">    assertEquals(&quot;bar&quot;, props.getProperty(&quot;foo&quot;));</span>
+<span class="fc" id="L677">  }</span>
+
+  public void testTreeSetSerialization() {
+<span class="fc" id="L680">    TreeSet&lt;String&gt; treeSet = new TreeSet&lt;String&gt;();</span>
+<span class="fc" id="L681">    treeSet.add(&quot;Value1&quot;);</span>
+<span class="fc" id="L682">    String json = gson.toJson(treeSet);</span>
+<span class="fc" id="L683">    assertEquals(&quot;[\&quot;Value1\&quot;]&quot;, json);</span>
+<span class="fc" id="L684">  }</span>
+
+  public void testTreeSetDeserialization() {
+<span class="fc" id="L687">    String json = &quot;['Value1']&quot;;</span>
+<span class="fc" id="L688">    Type type = new TypeToken&lt;TreeSet&lt;String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L689">    TreeSet&lt;String&gt; treeSet = gson.fromJson(json, type);</span>
+<span class="fc" id="L690">    assertTrue(treeSet.contains(&quot;Value1&quot;));</span>
+<span class="fc" id="L691">  }</span>
+
+  public void testStringBuilderSerialization() {
+<span class="fc" id="L694">    StringBuilder sb = new StringBuilder(&quot;abc&quot;);</span>
+<span class="fc" id="L695">    String json = gson.toJson(sb);</span>
+<span class="fc" id="L696">    assertEquals(&quot;\&quot;abc\&quot;&quot;, json);</span>
+<span class="fc" id="L697">  }</span>
+
+  public void testStringBuilderDeserialization() {
+<span class="fc" id="L700">    StringBuilder sb = gson.fromJson(&quot;'abc'&quot;, StringBuilder.class);</span>
+<span class="fc" id="L701">    assertEquals(&quot;abc&quot;, sb.toString());</span>
+<span class="fc" id="L702">  }</span>
+
+  public void testStringBufferSerialization() {
+<span class="fc" id="L705">    StringBuffer sb = new StringBuffer(&quot;abc&quot;);</span>
+<span class="fc" id="L706">    String json = gson.toJson(sb);</span>
+<span class="fc" id="L707">    assertEquals(&quot;\&quot;abc\&quot;&quot;, json);</span>
+<span class="fc" id="L708">  }</span>
+
+  public void testStringBufferDeserialization() {
+<span class="fc" id="L711">    StringBuffer sb = gson.fromJson(&quot;'abc'&quot;, StringBuffer.class);</span>
+<span class="fc" id="L712">    assertEquals(&quot;abc&quot;, sb.toString());</span>
+<span class="fc" id="L713">  }</span>
+
+  @SuppressWarnings(&quot;rawtypes&quot;)
+  private static class MyClassTypeAdapter extends TypeAdapter&lt;Class&gt; {
+    @Override
+    public void write(JsonWriter out, Class value) throws IOException {
+<span class="fc" id="L719">      out.value(value.getName());</span>
+<span class="fc" id="L720">    }</span>
+    @Override
+    public Class read(JsonReader in) throws IOException {
+<span class="fc" id="L723">      String className = in.nextString();</span>
+      try {
+<span class="fc" id="L725">        return Class.forName(className);</span>
+<span class="nc" id="L726">      } catch (ClassNotFoundException e) {</span>
+<span class="nc" id="L727">        throw new IOException(e);</span>
+      }
+    }
+  }
+
+  static class NumberAsStringAdapter extends TypeAdapter&lt;Number&gt; {
+    private final Constructor&lt;? extends Number&gt; constructor;
+<span class="fc" id="L734">    NumberAsStringAdapter(Class&lt;? extends Number&gt; type) throws Exception {</span>
+<span class="fc" id="L735">      this.constructor = type.getConstructor(String.class);</span>
+<span class="fc" id="L736">    }</span>
+    @Override public void write(JsonWriter out, Number value) throws IOException {
+<span class="fc" id="L738">      out.value(value.toString());</span>
+<span class="fc" id="L739">    }</span>
+    @Override public Number read(JsonReader in) throws IOException {
+      try {
+<span class="fc" id="L742">        return constructor.newInstance(in.nextString());</span>
+<span class="nc" id="L743">      } catch (Exception e) {</span>
+<span class="nc" id="L744">        throw new AssertionError(e);</span>
+      }
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

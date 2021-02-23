@@ -1,0 +1,649 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonWriterTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.stream</a> &gt; <span class="el_source">JsonWriterTest.java</span></div><h1>JsonWriterTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2010 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.stream;
+
+import junit.framework.TestCase;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
+@SuppressWarnings(&quot;resource&quot;)
+<span class="fc" id="L27">public final class JsonWriterTest extends TestCase {</span>
+
+  public void testTopLevelValueTypes() throws IOException {
+<span class="fc" id="L30">    StringWriter string1 = new StringWriter();</span>
+<span class="fc" id="L31">    JsonWriter writer1 = new JsonWriter(string1);</span>
+<span class="fc" id="L32">    writer1.value(true);</span>
+<span class="fc" id="L33">    writer1.close();</span>
+<span class="fc" id="L34">    assertEquals(&quot;true&quot;, string1.toString());</span>
+
+<span class="fc" id="L36">    StringWriter string2 = new StringWriter();</span>
+<span class="fc" id="L37">    JsonWriter writer2 = new JsonWriter(string2);</span>
+<span class="fc" id="L38">    writer2.nullValue();</span>
+<span class="fc" id="L39">    writer2.close();</span>
+<span class="fc" id="L40">    assertEquals(&quot;null&quot;, string2.toString());</span>
+
+<span class="fc" id="L42">    StringWriter string3 = new StringWriter();</span>
+<span class="fc" id="L43">    JsonWriter writer3 = new JsonWriter(string3);</span>
+<span class="fc" id="L44">    writer3.value(123);</span>
+<span class="fc" id="L45">    writer3.close();</span>
+<span class="fc" id="L46">    assertEquals(&quot;123&quot;, string3.toString());</span>
+
+<span class="fc" id="L48">    StringWriter string4 = new StringWriter();</span>
+<span class="fc" id="L49">    JsonWriter writer4 = new JsonWriter(string4);</span>
+<span class="fc" id="L50">    writer4.value(123.4);</span>
+<span class="fc" id="L51">    writer4.close();</span>
+<span class="fc" id="L52">    assertEquals(&quot;123.4&quot;, string4.toString());</span>
+
+<span class="fc" id="L54">    StringWriter string5 = new StringWriter();</span>
+<span class="fc" id="L55">    JsonWriter writert = new JsonWriter(string5);</span>
+<span class="fc" id="L56">    writert.value(&quot;a&quot;);</span>
+<span class="fc" id="L57">    writert.close();</span>
+<span class="fc" id="L58">    assertEquals(&quot;\&quot;a\&quot;&quot;, string5.toString());</span>
+<span class="fc" id="L59">  }</span>
+
+  public void testInvalidTopLevelTypes() throws IOException {
+<span class="fc" id="L62">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L63">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L64">    jsonWriter.name(&quot;hello&quot;);</span>
+    try {
+<span class="nc" id="L66">      jsonWriter.value(&quot;world&quot;);</span>
+<span class="nc" id="L67">      fail();</span>
+<span class="fc" id="L68">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L69">    }</span>
+<span class="fc" id="L70">  }</span>
+
+  public void testTwoNames() throws IOException {
+<span class="fc" id="L73">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L74">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L75">    jsonWriter.beginObject();</span>
+<span class="fc" id="L76">    jsonWriter.name(&quot;a&quot;);</span>
+    try {
+<span class="nc" id="L78">      jsonWriter.name(&quot;a&quot;);</span>
+<span class="nc" id="L79">      fail();</span>
+<span class="fc" id="L80">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L81">    }</span>
+<span class="fc" id="L82">  }</span>
+
+  public void testNameWithoutValue() throws IOException {
+<span class="fc" id="L85">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L86">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L87">    jsonWriter.beginObject();</span>
+<span class="fc" id="L88">    jsonWriter.name(&quot;a&quot;);</span>
+    try {
+<span class="nc" id="L90">      jsonWriter.endObject();</span>
+<span class="nc" id="L91">      fail();</span>
+<span class="fc" id="L92">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L93">    }</span>
+<span class="fc" id="L94">  }</span>
+
+  public void testValueWithoutName() throws IOException {
+<span class="fc" id="L97">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L98">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L99">    jsonWriter.beginObject();</span>
+    try {
+<span class="nc" id="L101">      jsonWriter.value(true);</span>
+<span class="nc" id="L102">      fail();</span>
+<span class="fc" id="L103">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L104">    }</span>
+<span class="fc" id="L105">  }</span>
+
+  public void testMultipleTopLevelValues() throws IOException {
+<span class="fc" id="L108">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L109">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L110">    jsonWriter.beginArray().endArray();</span>
+    try {
+<span class="nc" id="L112">      jsonWriter.beginArray();</span>
+<span class="nc" id="L113">      fail();</span>
+<span class="fc" id="L114">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L115">    }</span>
+<span class="fc" id="L116">  }</span>
+
+  public void testBadNestingObject() throws IOException {
+<span class="fc" id="L119">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L120">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L121">    jsonWriter.beginArray();</span>
+<span class="fc" id="L122">    jsonWriter.beginObject();</span>
+    try {
+<span class="nc" id="L124">      jsonWriter.endArray();</span>
+<span class="nc" id="L125">      fail();</span>
+<span class="fc" id="L126">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L127">    }</span>
+<span class="fc" id="L128">  }</span>
+
+  public void testBadNestingArray() throws IOException {
+<span class="fc" id="L131">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L132">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L133">    jsonWriter.beginArray();</span>
+<span class="fc" id="L134">    jsonWriter.beginArray();</span>
+    try {
+<span class="nc" id="L136">      jsonWriter.endObject();</span>
+<span class="nc" id="L137">      fail();</span>
+<span class="fc" id="L138">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L139">    }</span>
+<span class="fc" id="L140">  }</span>
+
+  public void testNullName() throws IOException {
+<span class="fc" id="L143">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L144">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L145">    jsonWriter.beginObject();</span>
+    try {
+<span class="nc" id="L147">      jsonWriter.name(null);</span>
+<span class="nc" id="L148">      fail();</span>
+<span class="fc" id="L149">    } catch (NullPointerException expected) {</span>
+<span class="nc" id="L150">    }</span>
+<span class="fc" id="L151">  }</span>
+
+  public void testNullStringValue() throws IOException {
+<span class="fc" id="L154">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L155">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L156">    jsonWriter.beginObject();</span>
+<span class="fc" id="L157">    jsonWriter.name(&quot;a&quot;);</span>
+<span class="fc" id="L158">    jsonWriter.value((String) null);</span>
+<span class="fc" id="L159">    jsonWriter.endObject();</span>
+<span class="fc" id="L160">    assertEquals(&quot;{\&quot;a\&quot;:null}&quot;, stringWriter.toString());</span>
+<span class="fc" id="L161">  }</span>
+
+  public void testJsonValue() throws IOException {
+<span class="fc" id="L164">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L165">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L166">    jsonWriter.beginObject();</span>
+<span class="fc" id="L167">    jsonWriter.name(&quot;a&quot;);</span>
+<span class="fc" id="L168">    jsonWriter.jsonValue(&quot;{\&quot;b\&quot;:true}&quot;);</span>
+<span class="fc" id="L169">    jsonWriter.name(&quot;c&quot;);</span>
+<span class="fc" id="L170">    jsonWriter.value(1);</span>
+<span class="fc" id="L171">    jsonWriter.endObject();</span>
+<span class="fc" id="L172">    assertEquals(&quot;{\&quot;a\&quot;:{\&quot;b\&quot;:true},\&quot;c\&quot;:1}&quot;, stringWriter.toString());</span>
+<span class="fc" id="L173">  }</span>
+
+  public void testNonFiniteDoubles() throws IOException {
+<span class="fc" id="L176">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L177">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L178">    jsonWriter.beginArray();</span>
+    try {
+<span class="nc" id="L180">      jsonWriter.value(Double.NaN);</span>
+<span class="nc" id="L181">      fail();</span>
+<span class="fc" id="L182">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L183">    }</span>
+    try {
+<span class="nc" id="L185">      jsonWriter.value(Double.NEGATIVE_INFINITY);</span>
+<span class="nc" id="L186">      fail();</span>
+<span class="fc" id="L187">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L188">    }</span>
+    try {
+<span class="nc" id="L190">      jsonWriter.value(Double.POSITIVE_INFINITY);</span>
+<span class="nc" id="L191">      fail();</span>
+<span class="fc" id="L192">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L193">    }</span>
+<span class="fc" id="L194">  }</span>
+
+  public void testNonFiniteBoxedDoubles() throws IOException {
+<span class="fc" id="L197">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L198">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L199">    jsonWriter.beginArray();</span>
+    try {
+<span class="nc" id="L201">      jsonWriter.value(Double.valueOf(Double.NaN));</span>
+<span class="nc" id="L202">      fail();</span>
+<span class="fc" id="L203">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L204">    }</span>
+    try {
+<span class="nc" id="L206">      jsonWriter.value(Double.valueOf(Double.NEGATIVE_INFINITY));</span>
+<span class="nc" id="L207">      fail();</span>
+<span class="fc" id="L208">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L209">    }</span>
+    try {
+<span class="nc" id="L211">      jsonWriter.value(Double.valueOf(Double.POSITIVE_INFINITY));</span>
+<span class="nc" id="L212">      fail();</span>
+<span class="fc" id="L213">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L214">    }</span>
+<span class="fc" id="L215">  }</span>
+
+  public void testNonFiniteDoublesWhenLenient() throws IOException {
+<span class="fc" id="L218">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L219">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L220">    jsonWriter.setLenient(true);</span>
+<span class="fc" id="L221">    jsonWriter.beginArray();</span>
+<span class="fc" id="L222">    jsonWriter.value(Double.NaN);</span>
+<span class="fc" id="L223">    jsonWriter.value(Double.NEGATIVE_INFINITY);</span>
+<span class="fc" id="L224">    jsonWriter.value(Double.POSITIVE_INFINITY);</span>
+<span class="fc" id="L225">    jsonWriter.endArray();</span>
+<span class="fc" id="L226">    assertEquals(&quot;[NaN,-Infinity,Infinity]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L227">  }</span>
+
+  public void testNonFiniteBoxedDoublesWhenLenient() throws IOException {
+<span class="fc" id="L230">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L231">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L232">    jsonWriter.setLenient(true);</span>
+<span class="fc" id="L233">    jsonWriter.beginArray();</span>
+<span class="fc" id="L234">    jsonWriter.value(Double.valueOf(Double.NaN));</span>
+<span class="fc" id="L235">    jsonWriter.value(Double.valueOf(Double.NEGATIVE_INFINITY));</span>
+<span class="fc" id="L236">    jsonWriter.value(Double.valueOf(Double.POSITIVE_INFINITY));</span>
+<span class="fc" id="L237">    jsonWriter.endArray();</span>
+<span class="fc" id="L238">    assertEquals(&quot;[NaN,-Infinity,Infinity]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L239">  }</span>
+
+  public void testDoubles() throws IOException {
+<span class="fc" id="L242">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L243">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L244">    jsonWriter.beginArray();</span>
+<span class="fc" id="L245">    jsonWriter.value(-0.0);</span>
+<span class="fc" id="L246">    jsonWriter.value(1.0);</span>
+<span class="fc" id="L247">    jsonWriter.value(Double.MAX_VALUE);</span>
+<span class="fc" id="L248">    jsonWriter.value(Double.MIN_VALUE);</span>
+<span class="fc" id="L249">    jsonWriter.value(0.0);</span>
+<span class="fc" id="L250">    jsonWriter.value(-0.5);</span>
+<span class="fc" id="L251">    jsonWriter.value(2.2250738585072014E-308);</span>
+<span class="fc" id="L252">    jsonWriter.value(Math.PI);</span>
+<span class="fc" id="L253">    jsonWriter.value(Math.E);</span>
+<span class="fc" id="L254">    jsonWriter.endArray();</span>
+<span class="fc" id="L255">    jsonWriter.close();</span>
+<span class="fc" id="L256">    assertEquals(&quot;[-0.0,&quot;</span>
+        + &quot;1.0,&quot;
+        + &quot;1.7976931348623157E308,&quot;
+        + &quot;4.9E-324,&quot;
+        + &quot;0.0,&quot;
+        + &quot;-0.5,&quot;
+        + &quot;2.2250738585072014E-308,&quot;
+        + &quot;3.141592653589793,&quot;
+<span class="fc" id="L264">        + &quot;2.718281828459045]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L265">  }</span>
+
+  public void testLongs() throws IOException {
+<span class="fc" id="L268">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L269">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L270">    jsonWriter.beginArray();</span>
+<span class="fc" id="L271">    jsonWriter.value(0);</span>
+<span class="fc" id="L272">    jsonWriter.value(1);</span>
+<span class="fc" id="L273">    jsonWriter.value(-1);</span>
+<span class="fc" id="L274">    jsonWriter.value(Long.MIN_VALUE);</span>
+<span class="fc" id="L275">    jsonWriter.value(Long.MAX_VALUE);</span>
+<span class="fc" id="L276">    jsonWriter.endArray();</span>
+<span class="fc" id="L277">    jsonWriter.close();</span>
+<span class="fc" id="L278">    assertEquals(&quot;[0,&quot;</span>
+        + &quot;1,&quot;
+        + &quot;-1,&quot;
+        + &quot;-9223372036854775808,&quot;
+<span class="fc" id="L282">        + &quot;9223372036854775807]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L283">  }</span>
+
+  public void testNumbers() throws IOException {
+<span class="fc" id="L286">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L287">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L288">    jsonWriter.beginArray();</span>
+<span class="fc" id="L289">    jsonWriter.value(new BigInteger(&quot;0&quot;));</span>
+<span class="fc" id="L290">    jsonWriter.value(new BigInteger(&quot;9223372036854775808&quot;));</span>
+<span class="fc" id="L291">    jsonWriter.value(new BigInteger(&quot;-9223372036854775809&quot;));</span>
+<span class="fc" id="L292">    jsonWriter.value(new BigDecimal(&quot;3.141592653589793238462643383&quot;));</span>
+<span class="fc" id="L293">    jsonWriter.endArray();</span>
+<span class="fc" id="L294">    jsonWriter.close();</span>
+<span class="fc" id="L295">    assertEquals(&quot;[0,&quot;</span>
+        + &quot;9223372036854775808,&quot;
+        + &quot;-9223372036854775809,&quot;
+<span class="fc" id="L298">        + &quot;3.141592653589793238462643383]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L299">  }</span>
+
+  public void testBooleans() throws IOException {
+<span class="fc" id="L302">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L303">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L304">    jsonWriter.beginArray();</span>
+<span class="fc" id="L305">    jsonWriter.value(true);</span>
+<span class="fc" id="L306">    jsonWriter.value(false);</span>
+<span class="fc" id="L307">    jsonWriter.endArray();</span>
+<span class="fc" id="L308">    assertEquals(&quot;[true,false]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L309">  }</span>
+
+  public void testBoxedBooleans() throws IOException {
+<span class="fc" id="L312">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L313">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L314">    jsonWriter.beginArray();</span>
+<span class="fc" id="L315">    jsonWriter.value((Boolean) true);</span>
+<span class="fc" id="L316">    jsonWriter.value((Boolean) false);</span>
+<span class="fc" id="L317">    jsonWriter.value((Boolean) null);</span>
+<span class="fc" id="L318">    jsonWriter.endArray();</span>
+<span class="fc" id="L319">    assertEquals(&quot;[true,false,null]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L320">  }</span>
+
+  public void testNulls() throws IOException {
+<span class="fc" id="L323">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L324">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L325">    jsonWriter.beginArray();</span>
+<span class="fc" id="L326">    jsonWriter.nullValue();</span>
+<span class="fc" id="L327">    jsonWriter.endArray();</span>
+<span class="fc" id="L328">    assertEquals(&quot;[null]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L329">  }</span>
+
+  public void testStrings() throws IOException {
+<span class="fc" id="L332">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L333">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L334">    jsonWriter.beginArray();</span>
+<span class="fc" id="L335">    jsonWriter.value(&quot;a&quot;);</span>
+<span class="fc" id="L336">    jsonWriter.value(&quot;a\&quot;&quot;);</span>
+<span class="fc" id="L337">    jsonWriter.value(&quot;\&quot;&quot;);</span>
+<span class="fc" id="L338">    jsonWriter.value(&quot;:&quot;);</span>
+<span class="fc" id="L339">    jsonWriter.value(&quot;,&quot;);</span>
+<span class="fc" id="L340">    jsonWriter.value(&quot;\b&quot;);</span>
+<span class="fc" id="L341">    jsonWriter.value(&quot;\f&quot;);</span>
+<span class="fc" id="L342">    jsonWriter.value(&quot;\n&quot;);</span>
+<span class="fc" id="L343">    jsonWriter.value(&quot;\r&quot;);</span>
+<span class="fc" id="L344">    jsonWriter.value(&quot;\t&quot;);</span>
+<span class="fc" id="L345">    jsonWriter.value(&quot; &quot;);</span>
+<span class="fc" id="L346">    jsonWriter.value(&quot;\\&quot;);</span>
+<span class="fc" id="L347">    jsonWriter.value(&quot;{&quot;);</span>
+<span class="fc" id="L348">    jsonWriter.value(&quot;}&quot;);</span>
+<span class="fc" id="L349">    jsonWriter.value(&quot;[&quot;);</span>
+<span class="fc" id="L350">    jsonWriter.value(&quot;]&quot;);</span>
+<span class="fc" id="L351">    jsonWriter.value(&quot;\0&quot;);</span>
+<span class="fc" id="L352">    jsonWriter.value(&quot;\u0019&quot;);</span>
+<span class="fc" id="L353">    jsonWriter.endArray();</span>
+<span class="fc" id="L354">    assertEquals(&quot;[\&quot;a\&quot;,&quot;</span>
+        + &quot;\&quot;a\\\&quot;\&quot;,&quot;
+        + &quot;\&quot;\\\&quot;\&quot;,&quot;
+        + &quot;\&quot;:\&quot;,&quot;
+        + &quot;\&quot;,\&quot;,&quot;
+        + &quot;\&quot;\\b\&quot;,&quot;
+        + &quot;\&quot;\\f\&quot;,&quot;
+        + &quot;\&quot;\\n\&quot;,&quot;
+        + &quot;\&quot;\\r\&quot;,&quot;
+        + &quot;\&quot;\\t\&quot;,&quot;
+        + &quot;\&quot; \&quot;,&quot;
+        + &quot;\&quot;\\\\\&quot;,&quot;
+        + &quot;\&quot;{\&quot;,&quot;
+        + &quot;\&quot;}\&quot;,&quot;
+        + &quot;\&quot;[\&quot;,&quot;
+        + &quot;\&quot;]\&quot;,&quot;
+        + &quot;\&quot;\\u0000\&quot;,&quot;
+<span class="fc" id="L371">        + &quot;\&quot;\\u0019\&quot;]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L372">  }</span>
+
+  public void testUnicodeLineBreaksEscaped() throws IOException {
+<span class="fc" id="L375">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L376">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L377">    jsonWriter.beginArray();</span>
+<span class="fc" id="L378">    jsonWriter.value(&quot;\u2028 \u2029&quot;);</span>
+<span class="fc" id="L379">    jsonWriter.endArray();</span>
+<span class="fc" id="L380">    assertEquals(&quot;[\&quot;\\u2028 \\u2029\&quot;]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L381">  }</span>
+
+  public void testEmptyArray() throws IOException {
+<span class="fc" id="L384">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L385">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L386">    jsonWriter.beginArray();</span>
+<span class="fc" id="L387">    jsonWriter.endArray();</span>
+<span class="fc" id="L388">    assertEquals(&quot;[]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L389">  }</span>
+
+  public void testEmptyObject() throws IOException {
+<span class="fc" id="L392">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L393">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L394">    jsonWriter.beginObject();</span>
+<span class="fc" id="L395">    jsonWriter.endObject();</span>
+<span class="fc" id="L396">    assertEquals(&quot;{}&quot;, stringWriter.toString());</span>
+<span class="fc" id="L397">  }</span>
+
+  public void testObjectsInArrays() throws IOException {
+<span class="fc" id="L400">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L401">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L402">    jsonWriter.beginArray();</span>
+<span class="fc" id="L403">    jsonWriter.beginObject();</span>
+<span class="fc" id="L404">    jsonWriter.name(&quot;a&quot;).value(5);</span>
+<span class="fc" id="L405">    jsonWriter.name(&quot;b&quot;).value(false);</span>
+<span class="fc" id="L406">    jsonWriter.endObject();</span>
+<span class="fc" id="L407">    jsonWriter.beginObject();</span>
+<span class="fc" id="L408">    jsonWriter.name(&quot;c&quot;).value(6);</span>
+<span class="fc" id="L409">    jsonWriter.name(&quot;d&quot;).value(true);</span>
+<span class="fc" id="L410">    jsonWriter.endObject();</span>
+<span class="fc" id="L411">    jsonWriter.endArray();</span>
+<span class="fc" id="L412">    assertEquals(&quot;[{\&quot;a\&quot;:5,\&quot;b\&quot;:false},&quot;</span>
+<span class="fc" id="L413">        + &quot;{\&quot;c\&quot;:6,\&quot;d\&quot;:true}]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L414">  }</span>
+
+  public void testArraysInObjects() throws IOException {
+<span class="fc" id="L417">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L418">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L419">    jsonWriter.beginObject();</span>
+<span class="fc" id="L420">    jsonWriter.name(&quot;a&quot;);</span>
+<span class="fc" id="L421">    jsonWriter.beginArray();</span>
+<span class="fc" id="L422">    jsonWriter.value(5);</span>
+<span class="fc" id="L423">    jsonWriter.value(false);</span>
+<span class="fc" id="L424">    jsonWriter.endArray();</span>
+<span class="fc" id="L425">    jsonWriter.name(&quot;b&quot;);</span>
+<span class="fc" id="L426">    jsonWriter.beginArray();</span>
+<span class="fc" id="L427">    jsonWriter.value(6);</span>
+<span class="fc" id="L428">    jsonWriter.value(true);</span>
+<span class="fc" id="L429">    jsonWriter.endArray();</span>
+<span class="fc" id="L430">    jsonWriter.endObject();</span>
+<span class="fc" id="L431">    assertEquals(&quot;{\&quot;a\&quot;:[5,false],&quot;</span>
+<span class="fc" id="L432">        + &quot;\&quot;b\&quot;:[6,true]}&quot;, stringWriter.toString());</span>
+<span class="fc" id="L433">  }</span>
+
+  public void testDeepNestingArrays() throws IOException {
+<span class="fc" id="L436">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L437">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">    for (int i = 0; i &lt; 20; i++) {</span>
+<span class="fc" id="L439">      jsonWriter.beginArray();</span>
+    }
+<span class="fc bfc" id="L441" title="All 2 branches covered.">    for (int i = 0; i &lt; 20; i++) {</span>
+<span class="fc" id="L442">      jsonWriter.endArray();</span>
+    }
+<span class="fc" id="L444">    assertEquals(&quot;[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L445">  }</span>
+
+  public void testDeepNestingObjects() throws IOException {
+<span class="fc" id="L448">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L449">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L450">    jsonWriter.beginObject();</span>
+<span class="fc bfc" id="L451" title="All 2 branches covered.">    for (int i = 0; i &lt; 20; i++) {</span>
+<span class="fc" id="L452">      jsonWriter.name(&quot;a&quot;);</span>
+<span class="fc" id="L453">      jsonWriter.beginObject();</span>
+    }
+<span class="fc bfc" id="L455" title="All 2 branches covered.">    for (int i = 0; i &lt; 20; i++) {</span>
+<span class="fc" id="L456">      jsonWriter.endObject();</span>
+    }
+<span class="fc" id="L458">    jsonWriter.endObject();</span>
+<span class="fc" id="L459">    assertEquals(&quot;{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:&quot;</span>
+        + &quot;{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{\&quot;a\&quot;:{&quot;
+<span class="fc" id="L461">        + &quot;}}}}}}}}}}}}}}}}}}}}}&quot;, stringWriter.toString());</span>
+<span class="fc" id="L462">  }</span>
+
+  public void testRepeatedName() throws IOException {
+<span class="fc" id="L465">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L466">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L467">    jsonWriter.beginObject();</span>
+<span class="fc" id="L468">    jsonWriter.name(&quot;a&quot;).value(true);</span>
+<span class="fc" id="L469">    jsonWriter.name(&quot;a&quot;).value(false);</span>
+<span class="fc" id="L470">    jsonWriter.endObject();</span>
+    // JsonWriter doesn't attempt to detect duplicate names
+<span class="fc" id="L472">    assertEquals(&quot;{\&quot;a\&quot;:true,\&quot;a\&quot;:false}&quot;, stringWriter.toString());</span>
+<span class="fc" id="L473">  }</span>
+
+  public void testPrettyPrintObject() throws IOException {
+<span class="fc" id="L476">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L477">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L478">    jsonWriter.setIndent(&quot;   &quot;);</span>
+
+<span class="fc" id="L480">    jsonWriter.beginObject();</span>
+<span class="fc" id="L481">    jsonWriter.name(&quot;a&quot;).value(true);</span>
+<span class="fc" id="L482">    jsonWriter.name(&quot;b&quot;).value(false);</span>
+<span class="fc" id="L483">    jsonWriter.name(&quot;c&quot;).value(5.0);</span>
+<span class="fc" id="L484">    jsonWriter.name(&quot;e&quot;).nullValue();</span>
+<span class="fc" id="L485">    jsonWriter.name(&quot;f&quot;).beginArray();</span>
+<span class="fc" id="L486">    jsonWriter.value(6.0);</span>
+<span class="fc" id="L487">    jsonWriter.value(7.0);</span>
+<span class="fc" id="L488">    jsonWriter.endArray();</span>
+<span class="fc" id="L489">    jsonWriter.name(&quot;g&quot;).beginObject();</span>
+<span class="fc" id="L490">    jsonWriter.name(&quot;h&quot;).value(8.0);</span>
+<span class="fc" id="L491">    jsonWriter.name(&quot;i&quot;).value(9.0);</span>
+<span class="fc" id="L492">    jsonWriter.endObject();</span>
+<span class="fc" id="L493">    jsonWriter.endObject();</span>
+
+<span class="fc" id="L495">    String expected = &quot;{\n&quot;</span>
+        + &quot;   \&quot;a\&quot;: true,\n&quot;
+        + &quot;   \&quot;b\&quot;: false,\n&quot;
+        + &quot;   \&quot;c\&quot;: 5.0,\n&quot;
+        + &quot;   \&quot;e\&quot;: null,\n&quot;
+        + &quot;   \&quot;f\&quot;: [\n&quot;
+        + &quot;      6.0,\n&quot;
+        + &quot;      7.0\n&quot;
+        + &quot;   ],\n&quot;
+        + &quot;   \&quot;g\&quot;: {\n&quot;
+        + &quot;      \&quot;h\&quot;: 8.0,\n&quot;
+        + &quot;      \&quot;i\&quot;: 9.0\n&quot;
+        + &quot;   }\n&quot;
+        + &quot;}&quot;;
+<span class="fc" id="L509">    assertEquals(expected, stringWriter.toString());</span>
+<span class="fc" id="L510">  }</span>
+
+  public void testPrettyPrintArray() throws IOException {
+<span class="fc" id="L513">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L514">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L515">    jsonWriter.setIndent(&quot;   &quot;);</span>
+
+<span class="fc" id="L517">    jsonWriter.beginArray();</span>
+<span class="fc" id="L518">    jsonWriter.value(true);</span>
+<span class="fc" id="L519">    jsonWriter.value(false);</span>
+<span class="fc" id="L520">    jsonWriter.value(5.0);</span>
+<span class="fc" id="L521">    jsonWriter.nullValue();</span>
+<span class="fc" id="L522">    jsonWriter.beginObject();</span>
+<span class="fc" id="L523">    jsonWriter.name(&quot;a&quot;).value(6.0);</span>
+<span class="fc" id="L524">    jsonWriter.name(&quot;b&quot;).value(7.0);</span>
+<span class="fc" id="L525">    jsonWriter.endObject();</span>
+<span class="fc" id="L526">    jsonWriter.beginArray();</span>
+<span class="fc" id="L527">    jsonWriter.value(8.0);</span>
+<span class="fc" id="L528">    jsonWriter.value(9.0);</span>
+<span class="fc" id="L529">    jsonWriter.endArray();</span>
+<span class="fc" id="L530">    jsonWriter.endArray();</span>
+
+<span class="fc" id="L532">    String expected = &quot;[\n&quot;</span>
+        + &quot;   true,\n&quot;
+        + &quot;   false,\n&quot;
+        + &quot;   5.0,\n&quot;
+        + &quot;   null,\n&quot;
+        + &quot;   {\n&quot;
+        + &quot;      \&quot;a\&quot;: 6.0,\n&quot;
+        + &quot;      \&quot;b\&quot;: 7.0\n&quot;
+        + &quot;   },\n&quot;
+        + &quot;   [\n&quot;
+        + &quot;      8.0,\n&quot;
+        + &quot;      9.0\n&quot;
+        + &quot;   ]\n&quot;
+        + &quot;]&quot;;
+<span class="fc" id="L546">    assertEquals(expected, stringWriter.toString());</span>
+<span class="fc" id="L547">  }</span>
+
+  public void testLenientWriterPermitsMultipleTopLevelValues() throws IOException {
+<span class="fc" id="L550">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L551">    JsonWriter writer = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L552">    writer.setLenient(true);</span>
+<span class="fc" id="L553">    writer.beginArray();</span>
+<span class="fc" id="L554">    writer.endArray();</span>
+<span class="fc" id="L555">    writer.beginArray();</span>
+<span class="fc" id="L556">    writer.endArray();</span>
+<span class="fc" id="L557">    writer.close();</span>
+<span class="fc" id="L558">    assertEquals(&quot;[][]&quot;, stringWriter.toString());</span>
+<span class="fc" id="L559">  }</span>
+
+  public void testStrictWriterDoesNotPermitMultipleTopLevelValues() throws IOException {
+<span class="fc" id="L562">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L563">    JsonWriter writer = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L564">    writer.beginArray();</span>
+<span class="fc" id="L565">    writer.endArray();</span>
+    try {
+<span class="nc" id="L567">      writer.beginArray();</span>
+<span class="nc" id="L568">      fail();</span>
+<span class="fc" id="L569">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L570">    }</span>
+<span class="fc" id="L571">  }</span>
+
+  public void testClosedWriterThrowsOnStructure() throws IOException {
+<span class="fc" id="L574">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L575">    JsonWriter writer = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L576">    writer.beginArray();</span>
+<span class="fc" id="L577">    writer.endArray();</span>
+<span class="fc" id="L578">    writer.close();</span>
+    try {
+<span class="nc" id="L580">      writer.beginArray();</span>
+<span class="nc" id="L581">      fail();</span>
+<span class="fc" id="L582">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L583">    }</span>
+    try {
+<span class="nc" id="L585">      writer.endArray();</span>
+<span class="nc" id="L586">      fail();</span>
+<span class="fc" id="L587">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L588">    }</span>
+    try {
+<span class="nc" id="L590">      writer.beginObject();</span>
+<span class="nc" id="L591">      fail();</span>
+<span class="fc" id="L592">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L593">    }</span>
+    try {
+<span class="nc" id="L595">      writer.endObject();</span>
+<span class="nc" id="L596">      fail();</span>
+<span class="fc" id="L597">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L598">    }</span>
+<span class="fc" id="L599">  }</span>
+
+  public void testClosedWriterThrowsOnName() throws IOException {
+<span class="fc" id="L602">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L603">    JsonWriter writer = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L604">    writer.beginArray();</span>
+<span class="fc" id="L605">    writer.endArray();</span>
+<span class="fc" id="L606">    writer.close();</span>
+    try {
+<span class="nc" id="L608">      writer.name(&quot;a&quot;);</span>
+<span class="nc" id="L609">      fail();</span>
+<span class="fc" id="L610">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L611">    }</span>
+<span class="fc" id="L612">  }</span>
+
+  public void testClosedWriterThrowsOnValue() throws IOException {
+<span class="fc" id="L615">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L616">    JsonWriter writer = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L617">    writer.beginArray();</span>
+<span class="fc" id="L618">    writer.endArray();</span>
+<span class="fc" id="L619">    writer.close();</span>
+    try {
+<span class="nc" id="L621">      writer.value(&quot;a&quot;);</span>
+<span class="nc" id="L622">      fail();</span>
+<span class="fc" id="L623">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L624">    }</span>
+<span class="fc" id="L625">  }</span>
+
+  public void testClosedWriterThrowsOnFlush() throws IOException {
+<span class="fc" id="L628">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L629">    JsonWriter writer = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L630">    writer.beginArray();</span>
+<span class="fc" id="L631">    writer.endArray();</span>
+<span class="fc" id="L632">    writer.close();</span>
+    try {
+<span class="nc" id="L634">      writer.flush();</span>
+<span class="nc" id="L635">      fail();</span>
+<span class="fc" id="L636">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L637">    }</span>
+<span class="fc" id="L638">  }</span>
+
+  public void testWriterCloseIsIdempotent() throws IOException {
+<span class="fc" id="L641">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L642">    JsonWriter writer = new JsonWriter(stringWriter);</span>
+<span class="fc" id="L643">    writer.beginArray();</span>
+<span class="fc" id="L644">    writer.endArray();</span>
+<span class="fc" id="L645">    writer.close();</span>
+<span class="fc" id="L646">    writer.close();</span>
+<span class="fc" id="L647">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

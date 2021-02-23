@@ -1,0 +1,909 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TypeAdapters.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal.bind</a> &gt; <span class="el_source">TypeAdapters.java</span></div><h1>TypeAdapters.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2011 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.internal.bind;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Calendar;
+import java.util.Currency;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.StringTokenizer;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.internal.LazilyParsedNumber;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+
+/**
+ * Type adapters for basic types.
+ */
+public final class TypeAdapters {
+<span class="nc" id="L64">  private TypeAdapters() {</span>
+<span class="nc" id="L65">    throw new UnsupportedOperationException();</span>
+  }
+
+  @SuppressWarnings(&quot;rawtypes&quot;)
+<span class="fc" id="L69">  public static final TypeAdapter&lt;Class&gt; CLASS = new TypeAdapter&lt;Class&gt;() {</span>
+    @Override
+    public void write(JsonWriter out, Class value) throws IOException {
+<span class="fc" id="L72">      throw new UnsupportedOperationException(&quot;Attempted to serialize java.lang.Class: &quot;</span>
+<span class="fc" id="L73">              + value.getName() + &quot;. Forgot to register a type adapter?&quot;);</span>
+    }
+    @Override
+    public Class read(JsonReader in) throws IOException {
+<span class="fc" id="L77">      throw new UnsupportedOperationException(</span>
+              &quot;Attempted to deserialize a java.lang.Class. Forgot to register a type adapter?&quot;);
+    }
+<span class="fc" id="L80">  }.nullSafe();</span>
+
+<span class="fc" id="L82">  public static final TypeAdapterFactory CLASS_FACTORY = newFactory(Class.class, CLASS);</span>
+
+<span class="fc" id="L84">  public static final TypeAdapter&lt;BitSet&gt; BIT_SET = new TypeAdapter&lt;BitSet&gt;() {</span>
+    @Override public BitSet read(JsonReader in) throws IOException {
+<span class="fc" id="L86">      BitSet bitset = new BitSet();</span>
+<span class="fc" id="L87">      in.beginArray();</span>
+<span class="fc" id="L88">      int i = 0;</span>
+<span class="fc" id="L89">      JsonToken tokenType = in.peek();</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">      while (tokenType != JsonToken.END_ARRAY) {</span>
+        boolean set;
+<span class="pc bpc" id="L92" title="1 of 4 branches missed.">        switch (tokenType) {</span>
+        case NUMBER:
+<span class="fc bfc" id="L94" title="All 2 branches covered.">          set = in.nextInt() != 0;</span>
+<span class="fc" id="L95">          break;</span>
+        case BOOLEAN:
+<span class="fc" id="L97">          set = in.nextBoolean();</span>
+<span class="fc" id="L98">          break;</span>
+        case STRING:
+<span class="fc" id="L100">          String stringValue = in.nextString();</span>
+          try {
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            set = Integer.parseInt(stringValue) != 0;</span>
+<span class="nc" id="L103">          } catch (NumberFormatException e) {</span>
+<span class="nc" id="L104">            throw new JsonSyntaxException(</span>
+                &quot;Error: Expecting: bitset number value (1, 0), Found: &quot; + stringValue);
+<span class="fc" id="L106">          }</span>
+          break;
+        default:
+<span class="nc" id="L109">          throw new JsonSyntaxException(&quot;Invalid bitset value type: &quot; + tokenType);</span>
+        }
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (set) {</span>
+<span class="fc" id="L112">          bitset.set(i);</span>
+        }
+<span class="fc" id="L114">        ++i;</span>
+<span class="fc" id="L115">        tokenType = in.peek();</span>
+<span class="fc" id="L116">      }</span>
+<span class="fc" id="L117">      in.endArray();</span>
+<span class="fc" id="L118">      return bitset;</span>
+    }
+
+    @Override public void write(JsonWriter out, BitSet src) throws IOException {
+<span class="fc" id="L122">      out.beginArray();</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">      for (int i = 0, length = src.length(); i &lt; length; i++) {</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        int value = (src.get(i)) ? 1 : 0;</span>
+<span class="fc" id="L125">        out.value(value);</span>
+      }
+<span class="fc" id="L127">      out.endArray();</span>
+<span class="fc" id="L128">    }</span>
+<span class="fc" id="L129">  }.nullSafe();</span>
+
+<span class="fc" id="L131">  public static final TypeAdapterFactory BIT_SET_FACTORY = newFactory(BitSet.class, BIT_SET);</span>
+
+<span class="fc" id="L133">  public static final TypeAdapter&lt;Boolean&gt; BOOLEAN = new TypeAdapter&lt;Boolean&gt;() {</span>
+    @Override
+    public Boolean read(JsonReader in) throws IOException {
+<span class="fc" id="L136">      JsonToken peek = in.peek();</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">      if (peek == JsonToken.NULL) {</span>
+<span class="fc" id="L138">        in.nextNull();</span>
+<span class="fc" id="L139">        return null;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">      } else if (peek == JsonToken.STRING) {</span>
+        // support strings for compatibility with GSON 1.7
+<span class="fc" id="L142">        return Boolean.parseBoolean(in.nextString());</span>
+      }
+<span class="fc" id="L144">      return in.nextBoolean();</span>
+    }
+    @Override
+    public void write(JsonWriter out, Boolean value) throws IOException {
+<span class="fc" id="L148">      out.value(value);</span>
+<span class="fc" id="L149">    }</span>
+  };
+
+  /**
+   * Writes a boolean as a string. Useful for map keys, where booleans aren't
+   * otherwise permitted.
+   */
+<span class="fc" id="L156">  public static final TypeAdapter&lt;Boolean&gt; BOOLEAN_AS_STRING = new TypeAdapter&lt;Boolean&gt;() {</span>
+    @Override public Boolean read(JsonReader in) throws IOException {
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="nc" id="L159">        in.nextNull();</span>
+<span class="nc" id="L160">        return null;</span>
+      }
+<span class="fc" id="L162">      return Boolean.valueOf(in.nextString());</span>
+    }
+
+    @Override public void write(JsonWriter out, Boolean value) throws IOException {
+<span class="nc bnc" id="L166" title="All 2 branches missed.">      out.value(value == null ? &quot;null&quot; : value.toString());</span>
+<span class="nc" id="L167">    }</span>
+  };
+
+<span class="fc" id="L170">  public static final TypeAdapterFactory BOOLEAN_FACTORY</span>
+<span class="fc" id="L171">      = newFactory(boolean.class, Boolean.class, BOOLEAN);</span>
+
+<span class="fc" id="L173">  public static final TypeAdapter&lt;Number&gt; BYTE = new TypeAdapter&lt;Number&gt;() {</span>
+    @Override
+    public Number read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L176" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L177">        in.nextNull();</span>
+<span class="fc" id="L178">        return null;</span>
+      }
+      try {
+<span class="fc" id="L181">        int intValue = in.nextInt();</span>
+<span class="fc" id="L182">        return (byte) intValue;</span>
+<span class="fc" id="L183">      } catch (NumberFormatException e) {</span>
+<span class="fc" id="L184">        throw new JsonSyntaxException(e);</span>
+      }
+    }
+    @Override
+    public void write(JsonWriter out, Number value) throws IOException {
+<span class="fc" id="L189">      out.value(value);</span>
+<span class="fc" id="L190">    }</span>
+  };
+
+<span class="fc" id="L193">  public static final TypeAdapterFactory BYTE_FACTORY</span>
+<span class="fc" id="L194">      = newFactory(byte.class, Byte.class, BYTE);</span>
+
+<span class="fc" id="L196">  public static final TypeAdapter&lt;Number&gt; SHORT = new TypeAdapter&lt;Number&gt;() {</span>
+    @Override
+    public Number read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L199" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L200">        in.nextNull();</span>
+<span class="fc" id="L201">        return null;</span>
+      }
+      try {
+<span class="fc" id="L204">        return (short) in.nextInt();</span>
+<span class="fc" id="L205">      } catch (NumberFormatException e) {</span>
+<span class="fc" id="L206">        throw new JsonSyntaxException(e);</span>
+      }
+    }
+    @Override
+    public void write(JsonWriter out, Number value) throws IOException {
+<span class="fc" id="L211">      out.value(value);</span>
+<span class="fc" id="L212">    }</span>
+  };
+
+<span class="fc" id="L215">  public static final TypeAdapterFactory SHORT_FACTORY</span>
+<span class="fc" id="L216">      = newFactory(short.class, Short.class, SHORT);</span>
+
+<span class="fc" id="L218">  public static final TypeAdapter&lt;Number&gt; INTEGER = new TypeAdapter&lt;Number&gt;() {</span>
+    @Override
+    public Number read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L221" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L222">        in.nextNull();</span>
+<span class="fc" id="L223">        return null;</span>
+      }
+      try {
+<span class="fc" id="L226">        return in.nextInt();</span>
+<span class="fc" id="L227">      } catch (NumberFormatException e) {</span>
+<span class="fc" id="L228">        throw new JsonSyntaxException(e);</span>
+      }
+    }
+    @Override
+    public void write(JsonWriter out, Number value) throws IOException {
+<span class="fc" id="L233">      out.value(value);</span>
+<span class="fc" id="L234">    }</span>
+  };
+<span class="fc" id="L236">  public static final TypeAdapterFactory INTEGER_FACTORY</span>
+<span class="fc" id="L237">      = newFactory(int.class, Integer.class, INTEGER);</span>
+
+<span class="fc" id="L239">  public static final TypeAdapter&lt;AtomicInteger&gt; ATOMIC_INTEGER = new TypeAdapter&lt;AtomicInteger&gt;() {</span>
+    @Override public AtomicInteger read(JsonReader in) throws IOException {
+      try {
+<span class="fc" id="L242">        return new AtomicInteger(in.nextInt());</span>
+<span class="nc" id="L243">      } catch (NumberFormatException e) {</span>
+<span class="nc" id="L244">        throw new JsonSyntaxException(e);</span>
+      }
+    }
+    @Override public void write(JsonWriter out, AtomicInteger value) throws IOException {
+<span class="fc" id="L248">      out.value(value.get());</span>
+<span class="fc" id="L249">    }</span>
+<span class="fc" id="L250">  }.nullSafe();</span>
+<span class="fc" id="L251">  public static final TypeAdapterFactory ATOMIC_INTEGER_FACTORY =</span>
+<span class="fc" id="L252">      newFactory(AtomicInteger.class, TypeAdapters.ATOMIC_INTEGER);</span>
+
+<span class="fc" id="L254">  public static final TypeAdapter&lt;AtomicBoolean&gt; ATOMIC_BOOLEAN = new TypeAdapter&lt;AtomicBoolean&gt;() {</span>
+    @Override public AtomicBoolean read(JsonReader in) throws IOException {
+<span class="fc" id="L256">      return new AtomicBoolean(in.nextBoolean());</span>
+    }
+    @Override public void write(JsonWriter out, AtomicBoolean value) throws IOException {
+<span class="fc" id="L259">      out.value(value.get());</span>
+<span class="fc" id="L260">    }</span>
+<span class="fc" id="L261">  }.nullSafe();</span>
+<span class="fc" id="L262">  public static final TypeAdapterFactory ATOMIC_BOOLEAN_FACTORY =</span>
+<span class="fc" id="L263">      newFactory(AtomicBoolean.class, TypeAdapters.ATOMIC_BOOLEAN);</span>
+
+<span class="fc" id="L265">  public static final TypeAdapter&lt;AtomicIntegerArray&gt; ATOMIC_INTEGER_ARRAY = new TypeAdapter&lt;AtomicIntegerArray&gt;() {</span>
+    @Override public AtomicIntegerArray read(JsonReader in) throws IOException {
+<span class="fc" id="L267">        List&lt;Integer&gt; list = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L268">        in.beginArray();</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">        while (in.hasNext()) {</span>
+          try {
+<span class="fc" id="L271">            int integer = in.nextInt();</span>
+<span class="fc" id="L272">            list.add(integer);</span>
+<span class="nc" id="L273">          } catch (NumberFormatException e) {</span>
+<span class="nc" id="L274">            throw new JsonSyntaxException(e);</span>
+<span class="fc" id="L275">          }</span>
+        }
+<span class="fc" id="L277">        in.endArray();</span>
+<span class="fc" id="L278">        int length = list.size();</span>
+<span class="fc" id="L279">        AtomicIntegerArray array = new AtomicIntegerArray(length);</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        for (int i = 0; i &lt; length; ++i) {</span>
+<span class="fc" id="L281">          array.set(i, list.get(i));</span>
+        }
+<span class="fc" id="L283">        return array;</span>
+    }
+    @Override public void write(JsonWriter out, AtomicIntegerArray value) throws IOException {
+<span class="fc" id="L286">      out.beginArray();</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">      for (int i = 0, length = value.length(); i &lt; length; i++) {</span>
+<span class="fc" id="L288">        out.value(value.get(i));</span>
+      }
+<span class="fc" id="L290">      out.endArray();</span>
+<span class="fc" id="L291">    }</span>
+<span class="fc" id="L292">  }.nullSafe();</span>
+<span class="fc" id="L293">  public static final TypeAdapterFactory ATOMIC_INTEGER_ARRAY_FACTORY =</span>
+<span class="fc" id="L294">      newFactory(AtomicIntegerArray.class, TypeAdapters.ATOMIC_INTEGER_ARRAY);</span>
+
+<span class="fc" id="L296">  public static final TypeAdapter&lt;Number&gt; LONG = new TypeAdapter&lt;Number&gt;() {</span>
+    @Override
+    public Number read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L299" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L300">        in.nextNull();</span>
+<span class="fc" id="L301">        return null;</span>
+      }
+      try {
+<span class="fc" id="L304">        return in.nextLong();</span>
+<span class="fc" id="L305">      } catch (NumberFormatException e) {</span>
+<span class="fc" id="L306">        throw new JsonSyntaxException(e);</span>
+      }
+    }
+    @Override
+    public void write(JsonWriter out, Number value) throws IOException {
+<span class="fc" id="L311">      out.value(value);</span>
+<span class="fc" id="L312">    }</span>
+  };
+
+<span class="fc" id="L315">  public static final TypeAdapter&lt;Number&gt; FLOAT = new TypeAdapter&lt;Number&gt;() {</span>
+    @Override
+    public Number read(JsonReader in) throws IOException {
+<span class="nc bnc" id="L318" title="All 2 branches missed.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="nc" id="L319">        in.nextNull();</span>
+<span class="nc" id="L320">        return null;</span>
+      }
+<span class="nc" id="L322">      return (float) in.nextDouble();</span>
+    }
+    @Override
+    public void write(JsonWriter out, Number value) throws IOException {
+<span class="fc" id="L326">      out.value(value);</span>
+<span class="fc" id="L327">    }</span>
+  };
+
+<span class="fc" id="L330">  public static final TypeAdapter&lt;Number&gt; DOUBLE = new TypeAdapter&lt;Number&gt;() {</span>
+    @Override
+    public Number read(JsonReader in) throws IOException {
+<span class="nc bnc" id="L333" title="All 2 branches missed.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="nc" id="L334">        in.nextNull();</span>
+<span class="nc" id="L335">        return null;</span>
+      }
+<span class="nc" id="L337">      return in.nextDouble();</span>
+    }
+    @Override
+    public void write(JsonWriter out, Number value) throws IOException {
+<span class="fc" id="L341">      out.value(value);</span>
+<span class="fc" id="L342">    }</span>
+  };
+
+<span class="fc" id="L345">  public static final TypeAdapter&lt;Number&gt; NUMBER = new TypeAdapter&lt;Number&gt;() {</span>
+    @Override
+    public Number read(JsonReader in) throws IOException {
+<span class="fc" id="L348">      JsonToken jsonToken = in.peek();</span>
+<span class="fc bfc" id="L349" title="All 3 branches covered.">      switch (jsonToken) {</span>
+      case NULL:
+<span class="fc" id="L351">        in.nextNull();</span>
+<span class="fc" id="L352">        return null;</span>
+      case NUMBER:
+      case STRING:
+<span class="fc" id="L355">        return new LazilyParsedNumber(in.nextString());</span>
+      default:
+<span class="fc" id="L357">        throw new JsonSyntaxException(&quot;Expecting number, got: &quot; + jsonToken);</span>
+      }
+    }
+    @Override
+    public void write(JsonWriter out, Number value) throws IOException {
+<span class="fc" id="L362">      out.value(value);</span>
+<span class="fc" id="L363">    }</span>
+  };
+
+<span class="fc" id="L366">  public static final TypeAdapterFactory NUMBER_FACTORY = newFactory(Number.class, NUMBER);</span>
+
+<span class="fc" id="L368">  public static final TypeAdapter&lt;Character&gt; CHARACTER = new TypeAdapter&lt;Character&gt;() {</span>
+    @Override
+    public Character read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L371" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L372">        in.nextNull();</span>
+<span class="fc" id="L373">        return null;</span>
+      }
+<span class="fc" id="L375">      String str = in.nextString();</span>
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">      if (str.length() != 1) {</span>
+<span class="nc" id="L377">        throw new JsonSyntaxException(&quot;Expecting character, got: &quot; + str);</span>
+      }
+<span class="fc" id="L379">      return str.charAt(0);</span>
+    }
+    @Override
+    public void write(JsonWriter out, Character value) throws IOException {
+<span class="fc bfc" id="L383" title="All 2 branches covered.">      out.value(value == null ? null : String.valueOf(value));</span>
+<span class="fc" id="L384">    }</span>
+  };
+
+<span class="fc" id="L387">  public static final TypeAdapterFactory CHARACTER_FACTORY</span>
+<span class="fc" id="L388">      = newFactory(char.class, Character.class, CHARACTER);</span>
+
+<span class="fc" id="L390">  public static final TypeAdapter&lt;String&gt; STRING = new TypeAdapter&lt;String&gt;() {</span>
+    @Override
+    public String read(JsonReader in) throws IOException {
+<span class="fc" id="L393">      JsonToken peek = in.peek();</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">      if (peek == JsonToken.NULL) {</span>
+<span class="fc" id="L395">        in.nextNull();</span>
+<span class="fc" id="L396">        return null;</span>
+      }
+      /* coerce booleans to strings for backwards compatibility */
+<span class="fc bfc" id="L399" title="All 2 branches covered.">      if (peek == JsonToken.BOOLEAN) {</span>
+<span class="fc" id="L400">        return Boolean.toString(in.nextBoolean());</span>
+      }
+<span class="fc" id="L402">      return in.nextString();</span>
+    }
+    @Override
+    public void write(JsonWriter out, String value) throws IOException {
+<span class="fc" id="L406">      out.value(value);</span>
+<span class="fc" id="L407">    }</span>
+  };
+  
+<span class="fc" id="L410">  public static final TypeAdapter&lt;BigDecimal&gt; BIG_DECIMAL = new TypeAdapter&lt;BigDecimal&gt;() {</span>
+    @Override public BigDecimal read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L412" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L413">        in.nextNull();</span>
+<span class="fc" id="L414">        return null;</span>
+      }
+      try {
+<span class="fc" id="L417">        return new BigDecimal(in.nextString());</span>
+<span class="fc" id="L418">      } catch (NumberFormatException e) {</span>
+<span class="fc" id="L419">        throw new JsonSyntaxException(e);</span>
+      }
+    }
+
+    @Override public void write(JsonWriter out, BigDecimal value) throws IOException {
+<span class="fc" id="L424">      out.value(value);</span>
+<span class="fc" id="L425">    }</span>
+  };
+  
+<span class="fc" id="L428">  public static final TypeAdapter&lt;BigInteger&gt; BIG_INTEGER = new TypeAdapter&lt;BigInteger&gt;() {</span>
+    @Override public BigInteger read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L430" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L431">        in.nextNull();</span>
+<span class="fc" id="L432">        return null;</span>
+      }
+      try {
+<span class="fc" id="L435">        return new BigInteger(in.nextString());</span>
+<span class="fc" id="L436">      } catch (NumberFormatException e) {</span>
+<span class="fc" id="L437">        throw new JsonSyntaxException(e);</span>
+      }
+    }
+
+    @Override public void write(JsonWriter out, BigInteger value) throws IOException {
+<span class="fc" id="L442">      out.value(value);</span>
+<span class="fc" id="L443">    }</span>
+  };
+
+<span class="fc" id="L446">  public static final TypeAdapterFactory STRING_FACTORY = newFactory(String.class, STRING);</span>
+
+<span class="fc" id="L448">  public static final TypeAdapter&lt;StringBuilder&gt; STRING_BUILDER = new TypeAdapter&lt;StringBuilder&gt;() {</span>
+    @Override
+    public StringBuilder read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L451" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L452">        in.nextNull();</span>
+<span class="fc" id="L453">        return null;</span>
+      }
+<span class="fc" id="L455">      return new StringBuilder(in.nextString());</span>
+    }
+    @Override
+    public void write(JsonWriter out, StringBuilder value) throws IOException {
+<span class="fc bfc" id="L459" title="All 2 branches covered.">      out.value(value == null ? null : value.toString());</span>
+<span class="fc" id="L460">    }</span>
+  };
+
+<span class="fc" id="L463">  public static final TypeAdapterFactory STRING_BUILDER_FACTORY =</span>
+<span class="fc" id="L464">    newFactory(StringBuilder.class, STRING_BUILDER);</span>
+
+<span class="fc" id="L466">  public static final TypeAdapter&lt;StringBuffer&gt; STRING_BUFFER = new TypeAdapter&lt;StringBuffer&gt;() {</span>
+    @Override
+    public StringBuffer read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L469" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L470">        in.nextNull();</span>
+<span class="fc" id="L471">        return null;</span>
+      }
+<span class="fc" id="L473">      return new StringBuffer(in.nextString());</span>
+    }
+    @Override
+    public void write(JsonWriter out, StringBuffer value) throws IOException {
+<span class="fc bfc" id="L477" title="All 2 branches covered.">      out.value(value == null ? null : value.toString());</span>
+<span class="fc" id="L478">    }</span>
+  };
+
+<span class="fc" id="L481">  public static final TypeAdapterFactory STRING_BUFFER_FACTORY =</span>
+<span class="fc" id="L482">    newFactory(StringBuffer.class, STRING_BUFFER);</span>
+
+<span class="fc" id="L484">  public static final TypeAdapter&lt;URL&gt; URL = new TypeAdapter&lt;URL&gt;() {</span>
+    @Override
+    public URL read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L487" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L488">        in.nextNull();</span>
+<span class="fc" id="L489">        return null;</span>
+      }
+<span class="fc" id="L491">      String nextString = in.nextString();</span>
+<span class="pc bpc" id="L492" title="1 of 2 branches missed.">      return &quot;null&quot;.equals(nextString) ? null : new URL(nextString);</span>
+    }
+    @Override
+    public void write(JsonWriter out, URL value) throws IOException {
+<span class="fc bfc" id="L496" title="All 2 branches covered.">      out.value(value == null ? null : value.toExternalForm());</span>
+<span class="fc" id="L497">    }</span>
+  };
+
+<span class="fc" id="L500">  public static final TypeAdapterFactory URL_FACTORY = newFactory(URL.class, URL);</span>
+
+<span class="fc" id="L502">  public static final TypeAdapter&lt;URI&gt; URI = new TypeAdapter&lt;URI&gt;() {</span>
+    @Override
+    public URI read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L505" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L506">        in.nextNull();</span>
+<span class="fc" id="L507">        return null;</span>
+      }
+      try {
+<span class="fc" id="L510">        String nextString = in.nextString();</span>
+<span class="pc bpc" id="L511" title="1 of 2 branches missed.">        return &quot;null&quot;.equals(nextString) ? null : new URI(nextString);</span>
+<span class="nc" id="L512">      } catch (URISyntaxException e) {</span>
+<span class="nc" id="L513">        throw new JsonIOException(e);</span>
+      }
+    }
+    @Override
+    public void write(JsonWriter out, URI value) throws IOException {
+<span class="fc bfc" id="L518" title="All 2 branches covered.">      out.value(value == null ? null : value.toASCIIString());</span>
+<span class="fc" id="L519">    }</span>
+  };
+
+<span class="fc" id="L522">  public static final TypeAdapterFactory URI_FACTORY = newFactory(URI.class, URI);</span>
+
+<span class="fc" id="L524">  public static final TypeAdapter&lt;InetAddress&gt; INET_ADDRESS = new TypeAdapter&lt;InetAddress&gt;() {</span>
+    @Override
+    public InetAddress read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L527" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L528">        in.nextNull();</span>
+<span class="fc" id="L529">        return null;</span>
+      }
+      // regrettably, this should have included both the host name and the host address
+<span class="fc" id="L532">      return InetAddress.getByName(in.nextString());</span>
+    }
+    @Override
+    public void write(JsonWriter out, InetAddress value) throws IOException {
+<span class="fc bfc" id="L536" title="All 2 branches covered.">      out.value(value == null ? null : value.getHostAddress());</span>
+<span class="fc" id="L537">    }</span>
+  };
+
+<span class="fc" id="L540">  public static final TypeAdapterFactory INET_ADDRESS_FACTORY =</span>
+<span class="fc" id="L541">    newTypeHierarchyFactory(InetAddress.class, INET_ADDRESS);</span>
+
+<span class="fc" id="L543">  public static final TypeAdapter&lt;UUID&gt; UUID = new TypeAdapter&lt;UUID&gt;() {</span>
+    @Override
+    public UUID read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L546" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L547">        in.nextNull();</span>
+<span class="fc" id="L548">        return null;</span>
+      }
+<span class="fc" id="L550">      return java.util.UUID.fromString(in.nextString());</span>
+    }
+    @Override
+    public void write(JsonWriter out, UUID value) throws IOException {
+<span class="fc bfc" id="L554" title="All 2 branches covered.">      out.value(value == null ? null : value.toString());</span>
+<span class="fc" id="L555">    }</span>
+  };
+
+<span class="fc" id="L558">  public static final TypeAdapterFactory UUID_FACTORY = newFactory(UUID.class, UUID);</span>
+
+<span class="fc" id="L560">  public static final TypeAdapter&lt;Currency&gt; CURRENCY = new TypeAdapter&lt;Currency&gt;() {</span>
+    @Override
+    public Currency read(JsonReader in) throws IOException {
+<span class="fc" id="L563">      return Currency.getInstance(in.nextString());</span>
+    }
+    @Override
+    public void write(JsonWriter out, Currency value) throws IOException {
+<span class="fc" id="L567">      out.value(value.getCurrencyCode());</span>
+<span class="fc" id="L568">    }</span>
+<span class="fc" id="L569">  }.nullSafe();</span>
+<span class="fc" id="L570">  public static final TypeAdapterFactory CURRENCY_FACTORY = newFactory(Currency.class, CURRENCY);</span>
+
+<span class="fc" id="L572">  public static final TypeAdapterFactory TIMESTAMP_FACTORY = new TypeAdapterFactory() {</span>
+    @SuppressWarnings(&quot;unchecked&quot;) // we use a runtime check to make sure the 'T's equal
+    @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {
+<span class="fc bfc" id="L575" title="All 2 branches covered.">      if (typeToken.getRawType() != Timestamp.class) {</span>
+<span class="fc" id="L576">        return null;</span>
+      }
+
+<span class="fc" id="L579">      final TypeAdapter&lt;Date&gt; dateTypeAdapter = gson.getAdapter(Date.class);</span>
+<span class="fc" id="L580">      return (TypeAdapter&lt;T&gt;) new TypeAdapter&lt;Timestamp&gt;() {</span>
+        @Override public Timestamp read(JsonReader in) throws IOException {
+<span class="fc" id="L582">          Date date = dateTypeAdapter.read(in);</span>
+<span class="fc bfc" id="L583" title="All 2 branches covered.">          return date != null ? new Timestamp(date.getTime()) : null;</span>
+        }
+
+        @Override public void write(JsonWriter out, Timestamp value) throws IOException {
+<span class="fc" id="L587">          dateTypeAdapter.write(out, value);</span>
+<span class="fc" id="L588">        }</span>
+      };
+    }
+  };
+
+<span class="fc" id="L593">  public static final TypeAdapter&lt;Calendar&gt; CALENDAR = new TypeAdapter&lt;Calendar&gt;() {</span>
+    private static final String YEAR = &quot;year&quot;;
+    private static final String MONTH = &quot;month&quot;;
+    private static final String DAY_OF_MONTH = &quot;dayOfMonth&quot;;
+    private static final String HOUR_OF_DAY = &quot;hourOfDay&quot;;
+    private static final String MINUTE = &quot;minute&quot;;
+    private static final String SECOND = &quot;second&quot;;
+
+    @Override
+    public Calendar read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L603" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L604">        in.nextNull();</span>
+<span class="fc" id="L605">        return  null;</span>
+      }
+<span class="fc" id="L607">      in.beginObject();</span>
+<span class="fc" id="L608">      int year = 0;</span>
+<span class="fc" id="L609">      int month = 0;</span>
+<span class="fc" id="L610">      int dayOfMonth = 0;</span>
+<span class="fc" id="L611">      int hourOfDay = 0;</span>
+<span class="fc" id="L612">      int minute = 0;</span>
+<span class="fc" id="L613">      int second = 0;</span>
+<span class="fc bfc" id="L614" title="All 2 branches covered.">      while (in.peek() != JsonToken.END_OBJECT) {</span>
+<span class="fc" id="L615">        String name = in.nextName();</span>
+<span class="fc" id="L616">        int value = in.nextInt();</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">        if (YEAR.equals(name)) {</span>
+<span class="fc" id="L618">          year = value;</span>
+<span class="fc bfc" id="L619" title="All 2 branches covered.">        } else if (MONTH.equals(name)) {</span>
+<span class="fc" id="L620">          month = value;</span>
+<span class="fc bfc" id="L621" title="All 2 branches covered.">        } else if (DAY_OF_MONTH.equals(name)) {</span>
+<span class="fc" id="L622">          dayOfMonth = value;</span>
+<span class="fc bfc" id="L623" title="All 2 branches covered.">        } else if (HOUR_OF_DAY.equals(name)) {</span>
+<span class="fc" id="L624">          hourOfDay = value;</span>
+<span class="fc bfc" id="L625" title="All 2 branches covered.">        } else if (MINUTE.equals(name)) {</span>
+<span class="fc" id="L626">          minute = value;</span>
+<span class="pc bpc" id="L627" title="1 of 2 branches missed.">        } else if (SECOND.equals(name)) {</span>
+<span class="fc" id="L628">          second = value;</span>
+        }
+<span class="fc" id="L630">      }</span>
+<span class="fc" id="L631">      in.endObject();</span>
+<span class="fc" id="L632">      return new GregorianCalendar(year, month, dayOfMonth, hourOfDay, minute, second);</span>
+    }
+
+    @Override
+    public void write(JsonWriter out, Calendar value) throws IOException {
+<span class="fc bfc" id="L637" title="All 2 branches covered.">      if (value == null) {</span>
+<span class="fc" id="L638">        out.nullValue();</span>
+<span class="fc" id="L639">        return;</span>
+      }
+<span class="fc" id="L641">      out.beginObject();</span>
+<span class="fc" id="L642">      out.name(YEAR);</span>
+<span class="fc" id="L643">      out.value(value.get(Calendar.YEAR));</span>
+<span class="fc" id="L644">      out.name(MONTH);</span>
+<span class="fc" id="L645">      out.value(value.get(Calendar.MONTH));</span>
+<span class="fc" id="L646">      out.name(DAY_OF_MONTH);</span>
+<span class="fc" id="L647">      out.value(value.get(Calendar.DAY_OF_MONTH));</span>
+<span class="fc" id="L648">      out.name(HOUR_OF_DAY);</span>
+<span class="fc" id="L649">      out.value(value.get(Calendar.HOUR_OF_DAY));</span>
+<span class="fc" id="L650">      out.name(MINUTE);</span>
+<span class="fc" id="L651">      out.value(value.get(Calendar.MINUTE));</span>
+<span class="fc" id="L652">      out.name(SECOND);</span>
+<span class="fc" id="L653">      out.value(value.get(Calendar.SECOND));</span>
+<span class="fc" id="L654">      out.endObject();</span>
+<span class="fc" id="L655">    }</span>
+  };
+
+<span class="fc" id="L658">  public static final TypeAdapterFactory CALENDAR_FACTORY =</span>
+<span class="fc" id="L659">    newFactoryForMultipleTypes(Calendar.class, GregorianCalendar.class, CALENDAR);</span>
+
+<span class="fc" id="L661">  public static final TypeAdapter&lt;Locale&gt; LOCALE = new TypeAdapter&lt;Locale&gt;() {</span>
+    @Override
+    public Locale read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L664" title="All 2 branches covered.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L665">        in.nextNull();</span>
+<span class="fc" id="L666">        return null;</span>
+      }
+<span class="fc" id="L668">      String locale = in.nextString();</span>
+<span class="fc" id="L669">      StringTokenizer tokenizer = new StringTokenizer(locale, &quot;_&quot;);</span>
+<span class="fc" id="L670">      String language = null;</span>
+<span class="fc" id="L671">      String country = null;</span>
+<span class="fc" id="L672">      String variant = null;</span>
+<span class="pc bpc" id="L673" title="1 of 2 branches missed.">      if (tokenizer.hasMoreElements()) {</span>
+<span class="fc" id="L674">        language = tokenizer.nextToken();</span>
+      }
+<span class="fc bfc" id="L676" title="All 2 branches covered.">      if (tokenizer.hasMoreElements()) {</span>
+<span class="fc" id="L677">        country = tokenizer.nextToken();</span>
+      }
+<span class="fc bfc" id="L679" title="All 2 branches covered.">      if (tokenizer.hasMoreElements()) {</span>
+<span class="fc" id="L680">        variant = tokenizer.nextToken();</span>
+      }
+<span class="pc bpc" id="L682" title="1 of 4 branches missed.">      if (country == null &amp;&amp; variant == null) {</span>
+<span class="fc" id="L683">        return new Locale(language);</span>
+<span class="fc bfc" id="L684" title="All 2 branches covered.">      } else if (variant == null) {</span>
+<span class="fc" id="L685">        return new Locale(language, country);</span>
+      } else {
+<span class="fc" id="L687">        return new Locale(language, country, variant);</span>
+      }
+    }
+    @Override
+    public void write(JsonWriter out, Locale value) throws IOException {
+<span class="fc bfc" id="L692" title="All 2 branches covered.">      out.value(value == null ? null : value.toString());</span>
+<span class="fc" id="L693">    }</span>
+  };
+
+<span class="fc" id="L696">  public static final TypeAdapterFactory LOCALE_FACTORY = newFactory(Locale.class, LOCALE);</span>
+
+<span class="fc" id="L698">  public static final TypeAdapter&lt;JsonElement&gt; JSON_ELEMENT = new TypeAdapter&lt;JsonElement&gt;() {</span>
+    @Override public JsonElement read(JsonReader in) throws IOException {
+<span class="pc bpc" id="L700" title="1 of 7 branches missed.">      switch (in.peek()) {</span>
+      case STRING:
+<span class="fc" id="L702">        return new JsonPrimitive(in.nextString());</span>
+      case NUMBER:
+<span class="fc" id="L704">        String number = in.nextString();</span>
+<span class="fc" id="L705">        return new JsonPrimitive(new LazilyParsedNumber(number));</span>
+      case BOOLEAN:
+<span class="fc" id="L707">        return new JsonPrimitive(in.nextBoolean());</span>
+      case NULL:
+<span class="fc" id="L709">        in.nextNull();</span>
+<span class="fc" id="L710">        return JsonNull.INSTANCE;</span>
+      case BEGIN_ARRAY:
+<span class="fc" id="L712">        JsonArray array = new JsonArray();</span>
+<span class="fc" id="L713">        in.beginArray();</span>
+<span class="fc bfc" id="L714" title="All 2 branches covered.">        while (in.hasNext()) {</span>
+<span class="fc" id="L715">          array.add(read(in));</span>
+        }
+<span class="fc" id="L717">        in.endArray();</span>
+<span class="fc" id="L718">        return array;</span>
+      case BEGIN_OBJECT:
+<span class="fc" id="L720">        JsonObject object = new JsonObject();</span>
+<span class="fc" id="L721">        in.beginObject();</span>
+<span class="fc bfc" id="L722" title="All 2 branches covered.">        while (in.hasNext()) {</span>
+<span class="fc" id="L723">          object.add(in.nextName(), read(in));</span>
+        }
+<span class="fc" id="L725">        in.endObject();</span>
+<span class="fc" id="L726">        return object;</span>
+      case END_DOCUMENT:
+      case NAME:
+      case END_OBJECT:
+      case END_ARRAY:
+      default:
+<span class="nc" id="L732">        throw new IllegalArgumentException();</span>
+      }
+    }
+
+    @Override public void write(JsonWriter out, JsonElement value) throws IOException {
+<span class="fc bfc" id="L737" title="All 4 branches covered.">      if (value == null || value.isJsonNull()) {</span>
+<span class="fc" id="L738">        out.nullValue();</span>
+<span class="fc bfc" id="L739" title="All 2 branches covered.">      } else if (value.isJsonPrimitive()) {</span>
+<span class="fc" id="L740">        JsonPrimitive primitive = value.getAsJsonPrimitive();</span>
+<span class="fc bfc" id="L741" title="All 2 branches covered.">        if (primitive.isNumber()) {</span>
+<span class="fc" id="L742">          out.value(primitive.getAsNumber());</span>
+<span class="fc bfc" id="L743" title="All 2 branches covered.">        } else if (primitive.isBoolean()) {</span>
+<span class="fc" id="L744">          out.value(primitive.getAsBoolean());</span>
+        } else {
+<span class="fc" id="L746">          out.value(primitive.getAsString());</span>
+        }
+
+<span class="fc bfc" id="L749" title="All 2 branches covered.">      } else if (value.isJsonArray()) {</span>
+<span class="fc" id="L750">        out.beginArray();</span>
+<span class="fc bfc" id="L751" title="All 2 branches covered.">        for (JsonElement e : value.getAsJsonArray()) {</span>
+<span class="fc" id="L752">          write(out, e);</span>
+<span class="fc" id="L753">        }</span>
+<span class="fc" id="L754">        out.endArray();</span>
+
+<span class="pc bpc" id="L756" title="1 of 2 branches missed.">      } else if (value.isJsonObject()) {</span>
+<span class="fc" id="L757">        out.beginObject();</span>
+<span class="fc bfc" id="L758" title="All 2 branches covered.">        for (Map.Entry&lt;String, JsonElement&gt; e : value.getAsJsonObject().entrySet()) {</span>
+<span class="fc" id="L759">          out.name(e.getKey());</span>
+<span class="fc" id="L760">          write(out, e.getValue());</span>
+<span class="fc" id="L761">        }</span>
+<span class="fc" id="L762">        out.endObject();</span>
+
+      } else {
+<span class="nc" id="L765">        throw new IllegalArgumentException(&quot;Couldn't write &quot; + value.getClass());</span>
+      }
+<span class="fc" id="L767">    }</span>
+  };
+
+<span class="fc" id="L770">  public static final TypeAdapterFactory JSON_ELEMENT_FACTORY</span>
+<span class="fc" id="L771">      = newTypeHierarchyFactory(JsonElement.class, JSON_ELEMENT);</span>
+
+  private static final class EnumTypeAdapter&lt;T extends Enum&lt;T&gt;&gt; extends TypeAdapter&lt;T&gt; {
+<span class="fc" id="L774">    private final Map&lt;String, T&gt; nameToConstant = new HashMap&lt;String, T&gt;();</span>
+<span class="fc" id="L775">    private final Map&lt;T, String&gt; constantToName = new HashMap&lt;T, String&gt;();</span>
+
+<span class="fc" id="L777">    public EnumTypeAdapter(Class&lt;T&gt; classOfT) {</span>
+      try {
+<span class="fc bfc" id="L779" title="All 2 branches covered.">        for (T constant : classOfT.getEnumConstants()) {</span>
+<span class="fc" id="L780">          String name = constant.name();</span>
+<span class="fc" id="L781">          SerializedName annotation = classOfT.getField(name).getAnnotation(SerializedName.class);</span>
+<span class="fc bfc" id="L782" title="All 2 branches covered.">          if (annotation != null) {</span>
+<span class="fc" id="L783">            name = annotation.value();</span>
+<span class="pc bpc" id="L784" title="1 of 2 branches missed.">            for (String alternate : annotation.alternate()) {</span>
+<span class="nc" id="L785">              nameToConstant.put(alternate, constant);</span>
+            }
+          }
+<span class="fc" id="L788">          nameToConstant.put(name, constant);</span>
+<span class="fc" id="L789">          constantToName.put(constant, name);</span>
+        }
+<span class="nc" id="L791">      } catch (NoSuchFieldException e) {</span>
+<span class="nc" id="L792">        throw new AssertionError(e);</span>
+<span class="fc" id="L793">      }</span>
+<span class="fc" id="L794">    }</span>
+    @Override public T read(JsonReader in) throws IOException {
+<span class="pc bpc" id="L796" title="1 of 2 branches missed.">      if (in.peek() == JsonToken.NULL) {</span>
+<span class="nc" id="L797">        in.nextNull();</span>
+<span class="nc" id="L798">        return null;</span>
+      }
+<span class="fc" id="L800">      return nameToConstant.get(in.nextString());</span>
+    }
+
+    @Override public void write(JsonWriter out, T value) throws IOException {
+<span class="pc bpc" id="L804" title="1 of 2 branches missed.">      out.value(value == null ? null : constantToName.get(value));</span>
+<span class="fc" id="L805">    }</span>
+  }
+
+<span class="fc" id="L808">  public static final TypeAdapterFactory ENUM_FACTORY = new TypeAdapterFactory() {</span>
+    @SuppressWarnings({&quot;rawtypes&quot;, &quot;unchecked&quot;})
+    @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {
+<span class="fc" id="L811">      Class&lt;? super T&gt; rawType = typeToken.getRawType();</span>
+<span class="fc bfc" id="L812" title="All 4 branches covered.">      if (!Enum.class.isAssignableFrom(rawType) || rawType == Enum.class) {</span>
+<span class="fc" id="L813">        return null;</span>
+      }
+<span class="fc bfc" id="L815" title="All 2 branches covered.">      if (!rawType.isEnum()) {</span>
+<span class="fc" id="L816">        rawType = rawType.getSuperclass(); // handle anonymous subclasses</span>
+      }
+<span class="fc" id="L818">      return (TypeAdapter&lt;T&gt;) new EnumTypeAdapter(rawType);</span>
+    }
+  };
+
+  public static &lt;TT&gt; TypeAdapterFactory newFactory(
+      final TypeToken&lt;TT&gt; type, final TypeAdapter&lt;TT&gt; typeAdapter) {
+<span class="fc" id="L824">    return new TypeAdapterFactory() {</span>
+      @SuppressWarnings(&quot;unchecked&quot;) // we use a runtime check to make sure the 'T's equal
+      @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {
+<span class="fc bfc" id="L827" title="All 2 branches covered.">        return typeToken.equals(type) ? (TypeAdapter&lt;T&gt;) typeAdapter : null;</span>
+      }
+    };
+  }
+
+  public static &lt;TT&gt; TypeAdapterFactory newFactory(
+      final Class&lt;TT&gt; type, final TypeAdapter&lt;TT&gt; typeAdapter) {
+<span class="fc" id="L834">    return new TypeAdapterFactory() {</span>
+      @SuppressWarnings(&quot;unchecked&quot;) // we use a runtime check to make sure the 'T's equal
+      @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {
+<span class="fc bfc" id="L837" title="All 2 branches covered.">        return typeToken.getRawType() == type ? (TypeAdapter&lt;T&gt;) typeAdapter : null;</span>
+      }
+      @Override public String toString() {
+<span class="nc" id="L840">        return &quot;Factory[type=&quot; + type.getName() + &quot;,adapter=&quot; + typeAdapter + &quot;]&quot;;</span>
+      }
+    };
+  }
+
+  public static &lt;TT&gt; TypeAdapterFactory newFactory(
+      final Class&lt;TT&gt; unboxed, final Class&lt;TT&gt; boxed, final TypeAdapter&lt;? super TT&gt; typeAdapter) {
+<span class="fc" id="L847">    return new TypeAdapterFactory() {</span>
+      @SuppressWarnings(&quot;unchecked&quot;) // we use a runtime check to make sure the 'T's equal
+      @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {
+<span class="fc" id="L850">        Class&lt;? super T&gt; rawType = typeToken.getRawType();</span>
+<span class="fc bfc" id="L851" title="All 4 branches covered.">        return (rawType == unboxed || rawType == boxed) ? (TypeAdapter&lt;T&gt;) typeAdapter : null;</span>
+      }
+      @Override public String toString() {
+<span class="nc" id="L854">        return &quot;Factory[type=&quot; + boxed.getName()</span>
+<span class="nc" id="L855">            + &quot;+&quot; + unboxed.getName() + &quot;,adapter=&quot; + typeAdapter + &quot;]&quot;;</span>
+      }
+    };
+  }
+
+  public static &lt;TT&gt; TypeAdapterFactory newFactoryForMultipleTypes(final Class&lt;TT&gt; base,
+      final Class&lt;? extends TT&gt; sub, final TypeAdapter&lt;? super TT&gt; typeAdapter) {
+<span class="fc" id="L862">    return new TypeAdapterFactory() {</span>
+      @SuppressWarnings(&quot;unchecked&quot;) // we use a runtime check to make sure the 'T's equal
+      @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {
+<span class="fc" id="L865">        Class&lt;? super T&gt; rawType = typeToken.getRawType();</span>
+<span class="fc bfc" id="L866" title="All 4 branches covered.">        return (rawType == base || rawType == sub) ? (TypeAdapter&lt;T&gt;) typeAdapter : null;</span>
+      }
+      @Override public String toString() {
+<span class="nc" id="L869">        return &quot;Factory[type=&quot; + base.getName()</span>
+<span class="nc" id="L870">            + &quot;+&quot; + sub.getName() + &quot;,adapter=&quot; + typeAdapter + &quot;]&quot;;</span>
+      }
+    };
+  }
+
+  /**
+   * Returns a factory for all subtypes of {@code typeAdapter}. We do a runtime check to confirm
+   * that the deserialized type matches the type requested.
+   */
+  public static &lt;T1&gt; TypeAdapterFactory newTypeHierarchyFactory(
+      final Class&lt;T1&gt; clazz, final TypeAdapter&lt;T1&gt; typeAdapter) {
+<span class="fc" id="L881">    return new TypeAdapterFactory() {</span>
+      @SuppressWarnings(&quot;unchecked&quot;)
+      @Override public &lt;T2&gt; TypeAdapter&lt;T2&gt; create(Gson gson, TypeToken&lt;T2&gt; typeToken) {
+<span class="fc" id="L884">        final Class&lt;? super T2&gt; requestedType = typeToken.getRawType();</span>
+<span class="fc bfc" id="L885" title="All 2 branches covered.">        if (!clazz.isAssignableFrom(requestedType)) {</span>
+<span class="fc" id="L886">          return null;</span>
+        }
+<span class="fc" id="L888">        return (TypeAdapter&lt;T2&gt;) new TypeAdapter&lt;T1&gt;() {</span>
+          @Override public void write(JsonWriter out, T1 value) throws IOException {
+<span class="fc" id="L890">            typeAdapter.write(out, value);</span>
+<span class="fc" id="L891">          }</span>
+
+          @Override public T1 read(JsonReader in) throws IOException {
+<span class="fc" id="L894">            T1 result = typeAdapter.read(in);</span>
+<span class="fc bfc" id="L895" title="All 4 branches covered.">            if (result != null &amp;&amp; !requestedType.isInstance(result)) {</span>
+<span class="fc" id="L896">              throw new JsonSyntaxException(&quot;Expected a &quot; + requestedType.getName()</span>
+<span class="fc" id="L897">                  + &quot; but was &quot; + result.getClass().getName());</span>
+            }
+<span class="fc" id="L899">            return result;</span>
+          }
+        };
+      }
+      @Override public String toString() {
+<span class="nc" id="L904">        return &quot;Factory[typeHierarchy=&quot; + clazz.getName() + &quot;,adapter=&quot; + typeAdapter + &quot;]&quot;;</span>
+      }
+    };
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonAdapterAnnotationOnFieldsTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">JsonAdapterAnnotationOnFieldsTest.java</span></div><h1>JsonAdapterAnnotationOnFieldsTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2014 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+
+import junit.framework.TestCase;
+
+/**
+ * Functional tests for the {@link com.google.gson.annotations.JsonAdapter} annotation on fields.
+ */
+<span class="fc" id="L37">public final class JsonAdapterAnnotationOnFieldsTest extends TestCase {</span>
+  public void testClassAnnotationAdapterTakesPrecedenceOverDefault() {
+<span class="fc" id="L39">    Gson gson = new Gson();</span>
+<span class="fc" id="L40">    String json = gson.toJson(new Computer(new User(&quot;Inderjeet Singh&quot;)));</span>
+<span class="fc" id="L41">    assertEquals(&quot;{\&quot;user\&quot;:\&quot;UserClassAnnotationAdapter\&quot;}&quot;, json);</span>
+<span class="fc" id="L42">    Computer computer = gson.fromJson(&quot;{'user':'Inderjeet Singh'}&quot;, Computer.class);</span>
+<span class="fc" id="L43">    assertEquals(&quot;UserClassAnnotationAdapter&quot;, computer.user.name);</span>
+<span class="fc" id="L44">  }</span>
+
+  public void testClassAnnotationAdapterFactoryTakesPrecedenceOverDefault() {
+<span class="fc" id="L47">    Gson gson = new Gson();</span>
+<span class="fc" id="L48">    String json = gson.toJson(new Gizmo(new Part(&quot;Part&quot;)));</span>
+<span class="fc" id="L49">    assertEquals(&quot;{\&quot;part\&quot;:\&quot;GizmoPartTypeAdapterFactory\&quot;}&quot;, json);</span>
+<span class="fc" id="L50">    Gizmo computer = gson.fromJson(&quot;{'part':'Part'}&quot;, Gizmo.class);</span>
+<span class="fc" id="L51">    assertEquals(&quot;GizmoPartTypeAdapterFactory&quot;, computer.part.name);</span>
+<span class="fc" id="L52">  }</span>
+
+  public void testRegisteredTypeAdapterTakesPrecedenceOverClassAnnotationAdapter() {
+<span class="fc" id="L55">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L56">        .registerTypeAdapter(User.class, new RegisteredUserAdapter())</span>
+<span class="fc" id="L57">        .create();</span>
+<span class="fc" id="L58">    String json = gson.toJson(new Computer(new User(&quot;Inderjeet Singh&quot;)));</span>
+<span class="fc" id="L59">    assertEquals(&quot;{\&quot;user\&quot;:\&quot;RegisteredUserAdapter\&quot;}&quot;, json);</span>
+<span class="fc" id="L60">    Computer computer = gson.fromJson(&quot;{'user':'Inderjeet Singh'}&quot;, Computer.class);</span>
+<span class="fc" id="L61">    assertEquals(&quot;RegisteredUserAdapter&quot;, computer.user.name);</span>
+<span class="fc" id="L62">  }</span>
+
+  public void testFieldAnnotationTakesPrecedenceOverRegisteredTypeAdapter() {
+<span class="fc" id="L65">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L66">      .registerTypeAdapter(Part.class, new TypeAdapter&lt;Part&gt;() {</span>
+        @Override public void write(JsonWriter out, Part part) throws IOException {
+<span class="nc" id="L68">          throw new AssertionError();</span>
+        }
+        @Override public Part read(JsonReader in) throws IOException {
+<span class="nc" id="L71">          throw new AssertionError();</span>
+        }
+<span class="fc" id="L73">      }).create();</span>
+<span class="fc" id="L74">    String json = gson.toJson(new Gadget(new Part(&quot;screen&quot;)));</span>
+<span class="fc" id="L75">    assertEquals(&quot;{\&quot;part\&quot;:\&quot;PartJsonFieldAnnotationAdapter\&quot;}&quot;, json);</span>
+<span class="fc" id="L76">    Gadget gadget = gson.fromJson(&quot;{'part':'screen'}&quot;, Gadget.class);</span>
+<span class="fc" id="L77">    assertEquals(&quot;PartJsonFieldAnnotationAdapter&quot;, gadget.part.name);</span>
+<span class="fc" id="L78">  }</span>
+
+  public void testFieldAnnotationTakesPrecedenceOverClassAnnotation() {
+<span class="fc" id="L81">    Gson gson = new Gson();</span>
+<span class="fc" id="L82">    String json = gson.toJson(new Computer2(new User(&quot;Inderjeet Singh&quot;)));</span>
+<span class="fc" id="L83">    assertEquals(&quot;{\&quot;user\&quot;:\&quot;UserFieldAnnotationAdapter\&quot;}&quot;, json);</span>
+<span class="fc" id="L84">    Computer2 target = gson.fromJson(&quot;{'user':'Interjeet Singh'}&quot;, Computer2.class);</span>
+<span class="fc" id="L85">    assertEquals(&quot;UserFieldAnnotationAdapter&quot;, target.user.name);</span>
+<span class="fc" id="L86">  }</span>
+
+  private static final class Gadget {
+    @JsonAdapter(PartJsonFieldAnnotationAdapter.class)
+    final Part part;
+<span class="fc" id="L91">    Gadget(Part part) {</span>
+<span class="fc" id="L92">      this.part = part;</span>
+<span class="fc" id="L93">    }</span>
+  }
+
+  private static final class Gizmo {
+    @JsonAdapter(GizmoPartTypeAdapterFactory.class)
+    final Part part;
+<span class="fc" id="L99">    Gizmo(Part part) {</span>
+<span class="fc" id="L100">      this.part = part;</span>
+<span class="fc" id="L101">    }</span>
+  }
+
+  private static final class Part {
+    final String name;
+<span class="fc" id="L106">    public Part(String name) {</span>
+<span class="fc" id="L107">      this.name = name;</span>
+<span class="fc" id="L108">    }</span>
+  }
+
+  private static class PartJsonFieldAnnotationAdapter extends TypeAdapter&lt;Part&gt; {
+    @Override public void write(JsonWriter out, Part part) throws IOException {
+<span class="fc" id="L113">      out.value(&quot;PartJsonFieldAnnotationAdapter&quot;);</span>
+<span class="fc" id="L114">    }</span>
+    @Override public Part read(JsonReader in) throws IOException {
+<span class="fc" id="L116">      in.nextString();</span>
+<span class="fc" id="L117">      return new Part(&quot;PartJsonFieldAnnotationAdapter&quot;);</span>
+    }
+  }
+
+  private static class GizmoPartTypeAdapterFactory implements TypeAdapterFactory {
+    @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, final TypeToken&lt;T&gt; type) {
+<span class="fc" id="L123">      return new TypeAdapter&lt;T&gt;() {</span>
+        @Override public void write(JsonWriter out, T value) throws IOException {
+<span class="fc" id="L125">          out.value(&quot;GizmoPartTypeAdapterFactory&quot;);</span>
+<span class="fc" id="L126">        }</span>
+        @SuppressWarnings(&quot;unchecked&quot;)
+        @Override public T read(JsonReader in) throws IOException {
+<span class="fc" id="L129">          in.nextString();</span>
+<span class="fc" id="L130">          return (T) new Part(&quot;GizmoPartTypeAdapterFactory&quot;);</span>
+        }
+      };
+    }
+  }
+
+  private static final class Computer {
+    final User user;
+<span class="fc" id="L138">    Computer(User user) {</span>
+<span class="fc" id="L139">      this.user = user;</span>
+<span class="fc" id="L140">    }</span>
+  }
+
+  @JsonAdapter(UserClassAnnotationAdapter.class)
+  private static class User {
+    public final String name;
+<span class="fc" id="L146">    private User(String name) {</span>
+<span class="fc" id="L147">      this.name = name;</span>
+<span class="fc" id="L148">    }</span>
+  }
+
+  private static class UserClassAnnotationAdapter extends TypeAdapter&lt;User&gt; {
+    @Override public void write(JsonWriter out, User user) throws IOException {
+<span class="fc" id="L153">      out.value(&quot;UserClassAnnotationAdapter&quot;);</span>
+<span class="fc" id="L154">    }</span>
+    @Override public User read(JsonReader in) throws IOException {
+<span class="fc" id="L156">      in.nextString();</span>
+<span class="fc" id="L157">      return new User(&quot;UserClassAnnotationAdapter&quot;);</span>
+    }
+  }
+
+  private static final class Computer2 {
+    // overrides the JsonAdapter annotation of User with this
+    @JsonAdapter(UserFieldAnnotationAdapter.class)
+    final User user;
+<span class="fc" id="L165">    Computer2(User user) {</span>
+<span class="fc" id="L166">      this.user = user;</span>
+<span class="fc" id="L167">    }</span>
+  }
+
+  private static final class UserFieldAnnotationAdapter extends TypeAdapter&lt;User&gt; {
+    @Override public void write(JsonWriter out, User user) throws IOException {
+<span class="fc" id="L172">      out.value(&quot;UserFieldAnnotationAdapter&quot;);</span>
+<span class="fc" id="L173">    }</span>
+    @Override public User read(JsonReader in) throws IOException {
+<span class="fc" id="L175">      in.nextString();</span>
+<span class="fc" id="L176">      return new User(&quot;UserFieldAnnotationAdapter&quot;);</span>
+    }
+  }
+
+  private static final class RegisteredUserAdapter extends TypeAdapter&lt;User&gt; {
+    @Override public void write(JsonWriter out, User user) throws IOException {
+<span class="fc" id="L182">      out.value(&quot;RegisteredUserAdapter&quot;);</span>
+<span class="fc" id="L183">    }</span>
+    @Override public User read(JsonReader in) throws IOException {
+<span class="fc" id="L185">      in.nextString();</span>
+<span class="fc" id="L186">      return new User(&quot;RegisteredUserAdapter&quot;);</span>
+    }
+  }
+
+  public void testJsonAdapterInvokedOnlyForAnnotatedFields() {
+<span class="fc" id="L191">    Gson gson = new Gson();</span>
+<span class="fc" id="L192">    String json = &quot;{'part1':'name','part2':{'name':'name2'}}&quot;;</span>
+<span class="fc" id="L193">    GadgetWithTwoParts gadget = gson.fromJson(json, GadgetWithTwoParts.class);</span>
+<span class="fc" id="L194">    assertEquals(&quot;PartJsonFieldAnnotationAdapter&quot;, gadget.part1.name);</span>
+<span class="fc" id="L195">    assertEquals(&quot;name2&quot;, gadget.part2.name);</span>
+<span class="fc" id="L196">  }</span>
+
+  private static final class GadgetWithTwoParts {
+    @JsonAdapter(PartJsonFieldAnnotationAdapter.class) final Part part1;
+    final Part part2; // Doesn't have the JsonAdapter annotation
+<span class="nc" id="L201">    @SuppressWarnings(&quot;unused&quot;) GadgetWithTwoParts(Part part1, Part part2) {</span>
+<span class="nc" id="L202">      this.part1 = part1;</span>
+<span class="nc" id="L203">      this.part2 = part2;</span>
+<span class="nc" id="L204">    }</span>
+  }
+
+  public void testJsonAdapterWrappedInNullSafeAsRequested() {
+<span class="fc" id="L208">    Gson gson = new Gson();</span>
+<span class="fc" id="L209">    String fromJson = &quot;{'part':null}&quot;;</span>
+
+<span class="fc" id="L211">    GadgetWithOptionalPart gadget = gson.fromJson(fromJson, GadgetWithOptionalPart.class);</span>
+<span class="fc" id="L212">    assertNull(gadget.part);</span>
+
+<span class="fc" id="L214">    String toJson = gson.toJson(gadget);</span>
+<span class="fc" id="L215">    assertFalse(toJson.contains(&quot;PartJsonFieldAnnotationAdapter&quot;));</span>
+<span class="fc" id="L216">  }</span>
+
+  private static final class GadgetWithOptionalPart {
+    @JsonAdapter(value = PartJsonFieldAnnotationAdapter.class)
+    final Part part;
+
+<span class="fc" id="L222">    private GadgetWithOptionalPart(Part part) {</span>
+<span class="fc" id="L223">      this.part = part;</span>
+<span class="fc" id="L224">    }</span>
+  }
+
+  /** Regression test contributed through https://github.com/google/gson/issues/831 */
+  public void testNonPrimitiveFieldAnnotationTakesPrecedenceOverDefault() {
+<span class="fc" id="L229">    Gson gson = new Gson();</span>
+<span class="fc" id="L230">    String json = gson.toJson(new GadgetWithOptionalPart(new Part(&quot;foo&quot;)));</span>
+<span class="fc" id="L231">    assertEquals(&quot;{\&quot;part\&quot;:\&quot;PartJsonFieldAnnotationAdapter\&quot;}&quot;, json);</span>
+<span class="fc" id="L232">    GadgetWithOptionalPart gadget = gson.fromJson(&quot;{'part':'foo'}&quot;, GadgetWithOptionalPart.class);</span>
+<span class="fc" id="L233">    assertEquals(&quot;PartJsonFieldAnnotationAdapter&quot;, gadget.part.name);</span>
+<span class="fc" id="L234">  }</span>
+
+  /** Regression test contributed through https://github.com/google/gson/issues/831 */
+  public void testPrimitiveFieldAnnotationTakesPrecedenceOverDefault() {
+<span class="fc" id="L238">    Gson gson = new Gson();</span>
+<span class="fc" id="L239">    String json = gson.toJson(new GadgetWithPrimitivePart(42));</span>
+<span class="fc" id="L240">    assertEquals(&quot;{\&quot;part\&quot;:\&quot;42\&quot;}&quot;, json);</span>
+<span class="fc" id="L241">    GadgetWithPrimitivePart gadget = gson.fromJson(json, GadgetWithPrimitivePart.class);</span>
+<span class="fc" id="L242">    assertEquals(42, gadget.part);</span>
+<span class="fc" id="L243">  }</span>
+
+  private static final class GadgetWithPrimitivePart {
+    @JsonAdapter(LongToStringTypeAdapterFactory.class)
+    final long part;
+
+<span class="fc" id="L249">    private GadgetWithPrimitivePart(long part) {</span>
+<span class="fc" id="L250">      this.part = part;</span>
+<span class="fc" id="L251">    }</span>
+  }
+
+  private static final class LongToStringTypeAdapterFactory implements TypeAdapterFactory {
+<span class="fc" id="L255">    static final TypeAdapter&lt;Long&gt; ADAPTER = new TypeAdapter&lt;Long&gt;() {</span>
+      @Override public void write(JsonWriter out, Long value) throws IOException {
+<span class="fc" id="L257">        out.value(value.toString());</span>
+<span class="fc" id="L258">      }</span>
+      @Override public Long read(JsonReader in) throws IOException {
+<span class="fc" id="L260">        return in.nextLong();</span>
+      }
+    };
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, final TypeToken&lt;T&gt; type) {
+<span class="fc" id="L265">      Class&lt;?&gt; cls = type.getRawType();</span>
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">      if (Long.class.isAssignableFrom(cls)) {</span>
+<span class="nc" id="L267">        return (TypeAdapter&lt;T&gt;) ADAPTER;</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">      } else if (long.class.isAssignableFrom(cls)) {</span>
+<span class="fc" id="L269">        return (TypeAdapter&lt;T&gt;) ADAPTER;</span>
+      }
+<span class="nc" id="L271">      throw new IllegalStateException(&quot;Non-long field of type &quot; + type</span>
+          + &quot; annotated with @JsonAdapter(LongToStringTypeAdapterFactory.class)&quot;);
+    }
+  }
+
+  public void testFieldAnnotationWorksForParameterizedType() {
+<span class="fc" id="L277">    Gson gson = new Gson();</span>
+<span class="fc" id="L278">    String json = gson.toJson(new Gizmo2(Arrays.asList(new Part(&quot;Part&quot;))));</span>
+<span class="fc" id="L279">    assertEquals(&quot;{\&quot;part\&quot;:\&quot;GizmoPartTypeAdapterFactory\&quot;}&quot;, json);</span>
+<span class="fc" id="L280">    Gizmo2 computer = gson.fromJson(&quot;{'part':'Part'}&quot;, Gizmo2.class);</span>
+<span class="fc" id="L281">    assertEquals(&quot;GizmoPartTypeAdapterFactory&quot;, computer.part.get(0).name);</span>
+<span class="fc" id="L282">  }</span>
+
+  private static final class Gizmo2 {
+    @JsonAdapter(Gizmo2PartTypeAdapterFactory.class)
+    List&lt;Part&gt; part;
+<span class="fc" id="L287">    Gizmo2(List&lt;Part&gt; part) {</span>
+<span class="fc" id="L288">      this.part = part;</span>
+<span class="fc" id="L289">    }</span>
+  }
+
+  private static class Gizmo2PartTypeAdapterFactory implements TypeAdapterFactory {
+    @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, final TypeToken&lt;T&gt; type) {
+<span class="fc" id="L294">      return new TypeAdapter&lt;T&gt;() {</span>
+        @Override public void write(JsonWriter out, T value) throws IOException {
+<span class="fc" id="L296">          out.value(&quot;GizmoPartTypeAdapterFactory&quot;);</span>
+<span class="fc" id="L297">        }</span>
+        @SuppressWarnings(&quot;unchecked&quot;)
+        @Override public T read(JsonReader in) throws IOException {
+<span class="fc" id="L300">          in.nextString();</span>
+<span class="fc" id="L301">          return (T) Arrays.asList(new Part(&quot;GizmoPartTypeAdapterFactory&quot;));</span>
+        }
+      };
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

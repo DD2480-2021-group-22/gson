@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PerformanceTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.metrics</a> &gt; <span class="el_source">PerformanceTest.java</span></div><h1>PerformanceTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.metrics;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
+import com.google.gson.annotations.Expose;
+import com.google.gson.reflect.TypeToken;
+
+import junit.framework.TestCase;
+
+import java.io.StringWriter;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Tests to measure performance for Gson. All tests in this file will be disabled in code. To run
+ * them remove disabled_ prefix from the tests and run them.
+ * 
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L40">public class PerformanceTest extends TestCase {</span>
+  private static final int COLLECTION_SIZE = 5000;
+
+  private static final int NUM_ITERATIONS = 100;
+
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L49">    super.setUp();</span>
+<span class="fc" id="L50">    gson = new Gson();</span>
+<span class="fc" id="L51">  }</span>
+  
+  public void testDummy() {
+    // This is here to prevent Junit for complaining when we disable all tests.
+<span class="fc" id="L55">  }</span>
+
+  public void disabled_testStringDeserialization() {
+<span class="nc" id="L58">    StringBuilder sb = new StringBuilder(8096);</span>
+<span class="nc" id="L59">    sb.append(&quot;Error Yippie&quot;);</span>
+
+    while (true) {
+      try {
+<span class="nc" id="L63">        String stackTrace = sb.toString();</span>
+<span class="nc" id="L64">        sb.append(stackTrace);</span>
+<span class="nc" id="L65">        String json = &quot;{\&quot;message\&quot;:\&quot;Error message.\&quot;,&quot; + &quot;\&quot;stackTrace\&quot;:\&quot;&quot; + stackTrace + &quot;\&quot;}&quot;;</span>
+<span class="nc" id="L66">        parseLongJson(json);</span>
+<span class="nc" id="L67">        System.out.println(&quot;Gson could handle a string of size: &quot; + stackTrace.length());</span>
+<span class="nc" id="L68">      } catch (JsonParseException expected) {</span>
+<span class="nc" id="L69">        break;</span>
+<span class="nc" id="L70">      }</span>
+    }
+<span class="nc" id="L72">  }</span>
+  
+  private void parseLongJson(String json) throws JsonParseException {
+<span class="nc" id="L75">    ExceptionHolder target = gson.fromJson(json, ExceptionHolder.class);</span>
+<span class="nc" id="L76">    assertTrue(target.message.contains(&quot;Error&quot;));</span>
+<span class="nc" id="L77">    assertTrue(target.stackTrace.contains(&quot;Yippie&quot;));</span>
+<span class="nc" id="L78">  }</span>
+
+  private static class ExceptionHolder {
+    public final String message;
+    public final String stackTrace;
+    
+    // For use by Gson
+    @SuppressWarnings(&quot;unused&quot;)
+    private ExceptionHolder() {
+<span class="nc" id="L87">      this(&quot;&quot;, &quot;&quot;);</span>
+<span class="nc" id="L88">    }</span>
+<span class="nc" id="L89">    public ExceptionHolder(String message, String stackTrace) {</span>
+<span class="nc" id="L90">      this.message = message;</span>
+<span class="nc" id="L91">      this.stackTrace = stackTrace;</span>
+<span class="nc" id="L92">    }</span>
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class CollectionEntry {
+    final String name;
+    final String value;
+
+    // For use by Gson
+    private CollectionEntry() {
+<span class="nc" id="L102">      this(null, null);</span>
+<span class="nc" id="L103">    }</span>
+
+<span class="nc" id="L105">    CollectionEntry(String name, String value) {</span>
+<span class="nc" id="L106">      this.name = name;</span>
+<span class="nc" id="L107">      this.value = value;</span>
+<span class="nc" id="L108">    }</span>
+  }
+  
+  /**
+   * Created in response to http://code.google.com/p/google-gson/issues/detail?id=96
+   */
+  public void disabled_testLargeCollectionSerialization() {
+<span class="nc" id="L115">    int count = 1400000;</span>
+<span class="nc" id="L116">    List&lt;CollectionEntry&gt; list = new ArrayList&lt;CollectionEntry&gt;(count);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">    for (int i = 0; i &lt; count; ++i) {</span>
+<span class="nc" id="L118">      list.add(new CollectionEntry(&quot;name&quot;+i,&quot;value&quot;+i));</span>
+    }    
+<span class="nc" id="L120">    gson.toJson(list);</span>
+<span class="nc" id="L121">  }</span>
+  
+  /**
+   * Created in response to http://code.google.com/p/google-gson/issues/detail?id=96
+   */
+  public void disabled_testLargeCollectionDeserialization() {
+<span class="nc" id="L127">    StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L128">    int count = 87000;</span>
+<span class="nc" id="L129">    boolean first = true;</span>
+<span class="nc" id="L130">    sb.append('[');</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    for (int i = 0; i &lt; count; ++i) {</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">      if (first) {</span>
+<span class="nc" id="L133">        first = false;</span>
+      } else {
+<span class="nc" id="L135">        sb.append(',');</span>
+      }
+<span class="nc" id="L137">      sb.append(&quot;{name:'name&quot;).append(i).append(&quot;',value:'value&quot;).append(i).append(&quot;'}&quot;);</span>
+    }    
+<span class="nc" id="L139">    sb.append(']');</span>
+<span class="nc" id="L140">    String json = sb.toString();</span>
+<span class="nc" id="L141">    Type collectionType = new TypeToken&lt;ArrayList&lt;CollectionEntry&gt;&gt;(){}.getType();</span>
+<span class="nc" id="L142">    List&lt;CollectionEntry&gt; list = gson.fromJson(json, collectionType);</span>
+<span class="nc" id="L143">    assertEquals(count, list.size());</span>
+<span class="nc" id="L144">  }</span>
+
+  /**
+   * Created in response to http://code.google.com/p/google-gson/issues/detail?id=96
+   */
+  // Last I tested, Gson was able to serialize upto 14MB byte array
+  public void disabled_testByteArraySerialization() {
+<span class="nc" id="L151">    for (int size = 4145152; true; size += 1036288) {</span>
+<span class="nc" id="L152">      byte[] ba = new byte[size];</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">      for (int i = 0; i &lt; size; ++i) {</span>
+<span class="nc" id="L154">        ba[i] = 0x05;</span>
+      }
+<span class="nc" id="L156">      gson.toJson(ba);</span>
+<span class="nc" id="L157">      System.out.printf(&quot;Gson could serialize a byte array of size: %d\n&quot;, size);</span>
+    }
+  }
+  
+  /**
+   * Created in response to http://code.google.com/p/google-gson/issues/detail?id=96
+   */
+  // Last I tested, Gson was able to deserialize a byte array of 11MB
+  public void disable_testByteArrayDeserialization() {
+<span class="nc" id="L166">    for (int numElements = 10639296; true; numElements += 16384) {</span>
+<span class="nc" id="L167">      StringBuilder sb = new StringBuilder(numElements*2);</span>
+<span class="nc" id="L168">      sb.append(&quot;[&quot;);</span>
+<span class="nc" id="L169">      boolean first = true;</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">      for (int i = 0; i &lt; numElements; ++i) {</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (first) {</span>
+<span class="nc" id="L172">          first = false;</span>
+        } else {
+<span class="nc" id="L174">          sb.append(&quot;,&quot;);</span>
+        }
+<span class="nc" id="L176">        sb.append(&quot;5&quot;);</span>
+      }
+<span class="nc" id="L178">      sb.append(&quot;]&quot;);</span>
+<span class="nc" id="L179">      String json = sb.toString();</span>
+<span class="nc" id="L180">      byte[] ba = gson.fromJson(json, byte[].class);</span>
+<span class="nc" id="L181">      System.out.printf(&quot;Gson could deserialize a byte array of size: %d\n&quot;, ba.length);</span>
+    }
+  }
+
+// The tests to measure serialization and deserialization performance of Gson
+// Based on the discussion at
+// http://groups.google.com/group/google-gson/browse_thread/thread/7a50b17a390dfaeb
+// Test results: 10/19/2009 
+// Serialize classes avg time: 60 ms
+// Deserialized classes avg time: 70 ms
+// Serialize exposed classes avg time: 159 ms
+// Deserialized exposed classes avg time: 173 ms
+  
+  public void disabled_testSerializeClasses() {
+<span class="nc" id="L195">    ClassWithList c = new ClassWithList(&quot;str&quot;); </span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">    for (int i = 0; i &lt; COLLECTION_SIZE; ++i) { </span>
+<span class="nc" id="L197">      c.list.add(new ClassWithField(&quot;element-&quot; + i)); </span>
+    }
+<span class="nc" id="L199">    StringWriter w = new StringWriter(); </span>
+<span class="nc" id="L200">    long t1 = System.currentTimeMillis(); </span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">    for (int i = 0; i &lt; NUM_ITERATIONS; ++i) { </span>
+<span class="nc" id="L202">      gson.toJson(c, w); </span>
+    } 
+<span class="nc" id="L204">    long t2 = System.currentTimeMillis(); </span>
+<span class="nc" id="L205">    long avg = (t2 - t1) / NUM_ITERATIONS;</span>
+<span class="nc" id="L206">    System.out.printf(&quot;Serialize classes avg time: %d ms\n&quot;, avg);</span>
+<span class="nc" id="L207">  }</span>
+
+  public void disabled_testDeserializeClasses() {
+<span class="nc" id="L210">    String json = buildJsonForClassWithList();</span>
+<span class="nc" id="L211">    ClassWithList[] target = new ClassWithList[NUM_ITERATIONS];</span>
+<span class="nc" id="L212">    long t1 = System.currentTimeMillis(); </span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">    for (int i = 0; i &lt; NUM_ITERATIONS; ++i) {</span>
+<span class="nc" id="L214">      target[i] = gson.fromJson(json, ClassWithList.class);</span>
+    }
+<span class="nc" id="L216">    long t2 = System.currentTimeMillis(); </span>
+<span class="nc" id="L217">    long avg = (t2 - t1) / NUM_ITERATIONS;</span>
+<span class="nc" id="L218">    System.out.printf(&quot;Deserialize classes avg time: %d ms\n&quot;, avg);</span>
+<span class="nc" id="L219">  }</span>
+  
+  public void disable_testLargeObjectSerializationAndDeserialization() {
+<span class="nc" id="L222">    Map&lt;String, Long&gt; largeObject = new HashMap&lt;String, Long&gt;();</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">    for (long l = 0; l &lt; 100000; l++) {</span>
+<span class="nc" id="L224">      largeObject.put(&quot;field&quot; + l, l);</span>
+    }
+    
+<span class="nc" id="L227">    long t1 = System.currentTimeMillis(); </span>
+<span class="nc" id="L228">    String json = gson.toJson(largeObject);</span>
+<span class="nc" id="L229">    long t2 = System.currentTimeMillis();</span>
+<span class="nc" id="L230">    System.out.printf(&quot;Large object serialized in: %d ms\n&quot;, (t2 - t1));</span>
+
+<span class="nc" id="L232">    t1 = System.currentTimeMillis(); </span>
+<span class="nc" id="L233">    gson.fromJson(json, new TypeToken&lt;Map&lt;String, Long&gt;&gt;() {}.getType());</span>
+<span class="nc" id="L234">    t2 = System.currentTimeMillis();</span>
+<span class="nc" id="L235">    System.out.printf(&quot;Large object deserialized in: %d ms\n&quot;, (t2 - t1));</span>
+    
+<span class="nc" id="L237">  }</span>
+
+  public void disabled_testSerializeExposedClasses() {
+<span class="nc" id="L240">    ClassWithListOfObjects c1 = new ClassWithListOfObjects(&quot;str&quot;); </span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">    for (int i1 = 0; i1 &lt; COLLECTION_SIZE; ++i1) { </span>
+<span class="nc" id="L242">      c1.list.add(new ClassWithExposedField(&quot;element-&quot; + i1)); </span>
+    }
+<span class="nc" id="L244">    ClassWithListOfObjects c = c1; </span>
+<span class="nc" id="L245">    StringWriter w = new StringWriter(); </span>
+<span class="nc" id="L246">    long t1 = System.currentTimeMillis(); </span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">    for (int i = 0; i &lt; NUM_ITERATIONS; ++i) { </span>
+<span class="nc" id="L248">      gson.toJson(c, w); </span>
+    } 
+<span class="nc" id="L250">    long t2 = System.currentTimeMillis(); </span>
+<span class="nc" id="L251">    long avg = (t2 - t1) / NUM_ITERATIONS;</span>
+<span class="nc" id="L252">    System.out.printf(&quot;Serialize exposed classes avg time: %d ms\n&quot;, avg);</span>
+<span class="nc" id="L253">  }</span>
+
+  public void disabled_testDeserializeExposedClasses() {
+<span class="nc" id="L256">    String json = buildJsonForClassWithList();</span>
+<span class="nc" id="L257">    ClassWithListOfObjects[] target = new ClassWithListOfObjects[NUM_ITERATIONS];</span>
+<span class="nc" id="L258">    long t1 = System.currentTimeMillis(); </span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">    for (int i = 0; i &lt; NUM_ITERATIONS; ++i) {</span>
+<span class="nc" id="L260">      target[i] = gson.fromJson(json, ClassWithListOfObjects.class);</span>
+    }
+<span class="nc" id="L262">    long t2 = System.currentTimeMillis(); </span>
+<span class="nc" id="L263">    long avg = (t2 - t1) / NUM_ITERATIONS;</span>
+<span class="nc" id="L264">    System.out.printf(&quot;Deserialize exposed classes avg time: %d ms\n&quot;, avg);</span>
+<span class="nc" id="L265">  }</span>
+
+  public void disabled_testLargeGsonMapRoundTrip() throws Exception {
+<span class="nc" id="L268">    Map&lt;Long, Long&gt; original = new HashMap&lt;Long, Long&gt;();</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">    for (long i = 0; i &lt; 1000000; i++) {</span>
+<span class="nc" id="L270">      original.put(i, i + 1);</span>
+    }
+
+<span class="nc" id="L273">    Gson gson = new Gson();</span>
+<span class="nc" id="L274">    String json = gson.toJson(original);</span>
+<span class="nc" id="L275">    Type longToLong = new TypeToken&lt;Map&lt;Long, Long&gt;&gt;(){}.getType();</span>
+<span class="nc" id="L276">    gson.fromJson(json, longToLong);</span>
+<span class="nc" id="L277">  }</span>
+
+  private String buildJsonForClassWithList() {
+<span class="nc" id="L280">    StringBuilder sb = new StringBuilder(&quot;{&quot;);</span>
+<span class="nc" id="L281">    sb.append(&quot;field:&quot;).append(&quot;'str',&quot;);</span>
+<span class="nc" id="L282">    sb.append(&quot;list:[&quot;);</span>
+<span class="nc" id="L283">    boolean first = true;</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">    for (int i = 0; i &lt; COLLECTION_SIZE; ++i) {</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">      if (first) {</span>
+<span class="nc" id="L286">        first = false;</span>
+      } else {
+<span class="nc" id="L288">        sb.append(&quot;,&quot;);</span>
+      }
+<span class="nc" id="L290">      sb.append(&quot;{field:'element-&quot; + i + &quot;'}&quot;);</span>
+    }
+<span class="nc" id="L292">    sb.append(&quot;]&quot;);</span>
+<span class="nc" id="L293">    sb.append(&quot;}&quot;);</span>
+<span class="nc" id="L294">    String json = sb.toString();</span>
+<span class="nc" id="L295">    return json;</span>
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static final class ClassWithList { 
+    final String field; 
+<span class="nc" id="L301">    final List&lt;ClassWithField&gt; list = new ArrayList&lt;ClassWithField&gt;(COLLECTION_SIZE);</span>
+    ClassWithList() {
+<span class="nc" id="L303">      this(null);</span>
+<span class="nc" id="L304">    }</span>
+<span class="nc" id="L305">    ClassWithList(String field) {</span>
+<span class="nc" id="L306">      this.field = field;</span>
+<span class="nc" id="L307">    }</span>
+  } 
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static final class ClassWithField { 
+    final String field;
+    ClassWithField() {
+<span class="nc" id="L314">      this(&quot;&quot;);</span>
+<span class="nc" id="L315">    }</span>
+<span class="nc" id="L316">    public ClassWithField(String field) { </span>
+<span class="nc" id="L317">      this.field = field; </span>
+<span class="nc" id="L318">    } </span>
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static final class ClassWithListOfObjects { 
+    @Expose 
+    final String field; 
+<span class="nc" id="L325">    @Expose </span>
+    final List&lt;ClassWithExposedField&gt; list = new ArrayList&lt;ClassWithExposedField&gt;(COLLECTION_SIZE);
+    ClassWithListOfObjects() {
+<span class="nc" id="L328">      this(null);</span>
+<span class="nc" id="L329">    }</span>
+<span class="nc" id="L330">    ClassWithListOfObjects(String field) {</span>
+<span class="nc" id="L331">      this.field = field;</span>
+<span class="nc" id="L332">    }</span>
+  } 
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static final class ClassWithExposedField { 
+    @Expose 
+    final String field;
+    ClassWithExposedField() {
+<span class="nc" id="L340">      this(&quot;&quot;);</span>
+<span class="nc" id="L341">    }</span>
+<span class="nc" id="L342">    ClassWithExposedField(String field) { </span>
+<span class="nc" id="L343">      this.field = field; </span>
+<span class="nc" id="L344">    } </span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

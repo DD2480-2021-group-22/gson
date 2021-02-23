@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SecurityTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">SecurityTest.java</span></div><h1>SecurityTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+
+import junit.framework.TestCase;
+
+/**
+ * Tests for security-related aspects of Gson
+ * 
+ * @author Inderjeet Singh
+ */
+<span class="fc" id="L30">public class SecurityTest extends TestCase {</span>
+  /**
+   * Keep this in sync with Gson.JSON_NON_EXECUTABLE_PREFIX
+   */
+  private static final String JSON_NON_EXECUTABLE_PREFIX = &quot;)]}'\n&quot;;
+
+  private GsonBuilder gsonBuilder;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L40">    super.setUp();</span>
+<span class="fc" id="L41">    gsonBuilder = new GsonBuilder();</span>
+<span class="fc" id="L42">  }</span>
+
+  public void testNonExecutableJsonSerialization() {
+<span class="fc" id="L45">    Gson gson = gsonBuilder.generateNonExecutableJson().create();</span>
+<span class="fc" id="L46">    String json = gson.toJson(new BagOfPrimitives());</span>
+<span class="fc" id="L47">    assertTrue(json.startsWith(JSON_NON_EXECUTABLE_PREFIX));</span>
+<span class="fc" id="L48">  }</span>
+  
+  public void testNonExecutableJsonDeserialization() {
+<span class="fc" id="L51">    String json = JSON_NON_EXECUTABLE_PREFIX + &quot;{longValue:1}&quot;;</span>
+<span class="fc" id="L52">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L53">    BagOfPrimitives target = gson.fromJson(json, BagOfPrimitives.class);</span>
+<span class="fc" id="L54">    assertEquals(1, target.longValue);</span>
+<span class="fc" id="L55">  }</span>
+  
+  public void testJsonWithNonExectuableTokenSerialization() {
+<span class="fc" id="L58">    Gson gson = gsonBuilder.generateNonExecutableJson().create();</span>
+<span class="fc" id="L59">    String json = gson.toJson(JSON_NON_EXECUTABLE_PREFIX);</span>
+<span class="fc" id="L60">    assertTrue(json.contains(&quot;)]}'\n&quot;));</span>
+<span class="fc" id="L61">  }</span>
+  
+  /**
+   *  Gson should be able to deserialize a stream with non-exectuable token even if it is created
+   *  without {@link GsonBuilder#generateNonExecutableJson()}.
+   */
+  public void testJsonWithNonExectuableTokenWithRegularGsonDeserialization() {
+<span class="fc" id="L68">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L69">    String json = JSON_NON_EXECUTABLE_PREFIX + &quot;{stringValue:')]}\\u0027\\n'}&quot;;</span>
+<span class="fc" id="L70">    BagOfPrimitives target = gson.fromJson(json, BagOfPrimitives.class);</span>
+<span class="fc" id="L71">    assertEquals(&quot;)]}'\n&quot;, target.stringValue);</span>
+<span class="fc" id="L72">  }  </span>
+  
+  /**
+   *  Gson should be able to deserialize a stream with non-exectuable token if it is created
+   *  with {@link GsonBuilder#generateNonExecutableJson()}.
+   */
+  public void testJsonWithNonExectuableTokenWithConfiguredGsonDeserialization() {
+    // Gson should be able to deserialize a stream with non-exectuable token even if it is created 
+<span class="fc" id="L80">    Gson gson = gsonBuilder.generateNonExecutableJson().create();</span>
+<span class="fc" id="L81">    String json = JSON_NON_EXECUTABLE_PREFIX + &quot;{intValue:2,stringValue:')]}\\u0027\\n'}&quot;;</span>
+<span class="fc" id="L82">    BagOfPrimitives target = gson.fromJson(json, BagOfPrimitives.class);</span>
+<span class="fc" id="L83">    assertEquals(&quot;)]}'\n&quot;, target.stringValue);</span>
+<span class="fc" id="L84">    assertEquals(2, target.intValue);</span>
+<span class="fc" id="L85">  }  </span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OverrideCoreTypeAdaptersTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson</a> &gt; <span class="el_source">OverrideCoreTypeAdaptersTest.java</span></div><h1>OverrideCoreTypeAdaptersTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2012 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson;
+
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.util.Locale;
+import junit.framework.TestCase;
+
+/**
+ * @author Jesse Wilson
+ */
+<span class="fc" id="L28">public class OverrideCoreTypeAdaptersTest extends TestCase {</span>
+<span class="fc" id="L29">  private static final TypeAdapter&lt;Boolean&gt; booleanAsIntAdapter = new TypeAdapter&lt;Boolean&gt;() {</span>
+    @Override public void write(JsonWriter out, Boolean value) throws IOException {
+<span class="fc bfc" id="L31" title="All 2 branches covered.">      out.value(value ? 1 : 0);</span>
+<span class="fc" id="L32">    }</span>
+    @Override public Boolean read(JsonReader in) throws IOException {
+<span class="fc" id="L34">      int value = in.nextInt();</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">      return value != 0;</span>
+    }
+  };
+
+<span class="fc" id="L39">  private static final TypeAdapter&lt;String&gt; swapCaseStringAdapter = new TypeAdapter&lt;String&gt;() {</span>
+    @Override public void write(JsonWriter out, String value) throws IOException {
+<span class="fc" id="L41">      out.value(value.toUpperCase(Locale.US));</span>
+<span class="fc" id="L42">    }</span>
+    @Override public String read(JsonReader in) throws IOException {
+<span class="fc" id="L44">      return in.nextString().toLowerCase(Locale.US);</span>
+    }
+  };
+
+  public void testOverrideWrapperBooleanAdapter() {
+<span class="fc" id="L49">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L50">        .registerTypeAdapter(Boolean.class, booleanAsIntAdapter)</span>
+<span class="fc" id="L51">        .create();</span>
+<span class="fc" id="L52">    assertEquals(&quot;true&quot;, gson.toJson(true, boolean.class));</span>
+<span class="fc" id="L53">    assertEquals(&quot;1&quot;, gson.toJson(true, Boolean.class));</span>
+<span class="fc" id="L54">    assertEquals(Boolean.TRUE, gson.fromJson(&quot;true&quot;, boolean.class));</span>
+<span class="fc" id="L55">    assertEquals(Boolean.TRUE, gson.fromJson(&quot;1&quot;, Boolean.class));</span>
+<span class="fc" id="L56">    assertEquals(Boolean.FALSE, gson.fromJson(&quot;0&quot;, Boolean.class));</span>
+<span class="fc" id="L57">  }</span>
+
+  public void testOverridePrimitiveBooleanAdapter() {
+<span class="fc" id="L60">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L61">        .registerTypeAdapter(boolean.class, booleanAsIntAdapter)</span>
+<span class="fc" id="L62">        .create();</span>
+<span class="fc" id="L63">    assertEquals(&quot;1&quot;, gson.toJson(true, boolean.class));</span>
+<span class="fc" id="L64">    assertEquals(&quot;true&quot;, gson.toJson(true, Boolean.class));</span>
+<span class="fc" id="L65">    assertEquals(Boolean.TRUE, gson.fromJson(&quot;1&quot;, boolean.class));</span>
+<span class="fc" id="L66">    assertEquals(Boolean.TRUE, gson.fromJson(&quot;true&quot;, Boolean.class));</span>
+<span class="fc" id="L67">    assertEquals(&quot;0&quot;, gson.toJson(false, boolean.class));</span>
+<span class="fc" id="L68">  }</span>
+
+  public void testOverrideStringAdapter() {
+<span class="fc" id="L71">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L72">        .registerTypeAdapter(String.class, swapCaseStringAdapter)</span>
+<span class="fc" id="L73">        .create();</span>
+<span class="fc" id="L74">    assertEquals(&quot;\&quot;HELLO\&quot;&quot;, gson.toJson(&quot;Hello&quot;, String.class));</span>
+<span class="fc" id="L75">    assertEquals(&quot;hello&quot;, gson.fromJson(&quot;\&quot;Hello\&quot;&quot;, String.class));</span>
+<span class="fc" id="L76">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

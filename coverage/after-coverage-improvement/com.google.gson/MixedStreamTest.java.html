@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MixedStreamTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson</a> &gt; <span class="el_source">MixedStreamTest.java</span></div><h1>MixedStreamTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2010 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson;
+
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.List;
+import junit.framework.TestCase;
+
+<span class="fc" id="L30">public final class MixedStreamTest extends TestCase {</span>
+
+<span class="fc" id="L32">  private static final Car BLUE_MUSTANG = new Car(&quot;mustang&quot;, 0x0000FF);</span>
+<span class="fc" id="L33">  private static final Car BLACK_BMW = new Car(&quot;bmw&quot;, 0x000000);</span>
+<span class="fc" id="L34">  private static final Car RED_MIATA = new Car(&quot;miata&quot;, 0xFF0000);</span>
+  private static final String CARS_JSON = &quot;[\n&quot;
+      + &quot;  {\n&quot;
+      + &quot;    \&quot;name\&quot;: \&quot;mustang\&quot;,\n&quot;
+      + &quot;    \&quot;color\&quot;: 255\n&quot;
+      + &quot;  },\n&quot;
+      + &quot;  {\n&quot;
+      + &quot;    \&quot;name\&quot;: \&quot;bmw\&quot;,\n&quot;
+      + &quot;    \&quot;color\&quot;: 0\n&quot;
+      + &quot;  },\n&quot;
+      + &quot;  {\n&quot;
+      + &quot;    \&quot;name\&quot;: \&quot;miata\&quot;,\n&quot;
+      + &quot;    \&quot;color\&quot;: 16711680\n&quot;
+      + &quot;  }\n&quot;
+      + &quot;]&quot;;
+
+  public void testWriteMixedStreamed() throws IOException {
+<span class="fc" id="L51">    Gson gson = new Gson();</span>
+<span class="fc" id="L52">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L53">    JsonWriter jsonWriter = new JsonWriter(stringWriter);</span>
+
+<span class="fc" id="L55">    jsonWriter.beginArray();</span>
+<span class="fc" id="L56">    jsonWriter.setIndent(&quot;  &quot;);</span>
+<span class="fc" id="L57">    gson.toJson(BLUE_MUSTANG, Car.class, jsonWriter);</span>
+<span class="fc" id="L58">    gson.toJson(BLACK_BMW, Car.class, jsonWriter);</span>
+<span class="fc" id="L59">    gson.toJson(RED_MIATA, Car.class, jsonWriter);</span>
+<span class="fc" id="L60">    jsonWriter.endArray();</span>
+
+<span class="fc" id="L62">    assertEquals(CARS_JSON, stringWriter.toString());</span>
+<span class="fc" id="L63">  }</span>
+
+  public void testReadMixedStreamed() throws IOException {
+<span class="fc" id="L66">    Gson gson = new Gson();</span>
+<span class="fc" id="L67">    StringReader stringReader = new StringReader(CARS_JSON);</span>
+<span class="fc" id="L68">    JsonReader jsonReader = new JsonReader(stringReader);</span>
+
+<span class="fc" id="L70">    jsonReader.beginArray();</span>
+<span class="fc" id="L71">    assertEquals(BLUE_MUSTANG, gson.fromJson(jsonReader, Car.class));</span>
+<span class="fc" id="L72">    assertEquals(BLACK_BMW, gson.fromJson(jsonReader, Car.class));</span>
+<span class="fc" id="L73">    assertEquals(RED_MIATA, gson.fromJson(jsonReader, Car.class));</span>
+<span class="fc" id="L74">    jsonReader.endArray();</span>
+<span class="fc" id="L75">  }</span>
+
+  public void testReaderDoesNotMutateState() throws IOException {
+<span class="fc" id="L78">    Gson gson = new Gson();</span>
+<span class="fc" id="L79">    JsonReader jsonReader = new JsonReader(new StringReader(CARS_JSON));</span>
+<span class="fc" id="L80">    jsonReader.beginArray();</span>
+
+<span class="fc" id="L82">    jsonReader.setLenient(false);</span>
+<span class="fc" id="L83">    gson.fromJson(jsonReader, Car.class);</span>
+<span class="fc" id="L84">    assertFalse(jsonReader.isLenient());</span>
+
+<span class="fc" id="L86">    jsonReader.setLenient(true);</span>
+<span class="fc" id="L87">    gson.fromJson(jsonReader, Car.class);</span>
+<span class="fc" id="L88">    assertTrue(jsonReader.isLenient());</span>
+<span class="fc" id="L89">  }</span>
+
+  public void testWriteDoesNotMutateState() throws IOException {
+<span class="fc" id="L92">    Gson gson = new Gson();</span>
+<span class="fc" id="L93">    JsonWriter jsonWriter = new JsonWriter(new StringWriter());</span>
+<span class="fc" id="L94">    jsonWriter.beginArray();</span>
+
+<span class="fc" id="L96">    jsonWriter.setHtmlSafe(true);</span>
+<span class="fc" id="L97">    jsonWriter.setLenient(true);</span>
+<span class="fc" id="L98">    gson.toJson(BLUE_MUSTANG, Car.class, jsonWriter);</span>
+<span class="fc" id="L99">    assertTrue(jsonWriter.isHtmlSafe());</span>
+<span class="fc" id="L100">    assertTrue(jsonWriter.isLenient());</span>
+
+<span class="fc" id="L102">    jsonWriter.setHtmlSafe(false);</span>
+<span class="fc" id="L103">    jsonWriter.setLenient(false);</span>
+<span class="fc" id="L104">    gson.toJson(BLUE_MUSTANG, Car.class, jsonWriter);</span>
+<span class="fc" id="L105">    assertFalse(jsonWriter.isHtmlSafe());</span>
+<span class="fc" id="L106">    assertFalse(jsonWriter.isLenient());</span>
+<span class="fc" id="L107">  }</span>
+
+  public void testReadInvalidState() throws IOException {
+<span class="fc" id="L110">    Gson gson = new Gson();</span>
+<span class="fc" id="L111">    JsonReader jsonReader = new JsonReader(new StringReader(CARS_JSON));</span>
+<span class="fc" id="L112">    jsonReader.beginArray();</span>
+<span class="fc" id="L113">    jsonReader.beginObject();</span>
+    try {
+<span class="nc" id="L115">      gson.fromJson(jsonReader, String.class);</span>
+<span class="nc" id="L116">      fail();</span>
+<span class="fc" id="L117">    } catch (JsonParseException expected) {</span>
+<span class="nc" id="L118">    }</span>
+<span class="fc" id="L119">  }</span>
+
+  public void testReadClosed() throws IOException {
+<span class="fc" id="L122">    Gson gson = new Gson();</span>
+<span class="fc" id="L123">    JsonReader jsonReader = new JsonReader(new StringReader(CARS_JSON));</span>
+<span class="fc" id="L124">    jsonReader.close();</span>
+    try {
+<span class="pc" id="L126">      gson.fromJson(jsonReader, new TypeToken&lt;List&lt;Car&gt;&gt;() {}.getType());</span>
+<span class="nc" id="L127">      fail();</span>
+<span class="fc" id="L128">    } catch (JsonParseException expected) {</span>
+<span class="nc" id="L129">    }</span>
+<span class="fc" id="L130">  }</span>
+
+  public void testWriteInvalidState() throws IOException {
+<span class="fc" id="L133">    Gson gson = new Gson();</span>
+<span class="fc" id="L134">    JsonWriter jsonWriter = new JsonWriter(new StringWriter());</span>
+<span class="fc" id="L135">    jsonWriter.beginObject();</span>
+    try {
+<span class="nc" id="L137">      gson.toJson(BLUE_MUSTANG, Car.class, jsonWriter);</span>
+<span class="nc" id="L138">      fail();</span>
+<span class="fc" id="L139">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L140">    }</span>
+<span class="fc" id="L141">  }</span>
+
+  public void testWriteClosed() throws IOException {
+<span class="fc" id="L144">    Gson gson = new Gson();</span>
+<span class="fc" id="L145">    JsonWriter jsonWriter = new JsonWriter(new StringWriter());</span>
+<span class="fc" id="L146">    jsonWriter.beginArray();</span>
+<span class="fc" id="L147">    jsonWriter.endArray();</span>
+<span class="fc" id="L148">    jsonWriter.close();</span>
+    try {
+<span class="nc" id="L150">      gson.toJson(BLUE_MUSTANG, Car.class, jsonWriter);</span>
+<span class="nc" id="L151">      fail();</span>
+<span class="fc" id="L152">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L153">    }</span>
+<span class="fc" id="L154">  }</span>
+
+  public void testWriteNulls() {
+<span class="fc" id="L157">    Gson gson = new Gson();</span>
+    try {
+<span class="nc" id="L159">      gson.toJson(new JsonPrimitive(&quot;hello&quot;), (JsonWriter) null);</span>
+<span class="nc" id="L160">      fail();</span>
+<span class="fc" id="L161">    } catch (NullPointerException expected) {</span>
+<span class="nc" id="L162">    }</span>
+
+<span class="fc" id="L164">    StringWriter stringWriter = new StringWriter();</span>
+<span class="fc" id="L165">    gson.toJson(null, new JsonWriter(stringWriter));</span>
+<span class="fc" id="L166">    assertEquals(&quot;null&quot;, stringWriter.toString());</span>
+<span class="fc" id="L167">  }</span>
+
+  public void testReadNulls() {
+<span class="fc" id="L170">    Gson gson = new Gson();</span>
+    try {
+<span class="nc" id="L172">      gson.fromJson((JsonReader) null, Integer.class);</span>
+<span class="nc" id="L173">      fail();</span>
+<span class="fc" id="L174">    } catch (NullPointerException expected) {</span>
+<span class="nc" id="L175">    }</span>
+    try {
+<span class="nc" id="L177">      gson.fromJson(new JsonReader(new StringReader(&quot;true&quot;)), null);</span>
+<span class="nc" id="L178">      fail();</span>
+<span class="fc" id="L179">    } catch (NullPointerException expected) {</span>
+<span class="nc" id="L180">    }</span>
+<span class="fc" id="L181">  }</span>
+
+  public void testWriteHtmlSafe() {
+<span class="fc" id="L184">    List&lt;String&gt; contents = Arrays.asList(&quot;&lt;&quot;, &quot;&gt;&quot;, &quot;&amp;&quot;, &quot;=&quot;, &quot;'&quot;);</span>
+<span class="fc" id="L185">    Type type = new TypeToken&lt;List&lt;String&gt;&gt;() {}.getType();</span>
+
+<span class="fc" id="L187">    StringWriter writer = new StringWriter();</span>
+<span class="fc" id="L188">    new Gson().toJson(contents, type, new JsonWriter(writer));</span>
+<span class="fc" id="L189">    assertEquals(&quot;[\&quot;\\u003c\&quot;,\&quot;\\u003e\&quot;,\&quot;\\u0026\&quot;,\&quot;\\u003d\&quot;,\&quot;\\u0027\&quot;]&quot;,</span>
+<span class="fc" id="L190">        writer.toString());</span>
+
+<span class="fc" id="L192">    writer = new StringWriter();</span>
+<span class="fc" id="L193">    new GsonBuilder().disableHtmlEscaping().create()</span>
+<span class="fc" id="L194">        .toJson(contents, type, new JsonWriter(writer));</span>
+<span class="fc" id="L195">    assertEquals(&quot;[\&quot;&lt;\&quot;,\&quot;&gt;\&quot;,\&quot;&amp;\&quot;,\&quot;=\&quot;,\&quot;'\&quot;]&quot;,</span>
+<span class="fc" id="L196">        writer.toString());</span>
+<span class="fc" id="L197">  }</span>
+
+  public void testWriteLenient() {
+<span class="fc" id="L200">    List&lt;Double&gt; doubles = Arrays.asList(Double.NaN, Double.NEGATIVE_INFINITY,</span>
+<span class="fc" id="L201">        Double.POSITIVE_INFINITY, -0.0d, 0.5d, 0.0d);</span>
+<span class="fc" id="L202">    Type type = new TypeToken&lt;List&lt;Double&gt;&gt;() {}.getType();</span>
+
+<span class="fc" id="L204">    StringWriter writer = new StringWriter();</span>
+<span class="fc" id="L205">    JsonWriter jsonWriter = new JsonWriter(writer);</span>
+<span class="fc" id="L206">    new GsonBuilder().serializeSpecialFloatingPointValues().create()</span>
+<span class="fc" id="L207">        .toJson(doubles, type, jsonWriter);</span>
+<span class="fc" id="L208">    assertEquals(&quot;[NaN,-Infinity,Infinity,-0.0,0.5,0.0]&quot;, writer.toString());</span>
+
+    try {
+<span class="nc" id="L211">      new Gson().toJson(doubles, type, new JsonWriter(new StringWriter()));</span>
+<span class="nc" id="L212">      fail();</span>
+<span class="fc" id="L213">    } catch (IllegalArgumentException expected) {</span>
+<span class="nc" id="L214">    }</span>
+<span class="fc" id="L215">  }</span>
+
+  static final class Car {
+    String name;
+    int color;
+
+<span class="fc" id="L221">    Car(String name, int color) {</span>
+<span class="fc" id="L222">      this.name = name;</span>
+<span class="fc" id="L223">      this.color = color;</span>
+<span class="fc" id="L224">    }</span>
+
+    // used by Gson
+<span class="fc" id="L227">    Car() {}</span>
+
+    @Override public int hashCode() {
+<span class="nc" id="L230">      return name.hashCode() ^ color;</span>
+    }
+
+    @Override public boolean equals(Object o) {
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">      return o instanceof Car</span>
+<span class="pc bpc" id="L235" title="2 of 4 branches missed.">          &amp;&amp; ((Car) o).name.equals(name)</span>
+          &amp;&amp; ((Car) o).color == color;
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

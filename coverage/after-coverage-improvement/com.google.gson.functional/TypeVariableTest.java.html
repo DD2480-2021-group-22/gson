@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TypeVariableTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">TypeVariableTest.java</span></div><h1>TypeVariableTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2010 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import junit.framework.TestCase;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Functional test for Gson serialization and deserialization of
+ * classes with type variables.
+ *
+ * @author Joel Leitch
+ */
+<span class="fc" id="L36">public class TypeVariableTest extends TestCase {</span>
+
+  public void testAdvancedTypeVariables() throws Exception {
+<span class="fc" id="L39">    Gson gson = new Gson();</span>
+<span class="fc" id="L40">    Bar bar1 = new Bar(&quot;someString&quot;, 1, true);</span>
+<span class="fc" id="L41">    ArrayList&lt;Integer&gt; arrayList = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L42">    arrayList.add(1);</span>
+<span class="fc" id="L43">    arrayList.add(2);</span>
+<span class="fc" id="L44">    arrayList.add(3);</span>
+<span class="fc" id="L45">    bar1.map.put(&quot;key1&quot;, arrayList);</span>
+<span class="fc" id="L46">    bar1.map.put(&quot;key2&quot;, new ArrayList&lt;Integer&gt;());</span>
+<span class="fc" id="L47">    String json = gson.toJson(bar1);</span>
+
+<span class="fc" id="L49">    Bar bar2 = gson.fromJson(json, Bar.class);</span>
+<span class="fc" id="L50">    assertEquals(bar1, bar2);</span>
+<span class="fc" id="L51">  }</span>
+
+  public void testTypeVariablesViaTypeParameter() throws Exception {
+<span class="fc" id="L54">    Gson gson = new Gson();</span>
+<span class="fc" id="L55">    Foo&lt;String, Integer&gt; original = new Foo&lt;String, Integer&gt;(&quot;e&quot;, 5, false);</span>
+<span class="fc" id="L56">    original.map.put(&quot;f&quot;, Arrays.asList(6, 7));</span>
+<span class="fc" id="L57">    Type type = new TypeToken&lt;Foo&lt;String, Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L58">    String json = gson.toJson(original, type);</span>
+<span class="fc" id="L59">    assertEquals(&quot;{\&quot;someSField\&quot;:\&quot;e\&quot;,\&quot;someTField\&quot;:5,\&quot;map\&quot;:{\&quot;f\&quot;:[6,7]},\&quot;redField\&quot;:false}&quot;,</span>
+        json);
+<span class="fc" id="L61">    assertEquals(original, gson.&lt;Foo&lt;String, Integer&gt;&gt;fromJson(json, type));</span>
+<span class="fc" id="L62">  }</span>
+
+  public void testBasicTypeVariables() throws Exception {
+<span class="fc" id="L65">    Gson gson = new Gson();</span>
+<span class="fc" id="L66">    Blue blue1 = new Blue(true);</span>
+<span class="fc" id="L67">    String json = gson.toJson(blue1);</span>
+
+<span class="fc" id="L69">    Blue blue2 = gson.fromJson(json, Blue.class);</span>
+<span class="fc" id="L70">    assertEquals(blue1, blue2);</span>
+<span class="fc" id="L71">  }</span>
+
+  public static class Blue extends Red&lt;Boolean&gt; {
+    public Blue() {
+<span class="fc" id="L75">      super(false);</span>
+<span class="fc" id="L76">    }</span>
+
+    public Blue(boolean value) {
+<span class="fc" id="L79">      super(value);</span>
+<span class="fc" id="L80">    }</span>
+
+    // Technically, we should implement hashcode too
+    @Override
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">      if (!(o instanceof Blue)) {</span>
+<span class="nc" id="L86">        return false;</span>
+      }
+<span class="fc" id="L88">      Blue blue = (Blue) o;</span>
+<span class="fc" id="L89">      return redField.equals(blue.redField);</span>
+    }
+  }
+
+  public static class Red&lt;S&gt; {
+    protected S redField;
+
+<span class="fc" id="L96">    public Red() {}</span>
+
+<span class="fc" id="L98">    public Red(S redField) {</span>
+<span class="fc" id="L99">      this.redField = redField;</span>
+<span class="fc" id="L100">    }</span>
+  }
+
+  public static class Foo&lt;S, T&gt; extends Red&lt;Boolean&gt; {
+    private S someSField;
+    private T someTField;
+<span class="fc" id="L106">    public final Map&lt;S, List&lt;T&gt;&gt; map = new HashMap&lt;S, List&lt;T&gt;&gt;();</span>
+
+<span class="fc" id="L108">    public Foo() {}</span>
+
+    public Foo(S sValue, T tValue, Boolean redField) {
+<span class="fc" id="L111">      super(redField);</span>
+<span class="fc" id="L112">      this.someSField = sValue;</span>
+<span class="fc" id="L113">      this.someTField = tValue;</span>
+<span class="fc" id="L114">    }</span>
+
+    // Technically, we should implement hashcode too
+    @Override
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">      if (!(o instanceof Foo&lt;?, ?&gt;)) {</span>
+<span class="nc" id="L121">        return false;</span>
+      }
+<span class="fc" id="L123">      Foo&lt;S, T&gt; realFoo = (Foo&lt;S, T&gt;) o;</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">      return redField.equals(realFoo.redField)</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        &amp;&amp; someTField.equals(realFoo.someTField)</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        &amp;&amp; someSField.equals(realFoo.someSField)</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        &amp;&amp; map.equals(realFoo.map);</span>
+    }
+  }
+
+  public static class Bar extends Foo&lt;String, Integer&gt; {
+    public Bar() {
+<span class="fc" id="L133">      this(&quot;&quot;, 0, false);</span>
+<span class="fc" id="L134">    }</span>
+
+    public Bar(String s, Integer i, boolean b) {
+<span class="fc" id="L137">      super(s, i, b);</span>
+<span class="fc" id="L138">    }</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

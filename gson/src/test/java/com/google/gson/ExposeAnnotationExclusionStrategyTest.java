@@ -17,7 +17,7 @@
 package com.google.gson;
 
 import com.google.gson.annotations.Expose;
-
+import com.google.gson.common.TestTypes;
 import com.google.gson.internal.Excluder;
 import junit.framework.TestCase;
 
@@ -28,6 +28,7 @@ import java.lang.reflect.Field;
  *
  * @author Joel Leitch
  */
+
 public class ExposeAnnotationExclusionStrategyTest extends TestCase {
   private Excluder excluder = Excluder.DEFAULT.excludeFieldsWithoutExposeAnnotation();
 
@@ -65,6 +66,7 @@ public class ExposeAnnotationExclusionStrategyTest extends TestCase {
     assertFalse(excluder.excludeField(f, true));
     assertTrue(excluder.excludeField(f, false));
   }
+
 
   private static Field createFieldAttributes(String fieldName) throws Exception {
     return MockObject.class.getField(fieldName);

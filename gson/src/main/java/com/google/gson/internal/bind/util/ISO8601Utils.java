@@ -211,6 +211,7 @@ public class ISO8601Utils
                             int parseEndOffset = Math.min(endOffset, offset + 3); // parse up to 3 digits
                             int fraction = parseInt(date, offset, parseEndOffset);
                             // compensate for "missing" digits
+                            // Switch case is never set to 2 and 1 , there this case is never tested in DefaultDateTypeAdapterTest.java.
                             switch (parseEndOffset - offset) { // number of digits parsed
                             case 2:
                                 milliseconds = fraction * 10;

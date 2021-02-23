@@ -16,22 +16,15 @@
 
 package com.google.gson.stream;
 
+import junit.framework.TestCase;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
-import junit.framework.TestCase;
 
-import static com.google.gson.stream.JsonToken.BEGIN_ARRAY;
-import static com.google.gson.stream.JsonToken.BEGIN_OBJECT;
-import static com.google.gson.stream.JsonToken.BOOLEAN;
-import static com.google.gson.stream.JsonToken.END_ARRAY;
-import static com.google.gson.stream.JsonToken.END_OBJECT;
-import static com.google.gson.stream.JsonToken.NAME;
-import static com.google.gson.stream.JsonToken.NULL;
-import static com.google.gson.stream.JsonToken.NUMBER;
-import static com.google.gson.stream.JsonToken.STRING;
+import static com.google.gson.stream.JsonToken.*;
 
 @SuppressWarnings("resource")
 public final class JsonReaderTest extends TestCase {
@@ -296,6 +289,21 @@ public final class JsonReaderTest extends TestCase {
     assertEquals(1.0, reader.nextDouble());
     assertEquals(1, reader.nextInt());
     assertEquals(1L, reader.nextLong());
+  }
+
+  /**
+   * Checks if nextInt can read single quoted number.
+   * Note that lenient is set to true for the tested JSON object.
+   * The reason is because single quoted numbers are usually not
+   * valid as numbers in JSON objects, but in this case it is acceptable.
+   * @throws IOException
+   */
+  public void testNextIntSingleQuoted() throws IOException {
+    JsonReader reader = new JsonReader(reader("{ \"number\": '123' }"));
+    reader.setLenient(true);
+    reader.beginObject();
+    assertEquals("number", reader.nextName());
+    assertEquals(123, reader.nextInt());
   }
 
   public void testDoubles() throws IOException {
@@ -1515,6 +1523,19 @@ public final class JsonReaderTest extends TestCase {
     }
   }
 
+  /**
+   * Test a document with an unterminated comment inside it.
+   */
+  public void testDocumentWithUnterminatedComment() throws IOException {
+    JsonReader reader = new JsonReader(reader("/* foo "));
+    reader.setLenient(true);
+    try {
+      reader.peek();
+      fail();
+    } catch (MalformedJsonException expected) {
+    }
+  }
+
   public void testStringWithLeadingSlash() throws IOException {
     JsonReader reader = new JsonReader(reader("/x"));
     reader.setLenient(true);
@@ -1601,6 +1622,34 @@ public final class JsonReaderTest extends TestCase {
 
   public void testSkipTopLevelQuotedString() throws IOException {
     JsonReader reader = new JsonReader(reader("\"" + repeat('x', 8192) + "\""));
+    reader.setLenient(true);
+    reader.skipValue();
+    assertEquals(JsonToken.END_DOCUMENT, reader.peek());
+  }
+
+  /**
+   * Check if value with unquoted name is skipped
+   * Note that lenient is set to true for the tested JSON object.
+   * The reason is because single quoted numbers are usually not
+   * valid as numbers in JSON objects, but in this case it is acceptable.
+   * @throws IOException
+   */
+  public void testSkipUnquotedName() throws IOException {
+    JsonReader reader = new JsonReader(reader("{ name: \"name\"}"));
+    reader.setLenient(true);
+    reader.skipValue();
+    assertEquals(JsonToken.END_DOCUMENT, reader.peek());
+  }
+
+  /**
+   * Check if value with single quoted name is skipped
+   * Note that lenient is set to true for the tested JSON object.
+   * The reason is because single quoted numbers are usually not
+   * valid as numbers in JSON objects, but in this case it is acceptable.
+   * @throws IOException
+   */
+  public void testSkipSingleQuotedName() throws IOException {
+    JsonReader reader = new JsonReader(reader("{ 'name': \"name\"}"));
     reader.setLenient(true);
     reader.skipValue();
     assertEquals(JsonToken.END_DOCUMENT, reader.peek());

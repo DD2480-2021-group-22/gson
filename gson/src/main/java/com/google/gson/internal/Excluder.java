@@ -28,6 +28,7 @@ import com.google.gson.annotations.Until;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -280,6 +281,7 @@ public final class Excluder implements TypeAdapterFactory, Cloneable {
       }
 
       if (isAnonymousOrLocal(clazz)) {
+
           return true;
       }
 

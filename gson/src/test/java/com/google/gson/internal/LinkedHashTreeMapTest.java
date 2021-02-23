@@ -209,6 +209,29 @@ public final class LinkedHashTreeMapTest extends TestCase {
 
     MoreAsserts.assertEqualsAndHashCode(map1, map2);
   }
+  /**
+   * Try to find a node using a non-existing key.
+   */
+  public void testFindWithNonExistingKey() {
+    LinkedHashTreeMap<String, String> map = new LinkedHashTreeMap<String, String>();
+    assertNull(map.find("a", false));
+
+  }
+
+  /**
+   * Try to find an element in a map that has a custom comparator.
+   */
+  public void testUserSuppliedComparator() {
+    Comparator comparator = new Comparator<String>() {
+      @Override
+      public int compare(String s1, String s2) {
+        return s1.compareTo(s2);
+      }
+    };
+    LinkedHashTreeMap<String, String> map = new LinkedHashTreeMap<String, String>(comparator);
+    map.put("a", "android");
+    assertEquals("android", map.find("a", true).getValue());
+  }
 
   public void testAvlWalker() {
     assertAvlWalker(node(node("a"), "b", node("c")),

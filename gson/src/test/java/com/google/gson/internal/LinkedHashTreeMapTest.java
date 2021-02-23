@@ -20,11 +20,9 @@ import com.google.gson.common.MoreAsserts;
 import com.google.gson.internal.LinkedHashTreeMap.AvlBuilder;
 import com.google.gson.internal.LinkedHashTreeMap.AvlIterator;
 import com.google.gson.internal.LinkedHashTreeMap.Node;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
+
+import java.util.*;
+
 import junit.framework.TestCase;
 
 public final class LinkedHashTreeMapTest extends TestCase {
@@ -149,6 +147,21 @@ public final class LinkedHashTreeMapTest extends TestCase {
     LinkedHashTreeMap<String, String> map = new LinkedHashTreeMap<String, String>();
     assertNull(map.find("a", false));
 
+  }
+
+  /**
+   * Try to find an element in a map that has a custom comparator.
+   */
+  public void testUserSuppliedComparator() {
+    Comparator comparator = new Comparator<String>() {
+      @Override
+      public int compare(String s1, String s2) {
+        return s1.compareTo(s2);
+      }
+    };
+    LinkedHashTreeMap<String, String> map = new LinkedHashTreeMap<String, String>(comparator);
+    map.put("a", "android");
+    assertEquals("android", map.find("a", true).getValue());
   }
 
   public void testAvlWalker() {

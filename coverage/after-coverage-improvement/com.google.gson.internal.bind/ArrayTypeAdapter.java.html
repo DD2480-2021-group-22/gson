@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArrayTypeAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal.bind</a> &gt; <span class="el_source">ArrayTypeAdapter.java</span></div><h1>ArrayTypeAdapter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2011 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.internal.bind;
+
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.google.gson.Gson;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.internal.$Gson$Types;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+
+/**
+ * Adapt an array of objects.
+ */
+public final class ArrayTypeAdapter&lt;E&gt; extends TypeAdapter&lt;Object&gt; {
+<span class="fc" id="L39">  public static final TypeAdapterFactory FACTORY = new TypeAdapterFactory() {</span>
+    @SuppressWarnings({&quot;unchecked&quot;, &quot;rawtypes&quot;})
+    @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; typeToken) {
+<span class="fc" id="L42">      Type type = typeToken.getType();</span>
+<span class="pc bpc" id="L43" title="1 of 6 branches missed.">      if (!(type instanceof GenericArrayType || type instanceof Class &amp;&amp; ((Class&lt;?&gt;) type).isArray())) {</span>
+<span class="fc" id="L44">        return null;</span>
+      }
+
+<span class="fc" id="L47">      Type componentType = $Gson$Types.getArrayComponentType(type);</span>
+<span class="fc" id="L48">      TypeAdapter&lt;?&gt; componentTypeAdapter = gson.getAdapter(TypeToken.get(componentType));</span>
+<span class="fc" id="L49">      return new ArrayTypeAdapter(</span>
+<span class="fc" id="L50">              gson, componentTypeAdapter, $Gson$Types.getRawType(componentType));</span>
+    }
+  };
+
+  private final Class&lt;E&gt; componentType;
+  private final TypeAdapter&lt;E&gt; componentTypeAdapter;
+
+<span class="fc" id="L57">  public ArrayTypeAdapter(Gson context, TypeAdapter&lt;E&gt; componentTypeAdapter, Class&lt;E&gt; componentType) {</span>
+<span class="fc" id="L58">    this.componentTypeAdapter =</span>
+      new TypeAdapterRuntimeTypeWrapper&lt;E&gt;(context, componentTypeAdapter, componentType);
+<span class="fc" id="L60">    this.componentType = componentType;</span>
+<span class="fc" id="L61">  }</span>
+
+  @Override public Object read(JsonReader in) throws IOException {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">    if (in.peek() == JsonToken.NULL) {</span>
+<span class="fc" id="L65">      in.nextNull();</span>
+<span class="fc" id="L66">      return null;</span>
+    }
+
+<span class="fc" id="L69">    List&lt;E&gt; list = new ArrayList&lt;E&gt;();</span>
+<span class="fc" id="L70">    in.beginArray();</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">    while (in.hasNext()) {</span>
+<span class="fc" id="L72">      E instance = componentTypeAdapter.read(in);</span>
+<span class="fc" id="L73">      list.add(instance);</span>
+<span class="fc" id="L74">    }</span>
+<span class="fc" id="L75">    in.endArray();</span>
+
+<span class="fc" id="L77">    int size = list.size();</span>
+<span class="fc" id="L78">    Object array = Array.newInstance(componentType, size);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="fc" id="L80">      Array.set(array, i, list.get(i));</span>
+    }
+<span class="fc" id="L82">    return array;</span>
+  }
+
+  @SuppressWarnings(&quot;unchecked&quot;)
+  @Override public void write(JsonWriter out, Object array) throws IOException {
+<span class="fc bfc" id="L87" title="All 2 branches covered.">    if (array == null) {</span>
+<span class="fc" id="L88">      out.nullValue();</span>
+<span class="fc" id="L89">      return;</span>
+    }
+
+<span class="fc" id="L92">    out.beginArray();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">    for (int i = 0, length = Array.getLength(array); i &lt; length; i++) {</span>
+<span class="fc" id="L94">      E value = (E) Array.get(array, i);</span>
+<span class="fc" id="L95">      componentTypeAdapter.write(out, value);</span>
+    }
+<span class="fc" id="L97">    out.endArray();</span>
+<span class="fc" id="L98">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

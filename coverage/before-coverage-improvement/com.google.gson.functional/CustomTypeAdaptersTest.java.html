@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CustomTypeAdaptersTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">CustomTypeAdaptersTest.java</span></div><h1>CustomTypeAdaptersTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.InstanceCreator;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+import com.google.gson.common.TestTypes.ClassWithCustomTypeConverter;
+import com.google.gson.reflect.TypeToken;
+
+import java.util.Date;
+import junit.framework.TestCase;
+
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Functional tests for the support of custom serializer and deserializers.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L48">public class CustomTypeAdaptersTest extends TestCase {</span>
+  private GsonBuilder builder;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L53">    super.setUp();</span>
+<span class="fc" id="L54">    builder = new GsonBuilder();</span>
+<span class="fc" id="L55">  }</span>
+
+  public void testCustomSerializers() {
+<span class="fc" id="L58">    Gson gson = builder.registerTypeAdapter(</span>
+<span class="fc" id="L59">        ClassWithCustomTypeConverter.class, new JsonSerializer&lt;ClassWithCustomTypeConverter&gt;() {</span>
+          @Override public JsonElement serialize(ClassWithCustomTypeConverter src, Type typeOfSrc,
+              JsonSerializationContext context) {
+<span class="fc" id="L62">        JsonObject json = new JsonObject();</span>
+<span class="fc" id="L63">        json.addProperty(&quot;bag&quot;, 5);</span>
+<span class="fc" id="L64">        json.addProperty(&quot;value&quot;, 25);</span>
+<span class="fc" id="L65">        return json;</span>
+      }
+<span class="fc" id="L67">    }).create();</span>
+<span class="fc" id="L68">    ClassWithCustomTypeConverter target = new ClassWithCustomTypeConverter();</span>
+<span class="fc" id="L69">    assertEquals(&quot;{\&quot;bag\&quot;:5,\&quot;value\&quot;:25}&quot;, gson.toJson(target));</span>
+<span class="fc" id="L70">  }</span>
+
+  public void testCustomDeserializers() {
+<span class="fc" id="L73">    Gson gson = new GsonBuilder().registerTypeAdapter(</span>
+<span class="fc" id="L74">        ClassWithCustomTypeConverter.class, new JsonDeserializer&lt;ClassWithCustomTypeConverter&gt;() {</span>
+          @Override public ClassWithCustomTypeConverter deserialize(JsonElement json, Type typeOfT,
+              JsonDeserializationContext context) {
+<span class="fc" id="L77">        JsonObject jsonObject = json.getAsJsonObject();</span>
+<span class="fc" id="L78">        int value = jsonObject.get(&quot;bag&quot;).getAsInt();</span>
+<span class="fc" id="L79">        return new ClassWithCustomTypeConverter(new BagOfPrimitives(value,</span>
+            value, false, &quot;&quot;), value);
+      }
+<span class="fc" id="L82">    }).create();</span>
+<span class="fc" id="L83">    String json = &quot;{\&quot;bag\&quot;:5,\&quot;value\&quot;:25}&quot;;</span>
+<span class="fc" id="L84">    ClassWithCustomTypeConverter target = gson.fromJson(json, ClassWithCustomTypeConverter.class);</span>
+<span class="fc" id="L85">    assertEquals(5, target.getBag().getIntValue());</span>
+<span class="fc" id="L86">  }</span>
+
+  public void disable_testCustomSerializersOfSelf() {
+<span class="nc" id="L89">    Gson gson = createGsonObjectWithFooTypeAdapter();</span>
+<span class="nc" id="L90">    Gson basicGson = new Gson();</span>
+<span class="nc" id="L91">    Foo newFooObject = new Foo(1, 2L);</span>
+<span class="nc" id="L92">    String jsonFromCustomSerializer = gson.toJson(newFooObject);</span>
+<span class="nc" id="L93">    String jsonFromGson = basicGson.toJson(newFooObject);</span>
+
+<span class="nc" id="L95">    assertEquals(jsonFromGson, jsonFromCustomSerializer);</span>
+<span class="nc" id="L96">  }</span>
+
+  public void disable_testCustomDeserializersOfSelf() {
+<span class="nc" id="L99">    Gson gson = createGsonObjectWithFooTypeAdapter();</span>
+<span class="nc" id="L100">    Gson basicGson = new Gson();</span>
+<span class="nc" id="L101">    Foo expectedFoo = new Foo(1, 2L);</span>
+<span class="nc" id="L102">    String json = basicGson.toJson(expectedFoo);</span>
+<span class="nc" id="L103">    Foo newFooObject = gson.fromJson(json, Foo.class);</span>
+
+<span class="nc" id="L105">    assertEquals(expectedFoo.key, newFooObject.key);</span>
+<span class="nc" id="L106">    assertEquals(expectedFoo.value, newFooObject.value);</span>
+<span class="nc" id="L107">  }</span>
+
+  public void testCustomNestedSerializers() {
+<span class="fc" id="L110">    Gson gson = new GsonBuilder().registerTypeAdapter(</span>
+<span class="fc" id="L111">        BagOfPrimitives.class, new JsonSerializer&lt;BagOfPrimitives&gt;() {</span>
+          @Override public JsonElement serialize(BagOfPrimitives src, Type typeOfSrc,
+          JsonSerializationContext context) {
+<span class="fc" id="L114">        return new JsonPrimitive(6);</span>
+      }
+<span class="fc" id="L116">    }).create();</span>
+<span class="fc" id="L117">    ClassWithCustomTypeConverter target = new ClassWithCustomTypeConverter();</span>
+<span class="fc" id="L118">    assertEquals(&quot;{\&quot;bag\&quot;:6,\&quot;value\&quot;:10}&quot;, gson.toJson(target));</span>
+<span class="fc" id="L119">  }</span>
+
+  public void testCustomNestedDeserializers() {
+<span class="fc" id="L122">    Gson gson = new GsonBuilder().registerTypeAdapter(</span>
+<span class="fc" id="L123">        BagOfPrimitives.class, new JsonDeserializer&lt;BagOfPrimitives&gt;() {</span>
+          @Override public BagOfPrimitives deserialize(JsonElement json, Type typeOfT,
+          JsonDeserializationContext context) throws JsonParseException {
+<span class="fc" id="L126">        int value = json.getAsInt();</span>
+<span class="fc" id="L127">        return new BagOfPrimitives(value, value, false, &quot;&quot;);</span>
+      }
+<span class="fc" id="L129">    }).create();</span>
+<span class="fc" id="L130">    String json = &quot;{\&quot;bag\&quot;:7,\&quot;value\&quot;:25}&quot;;</span>
+<span class="fc" id="L131">    ClassWithCustomTypeConverter target = gson.fromJson(json, ClassWithCustomTypeConverter.class);</span>
+<span class="fc" id="L132">    assertEquals(7, target.getBag().getIntValue());</span>
+<span class="fc" id="L133">  }</span>
+
+  public void testCustomTypeAdapterDoesNotAppliesToSubClasses() {
+<span class="fc" id="L136">    Gson gson = new GsonBuilder().registerTypeAdapter(Base.class, new JsonSerializer&lt;Base&gt; () {</span>
+      @Override
+      public JsonElement serialize(Base src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L139">        JsonObject json = new JsonObject();</span>
+<span class="fc" id="L140">        json.addProperty(&quot;value&quot;, src.baseValue);</span>
+<span class="fc" id="L141">        return json;</span>
+      }
+<span class="fc" id="L143">    }).create();</span>
+<span class="fc" id="L144">    Base b = new Base();</span>
+<span class="fc" id="L145">    String json = gson.toJson(b);</span>
+<span class="fc" id="L146">    assertTrue(json.contains(&quot;value&quot;));</span>
+<span class="fc" id="L147">    b = new Derived();</span>
+<span class="fc" id="L148">    json = gson.toJson(b);</span>
+<span class="fc" id="L149">    assertTrue(json.contains(&quot;derivedValue&quot;));</span>
+<span class="fc" id="L150">  }</span>
+
+  public void testCustomTypeAdapterAppliesToSubClassesSerializedAsBaseClass() {
+<span class="fc" id="L153">    Gson gson = new GsonBuilder().registerTypeAdapter(Base.class, new JsonSerializer&lt;Base&gt; () {</span>
+      @Override
+      public JsonElement serialize(Base src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L156">        JsonObject json = new JsonObject();</span>
+<span class="fc" id="L157">        json.addProperty(&quot;value&quot;, src.baseValue);</span>
+<span class="fc" id="L158">        return json;</span>
+      }
+<span class="fc" id="L160">    }).create();</span>
+<span class="fc" id="L161">    Base b = new Base();</span>
+<span class="fc" id="L162">    String json = gson.toJson(b);</span>
+<span class="fc" id="L163">    assertTrue(json.contains(&quot;value&quot;));</span>
+<span class="fc" id="L164">    b = new Derived();</span>
+<span class="fc" id="L165">    json = gson.toJson(b, Base.class);</span>
+<span class="fc" id="L166">    assertTrue(json.contains(&quot;value&quot;));</span>
+<span class="fc" id="L167">    assertFalse(json.contains(&quot;derivedValue&quot;));</span>
+<span class="fc" id="L168">  }</span>
+
+<span class="fc" id="L170">  private static class Base {</span>
+<span class="fc" id="L171">    int baseValue = 2;</span>
+  }
+
+<span class="fc" id="L174">  private static class Derived extends Base {</span>
+<span class="fc" id="L175">    @SuppressWarnings(&quot;unused&quot;)</span>
+    int derivedValue = 3;
+  }
+
+
+  private Gson createGsonObjectWithFooTypeAdapter() {
+<span class="nc" id="L181">    return new GsonBuilder().registerTypeAdapter(Foo.class, new FooTypeAdapter()).create();</span>
+  }
+
+  public static class Foo {
+    private final int key;
+    private final long value;
+
+    public Foo() {
+<span class="nc" id="L189">      this(0, 0L);</span>
+<span class="nc" id="L190">    }</span>
+
+<span class="nc" id="L192">    public Foo(int key, long value) {</span>
+<span class="nc" id="L193">      this.key = key;</span>
+<span class="nc" id="L194">      this.value = value;</span>
+<span class="nc" id="L195">    }</span>
+  }
+
+<span class="nc" id="L198">  public static final class FooTypeAdapter implements JsonSerializer&lt;Foo&gt;, JsonDeserializer&lt;Foo&gt; {</span>
+    @Override
+    public Foo deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="nc" id="L202">      return context.deserialize(json, typeOfT);</span>
+    }
+
+    @Override
+    public JsonElement serialize(Foo src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="nc" id="L207">      return context.serialize(src, typeOfSrc);</span>
+    }
+  }
+
+  public void testCustomSerializerInvokedForPrimitives() {
+<span class="fc" id="L212">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L213">        .registerTypeAdapter(boolean.class, new JsonSerializer&lt;Boolean&gt;() {</span>
+          @Override public JsonElement serialize(Boolean s, Type t, JsonSerializationContext c) {
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">            return new JsonPrimitive(s ? 1 : 0);</span>
+          }
+        })
+<span class="fc" id="L218">        .create();</span>
+<span class="fc" id="L219">    assertEquals(&quot;1&quot;, gson.toJson(true, boolean.class));</span>
+<span class="fc" id="L220">    assertEquals(&quot;true&quot;, gson.toJson(true, Boolean.class));</span>
+<span class="fc" id="L221">  }</span>
+
+  @SuppressWarnings(&quot;rawtypes&quot;)
+  public void testCustomDeserializerInvokedForPrimitives() {
+<span class="fc" id="L225">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L226">        .registerTypeAdapter(boolean.class, new JsonDeserializer() {</span>
+          @Override
+          public Object deserialize(JsonElement json, Type t, JsonDeserializationContext context) {
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">            return json.getAsInt() != 0;</span>
+          }
+        })
+<span class="fc" id="L232">        .create();</span>
+<span class="fc" id="L233">    assertEquals(Boolean.TRUE, gson.fromJson(&quot;1&quot;, boolean.class));</span>
+<span class="fc" id="L234">    assertEquals(Boolean.TRUE, gson.fromJson(&quot;true&quot;, Boolean.class));</span>
+<span class="fc" id="L235">  }</span>
+
+  public void testCustomByteArraySerializer() {
+<span class="fc" id="L238">    Gson gson = new GsonBuilder().registerTypeAdapter(byte[].class, new JsonSerializer&lt;byte[]&gt;() {</span>
+      @Override
+      public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L241">        StringBuilder sb = new StringBuilder(src.length);</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">        for (byte b : src) {</span>
+<span class="fc" id="L243">          sb.append(b);</span>
+        }
+<span class="fc" id="L245">        return new JsonPrimitive(sb.toString());</span>
+      }
+<span class="fc" id="L247">    }).create();</span>
+<span class="fc" id="L248">    byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};</span>
+<span class="fc" id="L249">    String json = gson.toJson(data);</span>
+<span class="fc" id="L250">    assertEquals(&quot;\&quot;0123456789\&quot;&quot;, json);</span>
+<span class="fc" id="L251">  }</span>
+
+  public void testCustomByteArrayDeserializerAndInstanceCreator() {
+<span class="fc" id="L254">    GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter(byte[].class,</span>
+<span class="fc" id="L255">        new JsonDeserializer&lt;byte[]&gt;() {</span>
+          @Override public byte[] deserialize(JsonElement json,
+              Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+<span class="fc" id="L258">        String str = json.getAsString();</span>
+<span class="fc" id="L259">        byte[] data = new byte[str.length()];</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">        for (int i = 0; i &lt; data.length; ++i) {</span>
+<span class="fc" id="L261">          data[i] = Byte.parseByte(&quot;&quot;+str.charAt(i));</span>
+        }
+<span class="fc" id="L263">        return data;</span>
+      }
+    });
+<span class="fc" id="L266">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L267">    String json = &quot;'0123456789'&quot;;</span>
+<span class="fc" id="L268">    byte[] actual = gson.fromJson(json, byte[].class);</span>
+<span class="fc" id="L269">    byte[] expected = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">    for (int i = 0; i &lt; actual.length; ++i) {</span>
+<span class="fc" id="L271">      assertEquals(expected[i], actual[i]);</span>
+    }
+<span class="fc" id="L273">  }</span>
+
+  private static final class StringHolder {
+    String part1;
+    String part2;
+
+<span class="fc" id="L279">    public StringHolder(String string) {</span>
+<span class="fc" id="L280">      String[] parts = string.split(&quot;:&quot;);</span>
+<span class="fc" id="L281">      part1 = parts[0];</span>
+<span class="fc" id="L282">      part2 = parts[1];</span>
+<span class="fc" id="L283">    }</span>
+<span class="fc" id="L284">    public StringHolder(String part1, String part2) {</span>
+<span class="fc" id="L285">      this.part1 = part1;</span>
+<span class="fc" id="L286">      this.part2 = part2;</span>
+<span class="fc" id="L287">    }</span>
+  }
+
+  private static class StringHolderTypeAdapter implements JsonSerializer&lt;StringHolder&gt;,
+      JsonDeserializer&lt;StringHolder&gt;, InstanceCreator&lt;StringHolder&gt; {
+
+    @Override public StringHolder createInstance(Type type) {
+      //Fill up with objects that will be thrown away
+<span class="nc" id="L295">      return new StringHolder(&quot;unknown:thing&quot;);</span>
+    }
+
+    @Override public StringHolder deserialize(JsonElement src, Type type,
+        JsonDeserializationContext context) {
+<span class="fc" id="L300">      return new StringHolder(src.getAsString());</span>
+    }
+
+    @Override public JsonElement serialize(StringHolder src, Type typeOfSrc,
+        JsonSerializationContext context) {
+<span class="fc" id="L305">      String contents = src.part1 + ':' + src.part2;</span>
+<span class="fc" id="L306">      return new JsonPrimitive(contents);</span>
+    }
+  }
+
+  // Test created from Issue 70
+  public void testCustomAdapterInvokedForCollectionElementSerializationWithType() {
+<span class="fc" id="L312">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L313">      .registerTypeAdapter(StringHolder.class, new StringHolderTypeAdapter())</span>
+<span class="fc" id="L314">      .create();</span>
+<span class="fc" id="L315">    Type setType = new TypeToken&lt;Set&lt;StringHolder&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L316">    StringHolder holder = new StringHolder(&quot;Jacob&quot;, &quot;Tomaw&quot;);</span>
+<span class="fc" id="L317">    Set&lt;StringHolder&gt; setOfHolders = new HashSet&lt;StringHolder&gt;();</span>
+<span class="fc" id="L318">    setOfHolders.add(holder);</span>
+<span class="fc" id="L319">    String json = gson.toJson(setOfHolders, setType);</span>
+<span class="fc" id="L320">    assertTrue(json.contains(&quot;Jacob:Tomaw&quot;));</span>
+<span class="fc" id="L321">  }</span>
+
+  // Test created from Issue 70
+  public void testCustomAdapterInvokedForCollectionElementSerialization() {
+<span class="fc" id="L325">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L326">      .registerTypeAdapter(StringHolder.class, new StringHolderTypeAdapter())</span>
+<span class="fc" id="L327">      .create();</span>
+<span class="fc" id="L328">    StringHolder holder = new StringHolder(&quot;Jacob&quot;, &quot;Tomaw&quot;);</span>
+<span class="fc" id="L329">    Set&lt;StringHolder&gt; setOfHolders = new HashSet&lt;StringHolder&gt;();</span>
+<span class="fc" id="L330">    setOfHolders.add(holder);</span>
+<span class="fc" id="L331">    String json = gson.toJson(setOfHolders);</span>
+<span class="fc" id="L332">    assertTrue(json.contains(&quot;Jacob:Tomaw&quot;));</span>
+<span class="fc" id="L333">  }</span>
+
+  // Test created from Issue 70
+  public void testCustomAdapterInvokedForCollectionElementDeserialization() {
+<span class="fc" id="L337">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L338">      .registerTypeAdapter(StringHolder.class, new StringHolderTypeAdapter())</span>
+<span class="fc" id="L339">      .create();</span>
+<span class="fc" id="L340">    Type setType = new TypeToken&lt;Set&lt;StringHolder&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L341">    Set&lt;StringHolder&gt; setOfHolders = gson.fromJson(&quot;['Jacob:Tomaw']&quot;, setType);</span>
+<span class="fc" id="L342">    assertEquals(1, setOfHolders.size());</span>
+<span class="fc" id="L343">    StringHolder foo = setOfHolders.iterator().next();</span>
+<span class="fc" id="L344">    assertEquals(&quot;Jacob&quot;, foo.part1);</span>
+<span class="fc" id="L345">    assertEquals(&quot;Tomaw&quot;, foo.part2);</span>
+<span class="fc" id="L346">  }</span>
+
+  // Test created from Issue 70
+  public void testCustomAdapterInvokedForMapElementSerializationWithType() {
+<span class="fc" id="L350">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L351">      .registerTypeAdapter(StringHolder.class, new StringHolderTypeAdapter())</span>
+<span class="fc" id="L352">      .create();</span>
+<span class="fc" id="L353">    Type mapType = new TypeToken&lt;Map&lt;String,StringHolder&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L354">    StringHolder holder = new StringHolder(&quot;Jacob&quot;, &quot;Tomaw&quot;);</span>
+<span class="fc" id="L355">    Map&lt;String, StringHolder&gt; mapOfHolders = new HashMap&lt;String, StringHolder&gt;();</span>
+<span class="fc" id="L356">    mapOfHolders.put(&quot;foo&quot;, holder);</span>
+<span class="fc" id="L357">    String json = gson.toJson(mapOfHolders, mapType);</span>
+<span class="fc" id="L358">    assertTrue(json.contains(&quot;\&quot;foo\&quot;:\&quot;Jacob:Tomaw\&quot;&quot;));</span>
+<span class="fc" id="L359">  }</span>
+
+  // Test created from Issue 70
+  public void testCustomAdapterInvokedForMapElementSerialization() {
+<span class="fc" id="L363">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L364">      .registerTypeAdapter(StringHolder.class, new StringHolderTypeAdapter())</span>
+<span class="fc" id="L365">      .create();</span>
+<span class="fc" id="L366">    StringHolder holder = new StringHolder(&quot;Jacob&quot;, &quot;Tomaw&quot;);</span>
+<span class="fc" id="L367">    Map&lt;String, StringHolder&gt; mapOfHolders = new HashMap&lt;String, StringHolder&gt;();</span>
+<span class="fc" id="L368">    mapOfHolders.put(&quot;foo&quot;, holder);</span>
+<span class="fc" id="L369">    String json = gson.toJson(mapOfHolders);</span>
+<span class="fc" id="L370">    assertTrue(json.contains(&quot;\&quot;foo\&quot;:\&quot;Jacob:Tomaw\&quot;&quot;));</span>
+<span class="fc" id="L371">  }</span>
+
+  // Test created from Issue 70
+  public void testCustomAdapterInvokedForMapElementDeserialization() {
+<span class="fc" id="L375">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L376">      .registerTypeAdapter(StringHolder.class, new StringHolderTypeAdapter())</span>
+<span class="fc" id="L377">      .create();</span>
+<span class="fc" id="L378">    Type mapType = new TypeToken&lt;Map&lt;String, StringHolder&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L379">    Map&lt;String, StringHolder&gt; mapOfFoo = gson.fromJson(&quot;{'foo':'Jacob:Tomaw'}&quot;, mapType);</span>
+<span class="fc" id="L380">    assertEquals(1, mapOfFoo.size());</span>
+<span class="fc" id="L381">    StringHolder foo = mapOfFoo.get(&quot;foo&quot;);</span>
+<span class="fc" id="L382">    assertEquals(&quot;Jacob&quot;, foo.part1);</span>
+<span class="fc" id="L383">    assertEquals(&quot;Tomaw&quot;, foo.part2);</span>
+<span class="fc" id="L384">  }</span>
+
+  public void testEnsureCustomSerializerNotInvokedForNullValues() {
+<span class="fc" id="L387">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L388">        .registerTypeAdapter(DataHolder.class, new DataHolderSerializer())</span>
+<span class="fc" id="L389">        .create();</span>
+<span class="fc" id="L390">    DataHolderWrapper target = new DataHolderWrapper(new DataHolder(&quot;abc&quot;));</span>
+<span class="fc" id="L391">    String json = gson.toJson(target);</span>
+<span class="fc" id="L392">    assertEquals(&quot;{\&quot;wrappedData\&quot;:{\&quot;myData\&quot;:\&quot;abc\&quot;}}&quot;, json);</span>
+<span class="fc" id="L393">  }</span>
+
+  public void testEnsureCustomDeserializerNotInvokedForNullValues() {
+<span class="fc" id="L396">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L397">        .registerTypeAdapter(DataHolder.class, new DataHolderDeserializer())</span>
+<span class="fc" id="L398">        .create();</span>
+<span class="fc" id="L399">    String json = &quot;{wrappedData:null}&quot;;</span>
+<span class="fc" id="L400">    DataHolderWrapper actual = gson.fromJson(json, DataHolderWrapper.class);</span>
+<span class="fc" id="L401">    assertNull(actual.wrappedData);</span>
+<span class="fc" id="L402">  }</span>
+
+  // Test created from Issue 352
+  public void testRegisterHierarchyAdapterForDate() {
+<span class="fc" id="L406">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L407">        .registerTypeHierarchyAdapter(Date.class, new DateTypeAdapter())</span>
+<span class="fc" id="L408">        .create();</span>
+<span class="fc" id="L409">    assertEquals(&quot;0&quot;, gson.toJson(new Date(0)));</span>
+<span class="fc" id="L410">    assertEquals(&quot;0&quot;, gson.toJson(new java.sql.Date(0)));</span>
+<span class="fc" id="L411">    assertEquals(new Date(0), gson.fromJson(&quot;0&quot;, Date.class));</span>
+<span class="fc" id="L412">    assertEquals(new java.sql.Date(0), gson.fromJson(&quot;0&quot;, java.sql.Date.class));</span>
+<span class="fc" id="L413">  }</span>
+
+  private static class DataHolder {
+    final String data;
+
+<span class="fc" id="L418">    public DataHolder(String data) {</span>
+<span class="fc" id="L419">      this.data = data;</span>
+<span class="fc" id="L420">    }</span>
+  }
+
+  private static class DataHolderWrapper {
+    final DataHolder wrappedData;
+
+<span class="fc" id="L426">    public DataHolderWrapper(DataHolder data) {</span>
+<span class="fc" id="L427">      this.wrappedData = data;</span>
+<span class="fc" id="L428">    }</span>
+  }
+
+  private static class DataHolderSerializer implements JsonSerializer&lt;DataHolder&gt; {
+    @Override
+    public JsonElement serialize(DataHolder src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L434">      JsonObject obj = new JsonObject();</span>
+<span class="fc" id="L435">      obj.addProperty(&quot;myData&quot;, src.data);</span>
+<span class="fc" id="L436">      return obj;</span>
+    }
+  }
+
+  private static class DataHolderDeserializer implements JsonDeserializer&lt;DataHolder&gt; {
+    @Override
+    public DataHolder deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="nc" id="L444">      JsonObject jsonObj = json.getAsJsonObject();</span>
+<span class="nc" id="L445">      JsonElement jsonElement = jsonObj.get(&quot;data&quot;);</span>
+<span class="nc bnc" id="L446" title="All 4 branches missed.">      if (jsonElement == null || jsonElement.isJsonNull()) {</span>
+<span class="nc" id="L447">        return new DataHolder(null);</span>
+      }
+<span class="nc" id="L449">      return new DataHolder(jsonElement.getAsString());</span>
+    }
+  }
+
+  private static class DateTypeAdapter implements JsonSerializer&lt;Date&gt;, JsonDeserializer&lt;Date&gt; {
+    @Override
+    public Date deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+<span class="fc bfc" id="L456" title="All 2 branches covered.">      return typeOfT == Date.class</span>
+<span class="fc" id="L457">          ? new Date(json.getAsLong())</span>
+<span class="fc" id="L458">          : new java.sql.Date(json.getAsLong());</span>
+    }
+    @Override
+    public JsonElement serialize(Date src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L462">      return new JsonPrimitive(src.getTime());</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

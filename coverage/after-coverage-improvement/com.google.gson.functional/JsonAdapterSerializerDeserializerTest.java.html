@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonAdapterSerializerDeserializerTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">JsonAdapterSerializerDeserializerTest.java</span></div><h1>JsonAdapterSerializerDeserializerTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2016 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import java.lang.reflect.Type;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.annotations.JsonAdapter;
+
+import junit.framework.TestCase;
+
+/**
+ * Functional tests for the {@link JsonAdapter} annotation on fields where the value is of
+ * type {@link JsonSerializer} or {@link JsonDeserializer}.
+ */
+<span class="fc" id="L37">public final class JsonAdapterSerializerDeserializerTest extends TestCase {</span>
+
+  public void testJsonSerializerDeserializerBasedJsonAdapterOnFields() {
+<span class="fc" id="L40">    Gson gson = new Gson();</span>
+<span class="fc" id="L41">    String json = gson.toJson(new Computer(new User(&quot;Inderjeet Singh&quot;), null, new User(&quot;Jesse Wilson&quot;)));</span>
+<span class="fc" id="L42">    assertEquals(&quot;{\&quot;user1\&quot;:\&quot;UserSerializer\&quot;,\&quot;user3\&quot;:\&quot;UserSerializerDeserializer\&quot;}&quot;, json);</span>
+<span class="fc" id="L43">    Computer computer = gson.fromJson(&quot;{'user2':'Jesse Wilson','user3':'Jake Wharton'}&quot;, Computer.class);</span>
+<span class="fc" id="L44">    assertEquals(&quot;UserSerializer&quot;, computer.user2.name);</span>
+<span class="fc" id="L45">    assertEquals(&quot;UserSerializerDeserializer&quot;, computer.user3.name);</span>
+<span class="fc" id="L46">  }</span>
+
+  private static final class Computer {
+    @JsonAdapter(UserSerializer.class) final User user1;
+    @JsonAdapter(UserDeserializer.class) final User user2;
+    @JsonAdapter(UserSerializerDeserializer.class) final User user3;
+<span class="fc" id="L52">    Computer(User user1, User user2, User user3) {</span>
+<span class="fc" id="L53">      this.user1 = user1;</span>
+<span class="fc" id="L54">      this.user2 = user2;</span>
+<span class="fc" id="L55">      this.user3 = user3;</span>
+<span class="fc" id="L56">    }</span>
+  }
+
+  private static final class User {
+    public final String name;
+<span class="fc" id="L61">    private User(String name) {</span>
+<span class="fc" id="L62">      this.name = name;</span>
+<span class="fc" id="L63">    }</span>
+  }
+
+  private static final class UserSerializer implements JsonSerializer&lt;User&gt; {
+    @Override
+    public JsonElement serialize(User src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L69">      return new JsonPrimitive(&quot;UserSerializer&quot;);</span>
+    }
+  }
+
+  private static final class UserDeserializer implements JsonDeserializer&lt;User&gt; {
+    @Override
+    public User deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="fc" id="L77">      return new User(&quot;UserSerializer&quot;);</span>
+    }
+  }
+
+  private static final class UserSerializerDeserializer implements JsonSerializer&lt;User&gt;, JsonDeserializer&lt;User&gt; {
+    @Override
+    public JsonElement serialize(User src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L84">      return new JsonPrimitive(&quot;UserSerializerDeserializer&quot;);</span>
+    }
+    @Override
+    public User deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="fc" id="L89">      return new User(&quot;UserSerializerDeserializer&quot;);</span>
+    }
+  }
+
+  public void testJsonSerializerDeserializerBasedJsonAdapterOnClass() {
+<span class="fc" id="L94">    Gson gson = new Gson();</span>
+<span class="fc" id="L95">    String json = gson.toJson(new Computer2(new User2(&quot;Inderjeet Singh&quot;)));</span>
+<span class="fc" id="L96">    assertEquals(&quot;{\&quot;user\&quot;:\&quot;UserSerializerDeserializer2\&quot;}&quot;, json);</span>
+<span class="fc" id="L97">    Computer2 computer = gson.fromJson(&quot;{'user':'Inderjeet Singh'}&quot;, Computer2.class);</span>
+<span class="fc" id="L98">    assertEquals(&quot;UserSerializerDeserializer2&quot;, computer.user.name);</span>
+<span class="fc" id="L99">  }</span>
+
+  private static final class Computer2 {
+    final User2 user;
+<span class="fc" id="L103">    Computer2(User2 user) {</span>
+<span class="fc" id="L104">      this.user = user;</span>
+<span class="fc" id="L105">    }</span>
+  }
+
+  @JsonAdapter(UserSerializerDeserializer2.class)
+  private static final class User2 {
+    public final String name;
+<span class="fc" id="L111">    private User2(String name) {</span>
+<span class="fc" id="L112">      this.name = name;</span>
+<span class="fc" id="L113">    }</span>
+  }
+
+  private static final class UserSerializerDeserializer2 implements JsonSerializer&lt;User2&gt;, JsonDeserializer&lt;User2&gt; {
+    @Override
+    public JsonElement serialize(User2 src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L119">      return new JsonPrimitive(&quot;UserSerializerDeserializer2&quot;);</span>
+    }
+    @Override
+    public User2 deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="fc" id="L124">      return new User2(&quot;UserSerializerDeserializer2&quot;);</span>
+    }
+  }
+
+  public void testDifferentJsonAdaptersForGenericFieldsOfSameRawType() {
+<span class="fc" id="L129">    Container c = new Container(&quot;Foo&quot;, 10);</span>
+<span class="fc" id="L130">    Gson gson = new Gson();</span>
+<span class="fc" id="L131">    String json = gson.toJson(c);</span>
+<span class="fc" id="L132">    assertTrue(json.contains(&quot;\&quot;a\&quot;:\&quot;BaseStringAdapter\&quot;&quot;));</span>
+<span class="fc" id="L133">    assertTrue(json.contains(&quot;\&quot;b\&quot;:\&quot;BaseIntegerAdapter\&quot;&quot;));</span>
+<span class="fc" id="L134">  }</span>
+
+  private static final class Container {
+    @JsonAdapter(BaseStringAdapter.class) Base&lt;String&gt; a;
+    @JsonAdapter(BaseIntegerAdapter.class) Base&lt;Integer&gt; b;
+<span class="fc" id="L139">    Container(String a, int b) {</span>
+<span class="fc" id="L140">      this.a = new Base&lt;String&gt;(a);</span>
+<span class="fc" id="L141">      this.b = new Base&lt;Integer&gt;(b);</span>
+<span class="fc" id="L142">    }</span>
+  }
+
+  private static final class Base&lt;T&gt; {
+    @SuppressWarnings(&quot;unused&quot;)
+    T value;
+<span class="fc" id="L148">    Base(T value) {</span>
+<span class="fc" id="L149">      this.value = value;</span>
+<span class="fc" id="L150">    }</span>
+  }
+
+  private static final class BaseStringAdapter implements JsonSerializer&lt;Base&lt;String&gt;&gt; {
+    @Override public JsonElement serialize(Base&lt;String&gt; src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L155">      return new JsonPrimitive(&quot;BaseStringAdapter&quot;);</span>
+    }
+  }
+
+  private static final class BaseIntegerAdapter implements JsonSerializer&lt;Base&lt;Integer&gt;&gt; {
+    @Override public JsonElement serialize(Base&lt;Integer&gt; src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L161">      return new JsonPrimitive(&quot;BaseIntegerAdapter&quot;);</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

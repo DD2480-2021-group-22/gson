@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonParserTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">JsonParserTest.java</span></div><h1>JsonParserTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+import com.google.gson.common.TestTypes.Nested;
+import com.google.gson.reflect.TypeToken;
+
+import junit.framework.TestCase;
+
+import java.io.StringReader;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Functional tests for that use JsonParser and related Gson methods
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L44">public class JsonParserTest extends TestCase {</span>
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L49">    super.setUp();</span>
+<span class="fc" id="L50">    gson = new Gson();</span>
+<span class="fc" id="L51">  }</span>
+
+  public void testParseInvalidJson() {
+    try {
+<span class="nc" id="L55">      gson.fromJson(&quot;[[]&quot;, Object[].class);</span>
+<span class="nc" id="L56">      fail();</span>
+<span class="pc" id="L57">    } catch (JsonSyntaxException expected) { }</span>
+<span class="fc" id="L58">  }</span>
+
+  public void testDeserializingCustomTree() {
+<span class="fc" id="L61">    JsonObject obj = new JsonObject();</span>
+<span class="fc" id="L62">    obj.addProperty(&quot;stringValue&quot;, &quot;foo&quot;);</span>
+<span class="fc" id="L63">    obj.addProperty(&quot;intValue&quot;, 11);</span>
+<span class="fc" id="L64">    BagOfPrimitives target = gson.fromJson(obj, BagOfPrimitives.class);</span>
+<span class="fc" id="L65">    assertEquals(11, target.intValue);</span>
+<span class="fc" id="L66">    assertEquals(&quot;foo&quot;, target.stringValue);</span>
+<span class="fc" id="L67">  }</span>
+
+  public void testBadTypeForDeserializingCustomTree() {
+<span class="fc" id="L70">    JsonObject obj = new JsonObject();</span>
+<span class="fc" id="L71">    obj.addProperty(&quot;stringValue&quot;, &quot;foo&quot;);</span>
+<span class="fc" id="L72">    obj.addProperty(&quot;intValue&quot;, 11);</span>
+<span class="fc" id="L73">    JsonArray array = new JsonArray();</span>
+<span class="fc" id="L74">    array.add(obj);</span>
+    try {
+<span class="nc" id="L76">      gson.fromJson(array, BagOfPrimitives.class);</span>
+<span class="nc" id="L77">      fail(&quot;BagOfPrimitives is not an array&quot;);</span>
+<span class="pc" id="L78">    } catch (JsonParseException expected) { }</span>
+<span class="fc" id="L79">  }</span>
+
+  public void testBadFieldTypeForCustomDeserializerCustomTree() {
+<span class="fc" id="L82">    JsonArray array = new JsonArray();</span>
+<span class="fc" id="L83">    array.add(new JsonPrimitive(&quot;blah&quot;));</span>
+<span class="fc" id="L84">    JsonObject obj = new JsonObject();</span>
+<span class="fc" id="L85">    obj.addProperty(&quot;stringValue&quot;, &quot;foo&quot;);</span>
+<span class="fc" id="L86">    obj.addProperty(&quot;intValue&quot;, 11);</span>
+<span class="fc" id="L87">    obj.add(&quot;longValue&quot;, array);</span>
+
+    try {
+<span class="nc" id="L90">      gson.fromJson(obj, BagOfPrimitives.class);</span>
+<span class="nc" id="L91">      fail(&quot;BagOfPrimitives is not an array&quot;);</span>
+<span class="pc" id="L92">    } catch (JsonParseException expected) { }</span>
+<span class="fc" id="L93">  }</span>
+
+  public void testBadFieldTypeForDeserializingCustomTree() {
+<span class="fc" id="L96">    JsonArray array = new JsonArray();</span>
+<span class="fc" id="L97">    array.add(new JsonPrimitive(&quot;blah&quot;));</span>
+<span class="fc" id="L98">    JsonObject primitive1 = new JsonObject();</span>
+<span class="fc" id="L99">    primitive1.addProperty(&quot;string&quot;, &quot;foo&quot;);</span>
+<span class="fc" id="L100">    primitive1.addProperty(&quot;intValue&quot;, 11);</span>
+
+<span class="fc" id="L102">    JsonObject obj = new JsonObject();</span>
+<span class="fc" id="L103">    obj.add(&quot;primitive1&quot;, primitive1);</span>
+<span class="fc" id="L104">    obj.add(&quot;primitive2&quot;, array);</span>
+
+    try {
+<span class="nc" id="L107">      gson.fromJson(obj, Nested.class);</span>
+<span class="nc" id="L108">      fail(&quot;Nested has field BagOfPrimitives which is not an array&quot;);</span>
+<span class="pc" id="L109">    } catch (JsonParseException expected) { }</span>
+<span class="fc" id="L110">  }</span>
+
+  public void testChangingCustomTreeAndDeserializing() {
+<span class="fc" id="L113">    StringReader json =</span>
+      new StringReader(&quot;{'stringValue':'no message','intValue':10,'longValue':20}&quot;);
+<span class="fc" id="L115">    JsonObject obj = (JsonObject) JsonParser.parseReader(json);</span>
+<span class="fc" id="L116">    obj.remove(&quot;stringValue&quot;);</span>
+<span class="fc" id="L117">    obj.addProperty(&quot;stringValue&quot;, &quot;fooBar&quot;);</span>
+<span class="fc" id="L118">    BagOfPrimitives target = gson.fromJson(obj, BagOfPrimitives.class);</span>
+<span class="fc" id="L119">    assertEquals(10, target.intValue);</span>
+<span class="fc" id="L120">    assertEquals(20, target.longValue);</span>
+<span class="fc" id="L121">    assertEquals(&quot;fooBar&quot;, target.stringValue);</span>
+<span class="fc" id="L122">  }</span>
+
+  public void testExtraCommasInArrays() {
+<span class="fc" id="L125">    Type type = new TypeToken&lt;List&lt;String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L126">    assertEquals(Arrays.asList(&quot;a&quot;, null, &quot;b&quot;, null, null), gson.fromJson(&quot;[a,,b,,]&quot;, type));</span>
+<span class="fc" id="L127">    assertEquals(Arrays.asList(null, null), gson.fromJson(&quot;[,]&quot;, type));</span>
+<span class="fc" id="L128">    assertEquals(Arrays.asList(&quot;a&quot;, null), gson.fromJson(&quot;[a,]&quot;, type));</span>
+<span class="fc" id="L129">  }</span>
+
+  public void testExtraCommasInMaps() {
+<span class="fc" id="L132">    Type type = new TypeToken&lt;Map&lt;String, String&gt;&gt;() {}.getType();</span>
+    try {
+<span class="nc" id="L134">      gson.fromJson(&quot;{a:b,}&quot;, type);</span>
+<span class="nc" id="L135">      fail();</span>
+<span class="fc" id="L136">    } catch (JsonSyntaxException expected) {</span>
+<span class="nc" id="L137">    }</span>
+<span class="fc" id="L138">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

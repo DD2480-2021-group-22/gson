@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DelegateTypeAdapterTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">DelegateTypeAdapterTest.java</span></div><h1>DelegateTypeAdapterTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2012 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import junit.framework.TestCase;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+
+/**
+ * Functional tests for {@link Gson#getDelegateAdapter(TypeAdapterFactory, TypeToken)} method.
+ *
+ * @author Inderjeet Singh
+ */
+<span class="fc" id="L38">public class DelegateTypeAdapterTest extends TestCase {</span>
+
+  private StatsTypeAdapterFactory stats;
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L45">    super.setUp();</span>
+<span class="fc" id="L46">    stats = new StatsTypeAdapterFactory();</span>
+<span class="fc" id="L47">    gson = new GsonBuilder()</span>
+<span class="fc" id="L48">      .registerTypeAdapterFactory(stats)</span>
+<span class="fc" id="L49">      .create();</span>
+<span class="fc" id="L50">  }</span>
+
+  public void testDelegateInvoked() {
+<span class="fc" id="L53">    List&lt;BagOfPrimitives&gt; bags = new ArrayList&lt;BagOfPrimitives&gt;();</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">    for (int i = 0; i &lt; 10; ++i) {</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">      bags.add(new BagOfPrimitives(i, i, i % 2 == 0, String.valueOf(i)));</span>
+    }
+<span class="fc" id="L57">    String json = gson.toJson(bags);</span>
+<span class="fc" id="L58">    bags = gson.fromJson(json, new TypeToken&lt;List&lt;BagOfPrimitives&gt;&gt;(){}.getType());</span>
+    // 11: 1 list object, and 10 entries. stats invoked on all 5 fields
+<span class="fc" id="L60">    assertEquals(51, stats.numReads);</span>
+<span class="fc" id="L61">    assertEquals(51, stats.numWrites);</span>
+<span class="fc" id="L62">  }</span>
+
+  public void testDelegateInvokedOnStrings() {
+<span class="fc" id="L65">    String[] bags = {&quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;};</span>
+<span class="fc" id="L66">    String json = gson.toJson(bags);</span>
+<span class="fc" id="L67">    bags = gson.fromJson(json, String[].class);</span>
+    // 1 array object with 4 elements.
+<span class="fc" id="L69">    assertEquals(5, stats.numReads);</span>
+<span class="fc" id="L70">    assertEquals(5, stats.numWrites);</span>
+<span class="fc" id="L71">  }</span>
+
+<span class="fc" id="L73">  private static class StatsTypeAdapterFactory implements TypeAdapterFactory {</span>
+<span class="fc" id="L74">    public int numReads = 0;</span>
+<span class="fc" id="L75">    public int numWrites = 0;</span>
+
+    @Override public &lt;T&gt; TypeAdapter&lt;T&gt; create(Gson gson, TypeToken&lt;T&gt; type) {
+<span class="fc" id="L78">      final TypeAdapter&lt;T&gt; delegate = gson.getDelegateAdapter(this, type);</span>
+<span class="fc" id="L79">      return new TypeAdapter&lt;T&gt;() {</span>
+        @Override
+        public void write(JsonWriter out, T value) throws IOException {
+<span class="fc" id="L82">          ++numWrites;</span>
+<span class="fc" id="L83">          delegate.write(out, value);</span>
+<span class="fc" id="L84">        }</span>
+
+        @Override
+        public T read(JsonReader in) throws IOException {
+<span class="fc" id="L88">          ++numReads;</span>
+<span class="fc" id="L89">          return delegate.read(in);</span>
+        }
+      };
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

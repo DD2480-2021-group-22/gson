@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RuntimeTypeAdapterFactoryFunctionalTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">RuntimeTypeAdapterFactoryFunctionalTest.java</span></div><h1>RuntimeTypeAdapterFactoryFunctionalTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import junit.framework.TestCase;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.internal.Streams;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+
+/**
+ * Functional tests for the RuntimeTypeAdapterFactory feature in extras.
+ */
+<span class="fc" id="L40">public final class RuntimeTypeAdapterFactoryFunctionalTest extends TestCase {</span>
+
+<span class="fc" id="L42">  private final Gson gson = new Gson();</span>
+
+  /**
+   * This test also ensures that {@link TypeAdapterFactory} registered through {@link JsonAdapter}
+   * work correctly for {@link Gson#getDelegateAdapter(TypeAdapterFactory, TypeToken)}.
+   */
+  public void testSubclassesAutomaticallySerialized() throws Exception {
+<span class="fc" id="L49">    Shape shape = new Circle(25);</span>
+<span class="fc" id="L50">    String json = gson.toJson(shape);</span>
+<span class="fc" id="L51">    shape = gson.fromJson(json, Shape.class);</span>
+<span class="fc" id="L52">    assertEquals(25, ((Circle)shape).radius);</span>
+
+<span class="fc" id="L54">    shape = new Square(15);</span>
+<span class="fc" id="L55">    json = gson.toJson(shape);</span>
+<span class="fc" id="L56">    shape = gson.fromJson(json, Shape.class);</span>
+<span class="fc" id="L57">    assertEquals(15, ((Square)shape).side);</span>
+<span class="fc" id="L58">    assertEquals(ShapeType.SQUARE, shape.type);</span>
+<span class="fc" id="L59">  }</span>
+
+  @JsonAdapter(Shape.JsonAdapterFactory.class)
+  static class Shape {
+    final ShapeType type;
+<span class="fc" id="L64">    Shape(ShapeType type) { this.type = type; }</span>
+    private static final class JsonAdapterFactory extends RuntimeTypeAdapterFactory&lt;Shape&gt; {
+      public JsonAdapterFactory() {
+<span class="fc" id="L67">        super(Shape.class, &quot;type&quot;);</span>
+<span class="fc" id="L68">        registerSubtype(Circle.class, ShapeType.CIRCLE.toString());</span>
+<span class="fc" id="L69">        registerSubtype(Square.class, ShapeType.SQUARE.toString());</span>
+<span class="fc" id="L70">      }</span>
+    }
+  }
+
+<span class="fc" id="L74">  public enum ShapeType {</span>
+<span class="fc" id="L75">    SQUARE, CIRCLE</span>
+  }
+
+  private static final class Circle extends Shape {
+    final int radius;
+<span class="fc" id="L80">    Circle(int radius) { super(ShapeType.CIRCLE); this.radius = radius; }</span>
+  }
+
+  private static final class Square extends Shape {
+    final int side;
+<span class="fc" id="L85">    Square(int side) { super(ShapeType.SQUARE); this.side = side; }</span>
+  }
+
+  // Copied from the extras package
+  static class RuntimeTypeAdapterFactory&lt;T&gt; implements TypeAdapterFactory {
+    private final Class&lt;?&gt; baseType;
+    private final String typeFieldName;
+<span class="fc" id="L92">    private final Map&lt;String, Class&lt;?&gt;&gt; labelToSubtype = new LinkedHashMap&lt;String, Class&lt;?&gt;&gt;();</span>
+<span class="fc" id="L93">    private final Map&lt;Class&lt;?&gt;, String&gt; subtypeToLabel = new LinkedHashMap&lt;Class&lt;?&gt;, String&gt;();</span>
+
+<span class="fc" id="L95">    protected RuntimeTypeAdapterFactory(Class&lt;?&gt; baseType, String typeFieldName) {</span>
+<span class="pc bpc" id="L96" title="2 of 4 branches missed.">      if (typeFieldName == null || baseType == null) {</span>
+<span class="nc" id="L97">        throw new NullPointerException();</span>
+      }
+<span class="fc" id="L99">      this.baseType = baseType;</span>
+<span class="fc" id="L100">      this.typeFieldName = typeFieldName;</span>
+<span class="fc" id="L101">    }</span>
+
+    /**
+     * Creates a new runtime type adapter using for {@code baseType} using {@code
+     * typeFieldName} as the type field name. Type field names are case sensitive.
+     */
+    public static &lt;T&gt; RuntimeTypeAdapterFactory&lt;T&gt; of(Class&lt;T&gt; baseType, String typeFieldName) {
+<span class="nc" id="L108">      return new RuntimeTypeAdapterFactory&lt;T&gt;(baseType, typeFieldName);</span>
+    }
+
+    /**
+     * Creates a new runtime type adapter for {@code baseType} using {@code &quot;type&quot;} as
+     * the type field name.
+     */
+    public static &lt;T&gt; RuntimeTypeAdapterFactory&lt;T&gt; of(Class&lt;T&gt; baseType) {
+<span class="nc" id="L116">      return new RuntimeTypeAdapterFactory&lt;T&gt;(baseType, &quot;type&quot;);</span>
+    }
+
+    /**
+     * Registers {@code type} identified by {@code label}. Labels are case
+     * sensitive.
+     *
+     * @throws IllegalArgumentException if either {@code type} or {@code label}
+     *     have already been registered on this type adapter.
+     */
+    public RuntimeTypeAdapterFactory&lt;T&gt; registerSubtype(Class&lt;? extends T&gt; type, String label) {
+<span class="pc bpc" id="L127" title="2 of 4 branches missed.">      if (type == null || label == null) {</span>
+<span class="nc" id="L128">        throw new NullPointerException();</span>
+      }
+<span class="pc bpc" id="L130" title="2 of 4 branches missed.">      if (subtypeToLabel.containsKey(type) || labelToSubtype.containsKey(label)) {</span>
+<span class="nc" id="L131">        throw new IllegalArgumentException(&quot;types and labels must be unique&quot;);</span>
+      }
+<span class="fc" id="L133">      labelToSubtype.put(label, type);</span>
+<span class="fc" id="L134">      subtypeToLabel.put(type, label);</span>
+<span class="fc" id="L135">      return this;</span>
+    }
+
+    /**
+     * Registers {@code type} identified by its {@link Class#getSimpleName simple
+     * name}. Labels are case sensitive.
+     *
+     * @throws IllegalArgumentException if either {@code type} or its simple name
+     *     have already been registered on this type adapter.
+     */
+    public RuntimeTypeAdapterFactory&lt;T&gt; registerSubtype(Class&lt;? extends T&gt; type) {
+<span class="nc" id="L146">      return registerSubtype(type, type.getSimpleName());</span>
+    }
+
+    @Override public &lt;R&gt; TypeAdapter&lt;R&gt; create(Gson gson, TypeToken&lt;R&gt; type) {
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">      if (type.getRawType() != baseType) {</span>
+<span class="nc" id="L151">        return null;</span>
+      }
+
+<span class="fc" id="L154">      final Map&lt;String, TypeAdapter&lt;?&gt;&gt; labelToDelegate</span>
+          = new LinkedHashMap&lt;String, TypeAdapter&lt;?&gt;&gt;();
+<span class="fc" id="L156">      final Map&lt;Class&lt;?&gt;, TypeAdapter&lt;?&gt;&gt; subtypeToDelegate</span>
+          = new LinkedHashMap&lt;Class&lt;?&gt;, TypeAdapter&lt;?&gt;&gt;();
+<span class="fc bfc" id="L158" title="All 2 branches covered.">      for (Map.Entry&lt;String, Class&lt;?&gt;&gt; entry : labelToSubtype.entrySet()) {</span>
+<span class="fc" id="L159">        TypeAdapter&lt;?&gt; delegate = gson.getDelegateAdapter(this, TypeToken.get(entry.getValue()));</span>
+<span class="fc" id="L160">        labelToDelegate.put(entry.getKey(), delegate);</span>
+<span class="fc" id="L161">        subtypeToDelegate.put(entry.getValue(), delegate);</span>
+<span class="fc" id="L162">      }</span>
+
+<span class="fc" id="L164">      return new TypeAdapter&lt;R&gt;() {</span>
+        @Override public R read(JsonReader in) throws IOException {
+<span class="fc" id="L166">          JsonElement jsonElement = Streams.parse(in);</span>
+<span class="fc" id="L167">          JsonElement labelJsonElement = jsonElement.getAsJsonObject().get(typeFieldName);</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">          if (labelJsonElement == null) {</span>
+<span class="nc" id="L169">            throw new JsonParseException(&quot;cannot deserialize &quot; + baseType</span>
+<span class="nc" id="L170">                + &quot; because it does not define a field named &quot; + typeFieldName);</span>
+          }
+<span class="fc" id="L172">          String label = labelJsonElement.getAsString();</span>
+          @SuppressWarnings(&quot;unchecked&quot;) // registration requires that subtype extends T
+<span class="fc" id="L174">          TypeAdapter&lt;R&gt; delegate = (TypeAdapter&lt;R&gt;) labelToDelegate.get(label);</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">          if (delegate == null) {</span>
+<span class="nc" id="L176">            throw new JsonParseException(&quot;cannot deserialize &quot; + baseType + &quot; subtype named &quot;</span>
+                + label + &quot;; did you forget to register a subtype?&quot;);
+          }
+<span class="fc" id="L179">          return delegate.fromJsonTree(jsonElement);</span>
+        }
+
+        @Override public void write(JsonWriter out, R value) throws IOException {
+<span class="nc" id="L183">          Class&lt;?&gt; srcType = value.getClass();</span>
+<span class="nc" id="L184">          String label = subtypeToLabel.get(srcType);</span>
+          @SuppressWarnings(&quot;unchecked&quot;) // registration requires that subtype extends T
+<span class="nc" id="L186">          TypeAdapter&lt;R&gt; delegate = (TypeAdapter&lt;R&gt;) subtypeToDelegate.get(srcType);</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">          if (delegate == null) {</span>
+<span class="nc" id="L188">            throw new JsonParseException(&quot;cannot serialize &quot; + srcType.getName()</span>
+                + &quot;; did you forget to register a subtype?&quot;);
+          }
+<span class="nc" id="L191">          JsonObject jsonObject = delegate.toJsonTree(value).getAsJsonObject();</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">          if (!jsonObject.has(typeFieldName)) {</span>
+<span class="nc" id="L193">            JsonObject clone = new JsonObject();</span>
+<span class="nc" id="L194">            clone.add(typeFieldName, new JsonPrimitive(label));</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">            for (Map.Entry&lt;String, JsonElement&gt; e : jsonObject.entrySet()) {</span>
+<span class="nc" id="L196">              clone.add(e.getKey(), e.getValue());</span>
+<span class="nc" id="L197">            }</span>
+<span class="nc" id="L198">            jsonObject = clone;</span>
+          }
+<span class="nc" id="L200">          Streams.write(jsonObject, out);</span>
+<span class="nc" id="L201">        }</span>
+      };
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

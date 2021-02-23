@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultDateTypeAdapterTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson</a> &gt; <span class="el_source">DefaultDateTypeAdapterTest.java</span></div><h1>DefaultDateTypeAdapterTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson;
+
+import com.google.gson.internal.JavaVersion;
+import junit.framework.TestCase;
+
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
+
+/**
+ * A simple unit test for the {@link DefaultDateTypeAdapter} class.
+ *
+ * @author Joel Leitch
+ */
+<span class="fc" id="L34">public class DefaultDateTypeAdapterTest extends TestCase {</span>
+
+  public void testFormattingInEnUs() {
+<span class="fc" id="L37">    assertFormattingAlwaysEmitsUsLocale(Locale.US);</span>
+<span class="fc" id="L38">  }</span>
+
+  public void testFormattingInFr() {
+<span class="fc" id="L41">    assertFormattingAlwaysEmitsUsLocale(Locale.FRANCE);</span>
+<span class="fc" id="L42">  }</span>
+
+  private void assertFormattingAlwaysEmitsUsLocale(Locale locale) {
+<span class="fc" id="L45">    TimeZone defaultTimeZone = TimeZone.getDefault();</span>
+<span class="fc" id="L46">    TimeZone.setDefault(TimeZone.getTimeZone(&quot;UTC&quot;));</span>
+<span class="fc" id="L47">    Locale defaultLocale = Locale.getDefault();</span>
+<span class="fc" id="L48">    Locale.setDefault(locale);</span>
+    try {
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">      String afterYearSep = JavaVersion.isJava9OrLater() ? &quot;, &quot; : &quot; &quot;;</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">      String afterYearLongSep = JavaVersion.isJava9OrLater() ? &quot; at &quot; : &quot; &quot;;</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">      String utcFull = JavaVersion.isJava9OrLater() ? &quot;Coordinated Universal Time&quot; : &quot;UTC&quot;;</span>
+<span class="fc" id="L53">      assertFormatted(String.format(&quot;Jan 1, 1970%s12:00:00 AM&quot;, afterYearSep),</span>
+              new DefaultDateTypeAdapter(Date.class));
+<span class="fc" id="L55">      assertFormatted(&quot;1/1/70&quot;, new DefaultDateTypeAdapter(Date.class, DateFormat.SHORT));</span>
+<span class="fc" id="L56">      assertFormatted(&quot;Jan 1, 1970&quot;, new DefaultDateTypeAdapter(Date.class, DateFormat.MEDIUM));</span>
+<span class="fc" id="L57">      assertFormatted(&quot;January 1, 1970&quot;, new DefaultDateTypeAdapter(Date.class, DateFormat.LONG));</span>
+<span class="fc" id="L58">      assertFormatted(String.format(&quot;1/1/70%s12:00 AM&quot;, afterYearSep),</span>
+          new DefaultDateTypeAdapter(DateFormat.SHORT, DateFormat.SHORT));
+<span class="fc" id="L60">      assertFormatted(String.format(&quot;Jan 1, 1970%s12:00:00 AM&quot;, afterYearSep),</span>
+          new DefaultDateTypeAdapter(DateFormat.MEDIUM, DateFormat.MEDIUM));
+<span class="fc" id="L62">      assertFormatted(String.format(&quot;January 1, 1970%s12:00:00 AM UTC&quot;, afterYearLongSep),</span>
+          new DefaultDateTypeAdapter(DateFormat.LONG, DateFormat.LONG));
+<span class="fc" id="L64">      assertFormatted(String.format(&quot;Thursday, January 1, 1970%s12:00:00 AM %s&quot;, afterYearLongSep, utcFull),</span>
+          new DefaultDateTypeAdapter(DateFormat.FULL, DateFormat.FULL));
+    } finally {
+<span class="fc" id="L67">      TimeZone.setDefault(defaultTimeZone);</span>
+<span class="fc" id="L68">      Locale.setDefault(defaultLocale);</span>
+    }
+<span class="fc" id="L70">  }</span>
+
+  public void testParsingDatesFormattedWithSystemLocale() throws Exception {
+<span class="fc" id="L73">    TimeZone defaultTimeZone = TimeZone.getDefault();</span>
+<span class="fc" id="L74">    TimeZone.setDefault(TimeZone.getTimeZone(&quot;UTC&quot;));</span>
+<span class="fc" id="L75">    Locale defaultLocale = Locale.getDefault();</span>
+<span class="fc" id="L76">    Locale.setDefault(Locale.FRANCE);</span>
+    try {
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">      String afterYearSep = JavaVersion.isJava9OrLater() ? &quot; à &quot; : &quot; &quot;;</span>
+<span class="fc" id="L79">      assertParsed(String.format(&quot;1 janv. 1970%s00:00:00&quot;, afterYearSep),</span>
+              new DefaultDateTypeAdapter(Date.class));
+<span class="fc" id="L81">      assertParsed(&quot;01/01/70&quot;, new DefaultDateTypeAdapter(Date.class, DateFormat.SHORT));</span>
+<span class="fc" id="L82">      assertParsed(&quot;1 janv. 1970&quot;, new DefaultDateTypeAdapter(Date.class, DateFormat.MEDIUM));</span>
+<span class="fc" id="L83">      assertParsed(&quot;1 janvier 1970&quot;, new DefaultDateTypeAdapter(Date.class, DateFormat.LONG));</span>
+<span class="fc" id="L84">      assertParsed(&quot;01/01/70 00:00&quot;,</span>
+          new DefaultDateTypeAdapter(DateFormat.SHORT, DateFormat.SHORT));
+<span class="fc" id="L86">      assertParsed(String.format(&quot;1 janv. 1970%s00:00:00&quot;, afterYearSep),</span>
+          new DefaultDateTypeAdapter(DateFormat.MEDIUM, DateFormat.MEDIUM));
+<span class="fc" id="L88">      assertParsed(String.format(&quot;1 janvier 1970%s00:00:00 UTC&quot;, afterYearSep),</span>
+          new DefaultDateTypeAdapter(DateFormat.LONG, DateFormat.LONG));
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">      assertParsed(JavaVersion.isJava9OrLater() ? (JavaVersion.getMajorJavaVersion() &lt;11 ?</span>
+<span class="fc" id="L91">                      &quot;jeudi 1 janvier 1970 à 00:00:00 Coordinated Universal Time&quot; :</span>
+<span class="nc" id="L92">                      &quot;jeudi 1 janvier 1970 à 00:00:00 Temps universel coordonné&quot;) :</span>
+<span class="pc" id="L93">                      &quot;jeudi 1 janvier 1970 00 h 00 UTC&quot;,</span>
+          new DefaultDateTypeAdapter(DateFormat.FULL, DateFormat.FULL));
+    } finally {
+<span class="fc" id="L96">      TimeZone.setDefault(defaultTimeZone);</span>
+<span class="fc" id="L97">      Locale.setDefault(defaultLocale);</span>
+    }
+<span class="fc" id="L99">  }</span>
+
+  public void testParsingDatesFormattedWithUsLocale() throws Exception {
+<span class="fc" id="L102">    TimeZone defaultTimeZone = TimeZone.getDefault();</span>
+<span class="fc" id="L103">    TimeZone.setDefault(TimeZone.getTimeZone(&quot;UTC&quot;));</span>
+<span class="fc" id="L104">    Locale defaultLocale = Locale.getDefault();</span>
+<span class="fc" id="L105">    Locale.setDefault(Locale.US);</span>
+    try {
+<span class="fc" id="L107">      assertParsed(&quot;Jan 1, 1970 0:00:00 AM&quot;, new DefaultDateTypeAdapter(Date.class));</span>
+<span class="fc" id="L108">      assertParsed(&quot;1/1/70&quot;, new DefaultDateTypeAdapter(Date.class, DateFormat.SHORT));</span>
+<span class="fc" id="L109">      assertParsed(&quot;Jan 1, 1970&quot;, new DefaultDateTypeAdapter(Date.class, DateFormat.MEDIUM));</span>
+<span class="fc" id="L110">      assertParsed(&quot;January 1, 1970&quot;, new DefaultDateTypeAdapter(Date.class, DateFormat.LONG));</span>
+<span class="fc" id="L111">      assertParsed(&quot;1/1/70 0:00 AM&quot;,</span>
+          new DefaultDateTypeAdapter(DateFormat.SHORT, DateFormat.SHORT));
+<span class="fc" id="L113">      assertParsed(&quot;Jan 1, 1970 0:00:00 AM&quot;,</span>
+          new DefaultDateTypeAdapter(DateFormat.MEDIUM, DateFormat.MEDIUM));
+<span class="fc" id="L115">      assertParsed(&quot;January 1, 1970 0:00:00 AM UTC&quot;,</span>
+          new DefaultDateTypeAdapter(DateFormat.LONG, DateFormat.LONG));
+<span class="fc" id="L117">      assertParsed(&quot;Thursday, January 1, 1970 0:00:00 AM UTC&quot;,</span>
+          new DefaultDateTypeAdapter(DateFormat.FULL, DateFormat.FULL));
+    } finally {
+<span class="fc" id="L120">      TimeZone.setDefault(defaultTimeZone);</span>
+<span class="fc" id="L121">      Locale.setDefault(defaultLocale);</span>
+    }
+<span class="fc" id="L123">  }</span>
+
+  public void testFormatUsesDefaultTimezone() throws Exception {
+<span class="fc" id="L126">    TimeZone defaultTimeZone = TimeZone.getDefault();</span>
+<span class="fc" id="L127">    TimeZone.setDefault(TimeZone.getTimeZone(&quot;America/Los_Angeles&quot;));</span>
+<span class="fc" id="L128">    Locale defaultLocale = Locale.getDefault();</span>
+<span class="fc" id="L129">    Locale.setDefault(Locale.US);</span>
+    try {
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">      String afterYearSep = JavaVersion.isJava9OrLater() ? &quot;, &quot; : &quot; &quot;;</span>
+<span class="fc" id="L132">      assertFormatted(String.format(&quot;Dec 31, 1969%s4:00:00 PM&quot;, afterYearSep),</span>
+              new DefaultDateTypeAdapter(Date.class));
+<span class="fc" id="L134">      assertParsed(&quot;Dec 31, 1969 4:00:00 PM&quot;, new DefaultDateTypeAdapter(Date.class));</span>
+    } finally {
+<span class="fc" id="L136">      TimeZone.setDefault(defaultTimeZone);</span>
+<span class="fc" id="L137">      Locale.setDefault(defaultLocale);</span>
+    }
+<span class="fc" id="L139">  }</span>
+
+  public void testDateDeserializationISO8601() throws Exception {
+<span class="fc" id="L142">    DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);</span>
+<span class="fc" id="L143">    assertParsed(&quot;1970-01-01T00:00:00.000Z&quot;, adapter);</span>
+<span class="fc" id="L144">    assertParsed(&quot;1970-01-01T00:00Z&quot;, adapter);</span>
+<span class="fc" id="L145">    assertParsed(&quot;1970-01-01T00:00:00+00:00&quot;, adapter);</span>
+<span class="fc" id="L146">    assertParsed(&quot;1970-01-01T01:00:00+01:00&quot;, adapter);</span>
+<span class="fc" id="L147">    assertParsed(&quot;1970-01-01T01:00:00+01&quot;, adapter);</span>
+<span class="fc" id="L148">  }</span>
+  
+  public void testDateSerialization() throws Exception {
+<span class="fc" id="L151">    int dateStyle = DateFormat.LONG;</span>
+<span class="fc" id="L152">    DefaultDateTypeAdapter dateTypeAdapter = new DefaultDateTypeAdapter(Date.class, dateStyle);</span>
+<span class="fc" id="L153">    DateFormat formatter = DateFormat.getDateInstance(dateStyle, Locale.US);</span>
+<span class="fc" id="L154">    Date currentDate = new Date();</span>
+
+<span class="fc" id="L156">    String dateString = dateTypeAdapter.toJson(currentDate);</span>
+<span class="fc" id="L157">    assertEquals(toLiteral(formatter.format(currentDate)), dateString);</span>
+<span class="fc" id="L158">  }</span>
+
+  public void testDatePattern() throws Exception {
+<span class="fc" id="L161">    String pattern = &quot;yyyy-MM-dd&quot;;</span>
+<span class="fc" id="L162">    DefaultDateTypeAdapter dateTypeAdapter = new DefaultDateTypeAdapter(Date.class, pattern);</span>
+<span class="fc" id="L163">    DateFormat formatter = new SimpleDateFormat(pattern);</span>
+<span class="fc" id="L164">    Date currentDate = new Date();</span>
+
+<span class="fc" id="L166">    String dateString = dateTypeAdapter.toJson(currentDate);</span>
+<span class="fc" id="L167">    assertEquals(toLiteral(formatter.format(currentDate)), dateString);</span>
+<span class="fc" id="L168">  }</span>
+
+  @SuppressWarnings(&quot;unused&quot;)
+  public void testInvalidDatePattern() throws Exception {
+    try {
+<span class="nc" id="L173">      new DefaultDateTypeAdapter(Date.class, &quot;I am a bad Date pattern....&quot;);</span>
+<span class="nc" id="L174">      fail(&quot;Invalid date pattern should fail.&quot;);</span>
+<span class="pc" id="L175">    } catch (IllegalArgumentException expected) { }</span>
+<span class="fc" id="L176">  }</span>
+
+  public void testNullValue() throws Exception {
+<span class="fc" id="L179">    DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);</span>
+<span class="fc" id="L180">    assertNull(adapter.fromJson(&quot;null&quot;));</span>
+<span class="fc" id="L181">    assertEquals(&quot;null&quot;, adapter.toJson(null));</span>
+<span class="fc" id="L182">  }</span>
+
+  public void testUnexpectedToken() throws Exception {
+    try {
+<span class="fc" id="L186">      DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);</span>
+<span class="nc" id="L187">      adapter.fromJson(&quot;{}&quot;);</span>
+<span class="nc" id="L188">      fail(&quot;Unexpected token should fail.&quot;);</span>
+<span class="pc" id="L189">    } catch (IllegalStateException expected) { }</span>
+<span class="fc" id="L190">  }</span>
+
+  /**
+   * Added tests to increase coverage for the function parse in src/main/java/com/google/gson/internal/bind/util/ISO8601Utils.java.
+   * The requirements for triggering the uncovered switch-cases are that (parseEndOffset - offset) is either 1 or 2.
+   * parseEndOffset is calculated asMath.min(endOffset, offset + 3) -
+   * which chooses the minimum of the offset to the last letter and the offset +3.
+   * First assert results in an (parseEndOffset - offset) value of 2 which results in switch case 2.
+   * Second assert results in an (parseEndOffset - offset) value of 1 which results in switch case 1.
+   * Both are parsed to the format of a DefaultDateTypeAdapter, despite the length.
+   * Expected: Date format parsed to the format of DefaultDateTypeAdapter.
+   * @throws Exception
+   */
+  public void testParseMethodDouble()throws Exception {
+    //Arrange
+<span class="fc" id="L205">    DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);</span>
+    //Act, Assert
+<span class="fc" id="L207">    assertParsed(&quot;1970-01-01T00:00:00.00Z&quot;, adapter);</span>
+
+<span class="fc" id="L209">  };</span>
+  public void testParseMethodSingle()throws Exception {
+    //Arrange
+<span class="fc" id="L212">    DefaultDateTypeAdapter adapter = new DefaultDateTypeAdapter(Date.class);</span>
+    //Two added tests for coverage
+<span class="fc" id="L214">    assertParsed(&quot;1970-01-01T00:00:00.0Z&quot;, adapter);</span>
+
+<span class="fc" id="L216">  };</span>
+
+  private void assertFormatted(String formatted, DefaultDateTypeAdapter adapter) {
+<span class="fc" id="L219">    assertEquals(toLiteral(formatted), adapter.toJson(new Date(0)));</span>
+<span class="fc" id="L220">  }</span>
+
+  private void assertParsed(String date, DefaultDateTypeAdapter adapter) throws IOException {
+<span class="fc" id="L223">    assertEquals(date, new Date(0), adapter.fromJson(toLiteral(date)));</span>
+<span class="fc" id="L224">    assertEquals(&quot;ISO 8601&quot;, new Date(0), adapter.fromJson(toLiteral(&quot;1970-01-01T00:00:00Z&quot;)));</span>
+<span class="fc" id="L225">  }</span>
+
+  private static String toLiteral(String s) {
+<span class="fc" id="L228">    return '&quot;' + s + '&quot;';</span>
+  }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

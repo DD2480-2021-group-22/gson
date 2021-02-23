@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UncategorizedTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">UncategorizedTest.java</span></div><h1>UncategorizedTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+import com.google.gson.common.TestTypes.ClassOverridingEquals;
+
+import com.google.gson.reflect.TypeToken;
+import java.util.Arrays;
+import java.util.List;
+import junit.framework.TestCase;
+
+import java.lang.reflect.Type;
+
+/**
+ * Functional tests that do not fall neatly into any of the existing classification.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L40">public class UncategorizedTest extends TestCase {</span>
+
+<span class="fc" id="L42">  private Gson gson = null;</span>
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L46">    super.setUp();</span>
+<span class="fc" id="L47">    gson = new Gson();</span>
+<span class="fc" id="L48">  }</span>
+
+  public void testInvalidJsonDeserializationFails() throws Exception {
+    try {
+<span class="nc" id="L52">      gson.fromJson(&quot;adfasdf1112,,,\&quot;:&quot;, BagOfPrimitives.class);</span>
+<span class="nc" id="L53">      fail(&quot;Bad JSON should throw a ParseException&quot;);</span>
+<span class="pc" id="L54">    } catch (JsonParseException expected) { }</span>
+
+    try {
+<span class="nc" id="L57">      gson.fromJson(&quot;{adfasdf1112,,,\&quot;:}&quot;, BagOfPrimitives.class);</span>
+<span class="nc" id="L58">      fail(&quot;Bad JSON should throw a ParseException&quot;);</span>
+<span class="pc" id="L59">    } catch (JsonParseException expected) { }</span>
+<span class="fc" id="L60">  }</span>
+
+  public void testObjectEqualButNotSameSerialization() throws Exception {
+<span class="fc" id="L63">    ClassOverridingEquals objA = new ClassOverridingEquals();</span>
+<span class="fc" id="L64">    ClassOverridingEquals objB = new ClassOverridingEquals();</span>
+<span class="fc" id="L65">    objB.ref = objA;</span>
+<span class="fc" id="L66">    String json = gson.toJson(objB);</span>
+<span class="fc" id="L67">    assertEquals(objB.getExpectedJson(), json);</span>
+<span class="fc" id="L68">  }</span>
+
+  public void testStaticFieldsAreNotSerialized() {
+<span class="fc" id="L71">    BagOfPrimitives target = new BagOfPrimitives();</span>
+<span class="fc" id="L72">    assertFalse(gson.toJson(target).contains(&quot;DEFAULT_VALUE&quot;));</span>
+<span class="fc" id="L73">  }</span>
+
+  public void testGsonInstanceReusableForSerializationAndDeserialization() {
+<span class="fc" id="L76">    BagOfPrimitives bag = new BagOfPrimitives();</span>
+<span class="fc" id="L77">    String json = gson.toJson(bag);</span>
+<span class="fc" id="L78">    BagOfPrimitives deserialized = gson.fromJson(json, BagOfPrimitives.class);</span>
+<span class="fc" id="L79">    assertEquals(bag, deserialized);</span>
+<span class="fc" id="L80">  }</span>
+
+  /**
+   * This test ensures that a custom deserializer is able to return a derived class instance for a
+   * base class object. For a motivation for this test, see Issue 37 and
+   * http://groups.google.com/group/google-gson/browse_thread/thread/677d56e9976d7761
+   */
+  public void testReturningDerivedClassesDuringDeserialization() {
+<span class="fc" id="L88">    Gson gson = new GsonBuilder().registerTypeAdapter(Base.class, new BaseTypeAdapter()).create();</span>
+<span class="fc" id="L89">    String json = &quot;{\&quot;opType\&quot;:\&quot;OP1\&quot;}&quot;;</span>
+<span class="fc" id="L90">    Base base = gson.fromJson(json, Base.class);</span>
+<span class="fc" id="L91">    assertTrue(base instanceof Derived1);</span>
+<span class="fc" id="L92">    assertEquals(OperationType.OP1, base.opType);</span>
+
+<span class="fc" id="L94">    json = &quot;{\&quot;opType\&quot;:\&quot;OP2\&quot;}&quot;;</span>
+<span class="fc" id="L95">    base = gson.fromJson(json, Base.class);</span>
+<span class="fc" id="L96">    assertTrue(base instanceof Derived2);</span>
+<span class="fc" id="L97">    assertEquals(OperationType.OP2, base.opType);</span>
+<span class="fc" id="L98">  }</span>
+
+  /**
+   * Test that trailing whitespace is ignored.
+   * http://code.google.com/p/google-gson/issues/detail?id=302
+   */
+  public void testTrailingWhitespace() throws Exception {
+<span class="fc" id="L105">    List&lt;Integer&gt; integers = gson.fromJson(&quot;[1,2,3]  \n\n  &quot;,</span>
+<span class="fc" id="L106">        new TypeToken&lt;List&lt;Integer&gt;&gt;() {}.getType());</span>
+<span class="fc" id="L107">    assertEquals(Arrays.asList(1, 2, 3), integers);</span>
+<span class="fc" id="L108">  }</span>
+
+<span class="fc" id="L110">  private enum OperationType { OP1, OP2 }</span>
+  private static class Base {
+    OperationType opType;
+  }
+  private static class Derived1 extends Base {
+<span class="fc" id="L115">    Derived1() { opType = OperationType.OP1; }</span>
+  }
+  private static class Derived2 extends Base {
+<span class="fc" id="L118">    Derived2() { opType = OperationType.OP2; }</span>
+  }
+  private static class BaseTypeAdapter implements JsonDeserializer&lt;Base&gt; {
+    @Override public Base deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="fc" id="L123">      String opTypeStr = json.getAsJsonObject().get(&quot;opType&quot;).getAsString();</span>
+<span class="fc" id="L124">      OperationType opType = OperationType.valueOf(opTypeStr);</span>
+<span class="pc bpc" id="L125" title="1 of 3 branches missed.">      switch (opType) {</span>
+      case OP1:
+<span class="fc" id="L127">        return new Derived1();</span>
+      case OP2:
+<span class="fc" id="L129">        return new Derived2();</span>
+      }
+<span class="nc" id="L131">      throw new JsonParseException(&quot;unknown type: &quot; + json);</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

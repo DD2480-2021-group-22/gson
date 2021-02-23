@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArrayTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">ArrayTest.java</span></div><h1>ArrayTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+import com.google.gson.common.TestTypes.ClassWithObjects;
+import com.google.gson.reflect.TypeToken;
+
+import junit.framework.TestCase;
+import static org.junit.Assert.assertArrayEquals;
+
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
+/**
+ * Functional tests for Json serialization and deserialization of arrays.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L39">public class ArrayTest extends TestCase {</span>
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L44">    super.setUp();</span>
+<span class="fc" id="L45">    gson = new Gson();</span>
+<span class="fc" id="L46">  }</span>
+
+  public void testTopLevelArrayOfIntsSerialization() {
+<span class="fc" id="L49">    int[] target = {1, 2, 3, 4, 5, 6, 7, 8, 9};</span>
+<span class="fc" id="L50">    assertEquals(&quot;[1,2,3,4,5,6,7,8,9]&quot;, gson.toJson(target));</span>
+<span class="fc" id="L51">  }</span>
+
+  public void testTopLevelArrayOfIntsDeserialization() {
+<span class="fc" id="L54">    int[] expected = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };</span>
+<span class="fc" id="L55">    int[] actual = gson.fromJson(&quot;[1,2,3,4,5,6,7,8,9]&quot;, int[].class);</span>
+<span class="fc" id="L56">    assertArrayEquals(expected, actual);</span>
+<span class="fc" id="L57">  }</span>
+
+  public void testInvalidArrayDeserialization() {
+<span class="fc" id="L60">    String json = &quot;[1, 2 3, 4, 5]&quot;;</span>
+    try {
+<span class="nc" id="L62">      gson.fromJson(json, int[].class);</span>
+<span class="nc" id="L63">      fail(&quot;Gson should not deserialize array elements with missing ,&quot;);</span>
+<span class="fc" id="L64">    } catch (JsonParseException expected) {</span>
+<span class="nc" id="L65">    }</span>
+<span class="fc" id="L66">  }</span>
+
+  public void testEmptyArraySerialization() {
+<span class="fc" id="L69">    int[] target = {};</span>
+<span class="fc" id="L70">    assertEquals(&quot;[]&quot;, gson.toJson(target));</span>
+<span class="fc" id="L71">  }</span>
+
+  public void testEmptyArrayDeserialization() {
+<span class="fc" id="L74">    int[] actualObject = gson.fromJson(&quot;[]&quot;, int[].class);</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">    assertTrue(actualObject.length == 0);</span>
+
+<span class="fc" id="L77">    Integer[] actualObject2 = gson.fromJson(&quot;[]&quot;, Integer[].class);</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">    assertTrue(actualObject2.length == 0);</span>
+
+<span class="fc" id="L80">    actualObject = gson.fromJson(&quot;[ ]&quot;, int[].class);</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">    assertTrue(actualObject.length == 0);</span>
+<span class="fc" id="L82">  }</span>
+
+  public void testNullsInArraySerialization() {
+<span class="fc" id="L85">    String[] array = {&quot;foo&quot;, null, &quot;bar&quot;};</span>
+<span class="fc" id="L86">    String expected = &quot;[\&quot;foo\&quot;,null,\&quot;bar\&quot;]&quot;;</span>
+<span class="fc" id="L87">    String json = gson.toJson(array);</span>
+<span class="fc" id="L88">    assertEquals(expected, json);</span>
+<span class="fc" id="L89">  }</span>
+
+  public void testNullsInArrayDeserialization() {
+<span class="fc" id="L92">    String json = &quot;[\&quot;foo\&quot;,null,\&quot;bar\&quot;]&quot;;</span>
+<span class="fc" id="L93">    String[] expected = {&quot;foo&quot;, null, &quot;bar&quot;};</span>
+<span class="fc" id="L94">    String[] target = gson.fromJson(json, expected.getClass());</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">    for (int i = 0; i &lt; expected.length; ++i) {</span>
+<span class="fc" id="L96">      assertEquals(expected[i], target[i]);</span>
+    }
+<span class="fc" id="L98">  }</span>
+
+  public void testSingleNullInArraySerialization() {
+<span class="fc" id="L101">    BagOfPrimitives[] array = new BagOfPrimitives[1];</span>
+<span class="fc" id="L102">    array[0] = null;</span>
+<span class="fc" id="L103">    String json = gson.toJson(array);</span>
+<span class="fc" id="L104">    assertEquals(&quot;[null]&quot;, json);</span>
+<span class="fc" id="L105">  }</span>
+
+  public void testSingleNullInArrayDeserialization() {
+<span class="fc" id="L108">    BagOfPrimitives[] array = gson.fromJson(&quot;[null]&quot;, BagOfPrimitives[].class);</span>
+<span class="fc" id="L109">    assertNull(array[0]);</span>
+<span class="fc" id="L110">  }</span>
+
+  public void testNullsInArrayWithSerializeNullPropertySetSerialization() {
+<span class="fc" id="L113">    gson = new GsonBuilder().serializeNulls().create();</span>
+<span class="fc" id="L114">    String[] array = {&quot;foo&quot;, null, &quot;bar&quot;};</span>
+<span class="fc" id="L115">    String expected = &quot;[\&quot;foo\&quot;,null,\&quot;bar\&quot;]&quot;;</span>
+<span class="fc" id="L116">    String json = gson.toJson(array);</span>
+<span class="fc" id="L117">    assertEquals(expected, json);</span>
+<span class="fc" id="L118">  }</span>
+
+  public void testArrayOfStringsSerialization() {
+<span class="fc" id="L121">    String[] target = {&quot;Hello&quot;, &quot;World&quot;};</span>
+<span class="fc" id="L122">    assertEquals(&quot;[\&quot;Hello\&quot;,\&quot;World\&quot;]&quot;, gson.toJson(target));</span>
+<span class="fc" id="L123">  }</span>
+
+  public void testArrayOfStringsDeserialization() {
+<span class="fc" id="L126">    String json = &quot;[\&quot;Hello\&quot;,\&quot;World\&quot;]&quot;;</span>
+<span class="fc" id="L127">    String[] target = gson.fromJson(json, String[].class);</span>
+<span class="fc" id="L128">    assertEquals(&quot;Hello&quot;, target[0]);</span>
+<span class="fc" id="L129">    assertEquals(&quot;World&quot;, target[1]);</span>
+<span class="fc" id="L130">  }</span>
+
+  public void testSingleStringArraySerialization() throws Exception {
+<span class="fc" id="L133">    String[] s = { &quot;hello&quot; };</span>
+<span class="fc" id="L134">    String output = gson.toJson(s);</span>
+<span class="fc" id="L135">    assertEquals(&quot;[\&quot;hello\&quot;]&quot;, output);</span>
+<span class="fc" id="L136">  }</span>
+
+  public void testSingleStringArrayDeserialization() throws Exception {
+<span class="fc" id="L139">    String json = &quot;[\&quot;hello\&quot;]&quot;;</span>
+<span class="fc" id="L140">    String[] arrayType = gson.fromJson(json, String[].class);</span>
+<span class="fc" id="L141">    assertEquals(1, arrayType.length);</span>
+<span class="fc" id="L142">    assertEquals(&quot;hello&quot;, arrayType[0]);</span>
+<span class="fc" id="L143">  }</span>
+
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public void testArrayOfCollectionSerialization() throws Exception {
+<span class="fc" id="L147">    StringBuilder sb = new StringBuilder(&quot;[&quot;);</span>
+<span class="fc" id="L148">    int arraySize = 3;</span>
+
+<span class="fc" id="L150">    Type typeToSerialize = new TypeToken&lt;Collection&lt;Integer&gt;[]&gt;() {}.getType();</span>
+<span class="fc" id="L151">    Collection&lt;Integer&gt;[] arrayOfCollection = new ArrayList[arraySize];</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">    for (int i = 0; i &lt; arraySize; ++i) {</span>
+<span class="fc" id="L153">      int startValue = (3 * i) + 1;</span>
+<span class="fc" id="L154">      sb.append('[').append(startValue).append(',').append(startValue + 1).append(']');</span>
+<span class="fc" id="L155">      ArrayList&lt;Integer&gt; tmpList = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L156">      tmpList.add(startValue);</span>
+<span class="fc" id="L157">      tmpList.add(startValue + 1);</span>
+<span class="fc" id="L158">      arrayOfCollection[i] = tmpList;</span>
+
+<span class="fc bfc" id="L160" title="All 2 branches covered.">      if (i &lt; arraySize - 1) {</span>
+<span class="fc" id="L161">        sb.append(',');</span>
+      }
+    }
+<span class="fc" id="L164">    sb.append(']');</span>
+
+<span class="fc" id="L166">    String json = gson.toJson(arrayOfCollection, typeToSerialize);</span>
+<span class="fc" id="L167">    assertEquals(sb.toString(), json);</span>
+<span class="fc" id="L168">  }</span>
+
+  public void testArrayOfCollectionDeserialization() throws Exception {
+<span class="fc" id="L171">    String json = &quot;[[1,2],[3,4]]&quot;;</span>
+<span class="fc" id="L172">    Type type = new TypeToken&lt;Collection&lt;Integer&gt;[]&gt;() {}.getType();</span>
+<span class="fc" id="L173">    Collection&lt;Integer&gt;[] target = gson.fromJson(json, type);</span>
+
+<span class="fc" id="L175">    assertEquals(2, target.length);</span>
+<span class="fc" id="L176">    assertArrayEquals(new Integer[] { 1, 2 }, target[0].toArray(new Integer[0]));</span>
+<span class="fc" id="L177">    assertArrayEquals(new Integer[] { 3, 4 }, target[1].toArray(new Integer[0]));</span>
+<span class="fc" id="L178">  }</span>
+
+  public void testArrayOfPrimitivesAsObjectsSerialization() throws Exception {
+<span class="fc" id="L181">    Object[] objs = new Object[] {1, &quot;abc&quot;, 0.3f, 5L};</span>
+<span class="fc" id="L182">    String json = gson.toJson(objs);</span>
+<span class="fc" id="L183">    assertTrue(json.contains(&quot;abc&quot;));</span>
+<span class="fc" id="L184">    assertTrue(json.contains(&quot;0.3&quot;));</span>
+<span class="fc" id="L185">    assertTrue(json.contains(&quot;5&quot;));</span>
+<span class="fc" id="L186">  }</span>
+
+  public void testArrayOfPrimitivesAsObjectsDeserialization() throws Exception {
+<span class="fc" id="L189">    String json = &quot;[1,'abc',0.3,1.1,5]&quot;;</span>
+<span class="fc" id="L190">    Object[] objs = gson.fromJson(json, Object[].class);</span>
+<span class="fc" id="L191">    assertEquals(1, ((Number)objs[0]).intValue());</span>
+<span class="fc" id="L192">    assertEquals(&quot;abc&quot;, objs[1]);</span>
+<span class="fc" id="L193">    assertEquals(0.3, ((Number)objs[2]).doubleValue());</span>
+<span class="fc" id="L194">    assertEquals(new BigDecimal(&quot;1.1&quot;), new BigDecimal(objs[3].toString()));</span>
+<span class="fc" id="L195">    assertEquals(5, ((Number)objs[4]).shortValue());</span>
+<span class="fc" id="L196">  }</span>
+
+  public void testObjectArrayWithNonPrimitivesSerialization() throws Exception {
+<span class="fc" id="L199">    ClassWithObjects classWithObjects = new ClassWithObjects();</span>
+<span class="fc" id="L200">    BagOfPrimitives bagOfPrimitives = new BagOfPrimitives();</span>
+<span class="fc" id="L201">    String classWithObjectsJson = gson.toJson(classWithObjects);</span>
+<span class="fc" id="L202">    String bagOfPrimitivesJson = gson.toJson(bagOfPrimitives);</span>
+
+<span class="fc" id="L204">    Object[] objects = new Object[] { classWithObjects, bagOfPrimitives };</span>
+<span class="fc" id="L205">    String json = gson.toJson(objects);</span>
+
+<span class="fc" id="L207">    assertTrue(json.contains(classWithObjectsJson));</span>
+<span class="fc" id="L208">    assertTrue(json.contains(bagOfPrimitivesJson));</span>
+<span class="fc" id="L209">  }</span>
+
+  public void testArrayOfNullSerialization() {
+<span class="fc" id="L212">    Object[] array = new Object[] {null};</span>
+<span class="fc" id="L213">    String json = gson.toJson(array);</span>
+<span class="fc" id="L214">    assertEquals(&quot;[null]&quot;, json);</span>
+<span class="fc" id="L215">  }</span>
+
+  public void testArrayOfNullDeserialization() {
+<span class="fc" id="L218">    String[] values = gson.fromJson(&quot;[null]&quot;, String[].class);</span>
+<span class="fc" id="L219">    assertNull(values[0]);</span>
+<span class="fc" id="L220">  }</span>
+
+  /**
+   * Regression tests for Issue 272
+   */
+  public void testMultidimenstionalArraysSerialization() {
+<span class="fc" id="L226">    String[][] items = new String[][]{</span>
+        {&quot;3m Co&quot;, &quot;71.72&quot;, &quot;0.02&quot;, &quot;0.03&quot;, &quot;4/2 12:00am&quot;, &quot;Manufacturing&quot;},
+        {&quot;Alcoa Inc&quot;, &quot;29.01&quot;, &quot;0.42&quot;, &quot;1.47&quot;, &quot;4/1 12:00am&quot;, &quot;Manufacturing&quot;}
+    };
+<span class="fc" id="L230">    String json = gson.toJson(items);</span>
+<span class="fc" id="L231">    assertTrue(json.contains(&quot;[[\&quot;3m Co&quot;));</span>
+<span class="fc" id="L232">    assertTrue(json.contains(&quot;Manufacturing\&quot;]]&quot;));</span>
+<span class="fc" id="L233">  }</span>
+
+  public void testMultiDimenstionalObjectArraysSerialization() {
+<span class="fc" id="L236">    Object[][] array = new Object[][] { new Object[] { 1, 2 } };</span>
+<span class="fc" id="L237">    assertEquals(&quot;[[1,2]]&quot;, gson.toJson(array));</span>
+<span class="fc" id="L238">  }</span>
+
+  /**
+   * Regression test for Issue 205
+   */
+  public void testMixingTypesInObjectArraySerialization() {
+<span class="fc" id="L244">    Object[] array = new Object[] { 1, 2, new Object[] { &quot;one&quot;, &quot;two&quot;, 3 } };</span>
+<span class="fc" id="L245">    assertEquals(&quot;[1,2,[\&quot;one\&quot;,\&quot;two\&quot;,3]]&quot;, gson.toJson(array));</span>
+<span class="fc" id="L246">  }</span>
+
+  /**
+   * Regression tests for Issue 272
+   */
+  public void testMultidimenstionalArraysDeserialization() {
+<span class="fc" id="L252">    String json = &quot;[['3m Co','71.72','0.02','0.03','4/2 12:00am','Manufacturing'],&quot;</span>
+      + &quot;['Alcoa Inc','29.01','0.42','1.47','4/1 12:00am','Manufacturing']]&quot;;
+<span class="fc" id="L254">    String[][] items = gson.fromJson(json, String[][].class);</span>
+<span class="fc" id="L255">    assertEquals(&quot;3m Co&quot;, items[0][0]);</span>
+<span class="fc" id="L256">    assertEquals(&quot;Manufacturing&quot;, items[1][5]);</span>
+<span class="fc" id="L257">  }</span>
+
+  /** http://code.google.com/p/google-gson/issues/detail?id=342 */
+  public void testArrayElementsAreArrays() {
+<span class="fc" id="L261">    Object[] stringArrays = {</span>
+        new String[] {&quot;test1&quot;, &quot;test2&quot;},
+        new String[] {&quot;test3&quot;, &quot;test4&quot;}
+    };
+<span class="fc" id="L265">    assertEquals(&quot;[[\&quot;test1\&quot;,\&quot;test2\&quot;],[\&quot;test3\&quot;,\&quot;test4\&quot;]]&quot;,</span>
+<span class="fc" id="L266">        new Gson().toJson(stringArrays));</span>
+<span class="fc" id="L267">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

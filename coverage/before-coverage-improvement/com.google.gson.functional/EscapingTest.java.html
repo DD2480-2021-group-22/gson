@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EscapingTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">EscapingTest.java</span></div><h1>EscapingTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+import java.util.ArrayList;
+import java.util.List;
+import junit.framework.TestCase;
+
+/**
+ * Performs some functional test involving JSON output escaping.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L32">public class EscapingTest extends TestCase {</span>
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L37">    super.setUp();</span>
+<span class="fc" id="L38">    gson = new Gson();</span>
+<span class="fc" id="L39">  }</span>
+
+  public void testEscapingQuotesInStringArray() throws Exception {
+<span class="fc" id="L42">    String[] valueWithQuotes = { &quot;beforeQuote\&quot;afterQuote&quot; };</span>
+<span class="fc" id="L43">    String jsonRepresentation = gson.toJson(valueWithQuotes);</span>
+<span class="fc" id="L44">    String[] target = gson.fromJson(jsonRepresentation, String[].class);</span>
+<span class="fc" id="L45">    assertEquals(1, target.length);</span>
+<span class="fc" id="L46">    assertEquals(valueWithQuotes[0], target[0]);</span>
+<span class="fc" id="L47">  }</span>
+
+  public void testEscapeAllHtmlCharacters() {
+<span class="fc" id="L50">    List&lt;String&gt; strings = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L51">    strings.add(&quot;&lt;&quot;);</span>
+<span class="fc" id="L52">    strings.add(&quot;&gt;&quot;);</span>
+<span class="fc" id="L53">    strings.add(&quot;=&quot;);</span>
+<span class="fc" id="L54">    strings.add(&quot;&amp;&quot;);</span>
+<span class="fc" id="L55">    strings.add(&quot;'&quot;);</span>
+<span class="fc" id="L56">    strings.add(&quot;\&quot;&quot;);</span>
+<span class="fc" id="L57">    assertEquals(&quot;[\&quot;\\u003c\&quot;,\&quot;\\u003e\&quot;,\&quot;\\u003d\&quot;,\&quot;\\u0026\&quot;,\&quot;\\u0027\&quot;,\&quot;\\\&quot;\&quot;]&quot;,</span>
+<span class="fc" id="L58">        gson.toJson(strings));</span>
+<span class="fc" id="L59">  }</span>
+
+  public void testEscapingObjectFields() throws Exception {
+<span class="fc" id="L62">    BagOfPrimitives objWithPrimitives = new BagOfPrimitives(1L, 1, true, &quot;test with\&quot; &lt;script&gt;&quot;);</span>
+<span class="fc" id="L63">    String jsonRepresentation = gson.toJson(objWithPrimitives);</span>
+<span class="fc" id="L64">    assertFalse(jsonRepresentation.contains(&quot;&lt;&quot;));</span>
+<span class="fc" id="L65">    assertFalse(jsonRepresentation.contains(&quot;&gt;&quot;));</span>
+<span class="fc" id="L66">    assertTrue(jsonRepresentation.contains(&quot;\\\&quot;&quot;));</span>
+
+<span class="fc" id="L68">    BagOfPrimitives expectedObject = gson.fromJson(jsonRepresentation, BagOfPrimitives.class);</span>
+<span class="fc" id="L69">    assertEquals(objWithPrimitives.getExpectedJson(), expectedObject.getExpectedJson());</span>
+<span class="fc" id="L70">  }</span>
+  
+  public void testGsonAcceptsEscapedAndNonEscapedJsonDeserialization() throws Exception {
+<span class="fc" id="L73">    Gson escapeHtmlGson = new GsonBuilder().create();</span>
+<span class="fc" id="L74">    Gson noEscapeHtmlGson = new GsonBuilder().disableHtmlEscaping().create();</span>
+    
+<span class="fc" id="L76">    BagOfPrimitives target = new BagOfPrimitives(1L, 1, true, &quot;test' / w'ith\&quot; / \\ &lt;script&gt;&quot;);</span>
+<span class="fc" id="L77">    String escapedJsonForm = escapeHtmlGson.toJson(target);</span>
+<span class="fc" id="L78">    String nonEscapedJsonForm = noEscapeHtmlGson.toJson(target);</span>
+<span class="fc" id="L79">    assertFalse(escapedJsonForm.equals(nonEscapedJsonForm));</span>
+    
+<span class="fc" id="L81">    assertEquals(target, noEscapeHtmlGson.fromJson(escapedJsonForm, BagOfPrimitives.class));</span>
+<span class="fc" id="L82">    assertEquals(target, escapeHtmlGson.fromJson(nonEscapedJsonForm, BagOfPrimitives.class));</span>
+<span class="fc" id="L83">  }</span>
+
+  public void testGsonDoubleDeserialization() {
+<span class="fc" id="L86">    BagOfPrimitives expected = new BagOfPrimitives(3L, 4, true, &quot;value1&quot;);</span>
+<span class="fc" id="L87">    String json = gson.toJson(gson.toJson(expected));</span>
+<span class="fc" id="L88">    String value = gson.fromJson(json, String.class);</span>
+<span class="fc" id="L89">    BagOfPrimitives actual = gson.fromJson(value, BagOfPrimitives.class);</span>
+<span class="fc" id="L90">    assertEquals(expected, actual);</span>
+<span class="fc" id="L91">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

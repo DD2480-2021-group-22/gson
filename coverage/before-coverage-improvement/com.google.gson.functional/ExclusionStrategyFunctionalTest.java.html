@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExclusionStrategyFunctionalTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">ExclusionStrategyFunctionalTest.java</span></div><h1>ExclusionStrategyFunctionalTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import junit.framework.TestCase;
+
+/**
+ * Performs some functional tests when Gson is instantiated with some common user defined
+ * {@link ExclusionStrategy} objects.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L38">public class ExclusionStrategyFunctionalTest extends TestCase {</span>
+<span class="fc" id="L39">  private static final ExclusionStrategy EXCLUDE_SAMPLE_OBJECT_FOR_TEST = new ExclusionStrategy() {</span>
+    @Override public boolean shouldSkipField(FieldAttributes f) {
+<span class="fc" id="L41">      return false;</span>
+    }
+    @Override public boolean shouldSkipClass(Class&lt;?&gt; clazz) {
+<span class="fc bfc" id="L44" title="All 2 branches covered.">      return clazz == SampleObjectForTest.class;</span>
+    }
+  };
+
+  private SampleObjectForTest src;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L52">    super.setUp();</span>
+<span class="fc" id="L53">    src = new SampleObjectForTest();</span>
+<span class="fc" id="L54">  }</span>
+
+  public void testExclusionStrategySerialization() throws Exception {
+<span class="fc" id="L57">    Gson gson = createGson(new MyExclusionStrategy(String.class), true);</span>
+<span class="fc" id="L58">    String json = gson.toJson(src);</span>
+<span class="fc" id="L59">    assertFalse(json.contains(&quot;\&quot;stringField\&quot;&quot;));</span>
+<span class="fc" id="L60">    assertFalse(json.contains(&quot;\&quot;annotatedField\&quot;&quot;));</span>
+<span class="fc" id="L61">    assertTrue(json.contains(&quot;\&quot;longField\&quot;&quot;));</span>
+<span class="fc" id="L62">  }</span>
+
+  public void testExclusionStrategySerializationDoesNotImpactDeserialization() {
+<span class="fc" id="L65">    String json = &quot;{\&quot;annotatedField\&quot;:1,\&quot;stringField\&quot;:\&quot;x\&quot;,\&quot;longField\&quot;:2}&quot;;</span>
+<span class="fc" id="L66">    Gson gson = createGson(new MyExclusionStrategy(String.class), true);</span>
+<span class="fc" id="L67">    SampleObjectForTest value = gson.fromJson(json, SampleObjectForTest.class);</span>
+<span class="fc" id="L68">    assertEquals(1, value.annotatedField);</span>
+<span class="fc" id="L69">    assertEquals(&quot;x&quot;, value.stringField);</span>
+<span class="fc" id="L70">    assertEquals(2, value.longField);</span>
+<span class="fc" id="L71">  }</span>
+
+  public void testExclusionStrategyDeserialization() throws Exception {
+<span class="fc" id="L74">    Gson gson = createGson(new MyExclusionStrategy(String.class), false);</span>
+<span class="fc" id="L75">    JsonObject json = new JsonObject();</span>
+<span class="fc" id="L76">    json.add(&quot;annotatedField&quot;, new JsonPrimitive(src.annotatedField + 5));</span>
+<span class="fc" id="L77">    json.add(&quot;stringField&quot;, new JsonPrimitive(src.stringField + &quot;blah,blah&quot;));</span>
+<span class="fc" id="L78">    json.add(&quot;longField&quot;, new JsonPrimitive(1212311L));</span>
+
+<span class="fc" id="L80">    SampleObjectForTest target = gson.fromJson(json, SampleObjectForTest.class);</span>
+<span class="fc" id="L81">    assertEquals(1212311L, target.longField);</span>
+
+    // assert excluded fields are set to the defaults
+<span class="fc" id="L84">    assertEquals(src.annotatedField, target.annotatedField);</span>
+<span class="fc" id="L85">    assertEquals(src.stringField, target.stringField);</span>
+<span class="fc" id="L86">  }</span>
+
+  public void testExclusionStrategySerializationDoesNotImpactSerialization() throws Exception {
+<span class="fc" id="L89">    Gson gson = createGson(new MyExclusionStrategy(String.class), false);</span>
+<span class="fc" id="L90">    String json = gson.toJson(src);</span>
+<span class="fc" id="L91">    assertTrue(json.contains(&quot;\&quot;stringField\&quot;&quot;));</span>
+<span class="fc" id="L92">    assertTrue(json.contains(&quot;\&quot;annotatedField\&quot;&quot;));</span>
+<span class="fc" id="L93">    assertTrue(json.contains(&quot;\&quot;longField\&quot;&quot;));</span>
+<span class="fc" id="L94">  }</span>
+
+  public void testExclusionStrategyWithMode() throws Exception {
+<span class="fc" id="L97">    SampleObjectForTest testObj = new SampleObjectForTest(</span>
+<span class="fc" id="L98">        src.annotatedField + 5, src.stringField + &quot;blah,blah&quot;,</span>
+<span class="fc" id="L99">        src.longField + 655L);</span>
+
+<span class="fc" id="L101">    Gson gson = createGson(new MyExclusionStrategy(String.class), false);</span>
+<span class="fc" id="L102">    JsonObject json = gson.toJsonTree(testObj).getAsJsonObject();</span>
+<span class="fc" id="L103">    assertEquals(testObj.annotatedField, json.get(&quot;annotatedField&quot;).getAsInt());</span>
+<span class="fc" id="L104">    assertEquals(testObj.stringField, json.get(&quot;stringField&quot;).getAsString());</span>
+<span class="fc" id="L105">    assertEquals(testObj.longField, json.get(&quot;longField&quot;).getAsLong());</span>
+
+<span class="fc" id="L107">    SampleObjectForTest target = gson.fromJson(json, SampleObjectForTest.class);</span>
+<span class="fc" id="L108">    assertEquals(testObj.longField, target.longField);</span>
+
+    // assert excluded fields are set to the defaults
+<span class="fc" id="L111">    assertEquals(src.annotatedField, target.annotatedField);</span>
+<span class="fc" id="L112">    assertEquals(src.stringField, target.stringField);</span>
+<span class="fc" id="L113">  }</span>
+
+  public void testExcludeTopLevelClassSerialization() {
+<span class="fc" id="L116">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L117">        .addSerializationExclusionStrategy(EXCLUDE_SAMPLE_OBJECT_FOR_TEST)</span>
+<span class="fc" id="L118">        .create();</span>
+<span class="fc" id="L119">    assertEquals(&quot;null&quot;, gson.toJson(new SampleObjectForTest(), SampleObjectForTest.class));</span>
+<span class="fc" id="L120">  }</span>
+
+  public void testExcludeTopLevelClassSerializationDoesNotImpactDeserialization() {
+<span class="fc" id="L123">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L124">        .addSerializationExclusionStrategy(EXCLUDE_SAMPLE_OBJECT_FOR_TEST)</span>
+<span class="fc" id="L125">        .create();</span>
+<span class="fc" id="L126">    String json = &quot;{\&quot;annotatedField\&quot;:1,\&quot;stringField\&quot;:\&quot;x\&quot;,\&quot;longField\&quot;:2}&quot;;</span>
+<span class="fc" id="L127">    SampleObjectForTest value = gson.fromJson(json, SampleObjectForTest.class);</span>
+<span class="fc" id="L128">    assertEquals(1, value.annotatedField);</span>
+<span class="fc" id="L129">    assertEquals(&quot;x&quot;, value.stringField);</span>
+<span class="fc" id="L130">    assertEquals(2, value.longField);</span>
+<span class="fc" id="L131">  }</span>
+
+  public void testExcludeTopLevelClassDeserialization() {
+<span class="fc" id="L134">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L135">        .addDeserializationExclusionStrategy(EXCLUDE_SAMPLE_OBJECT_FOR_TEST)</span>
+<span class="fc" id="L136">        .create();</span>
+<span class="fc" id="L137">    String json = &quot;{\&quot;annotatedField\&quot;:1,\&quot;stringField\&quot;:\&quot;x\&quot;,\&quot;longField\&quot;:2}&quot;;</span>
+<span class="fc" id="L138">    SampleObjectForTest value = gson.fromJson(json, SampleObjectForTest.class);</span>
+<span class="fc" id="L139">    assertNull(value);</span>
+<span class="fc" id="L140">  }</span>
+
+  public void testExcludeTopLevelClassDeserializationDoesNotImpactSerialization() {
+<span class="fc" id="L143">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L144">        .addDeserializationExclusionStrategy(EXCLUDE_SAMPLE_OBJECT_FOR_TEST)</span>
+<span class="fc" id="L145">        .create();</span>
+<span class="fc" id="L146">    String json = gson.toJson(new SampleObjectForTest(), SampleObjectForTest.class);</span>
+<span class="fc" id="L147">    assertTrue(json.contains(&quot;\&quot;stringField\&quot;&quot;));</span>
+<span class="fc" id="L148">    assertTrue(json.contains(&quot;\&quot;annotatedField\&quot;&quot;));</span>
+<span class="fc" id="L149">    assertTrue(json.contains(&quot;\&quot;longField\&quot;&quot;));</span>
+<span class="fc" id="L150">  }</span>
+
+  private static Gson createGson(ExclusionStrategy exclusionStrategy, boolean serialization) {
+<span class="fc" id="L153">    GsonBuilder gsonBuilder = new GsonBuilder();</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">    if (serialization) {</span>
+<span class="fc" id="L155">      gsonBuilder.addSerializationExclusionStrategy(exclusionStrategy);</span>
+    } else {
+<span class="fc" id="L157">      gsonBuilder.addDeserializationExclusionStrategy(exclusionStrategy);</span>
+    }
+<span class="fc" id="L159">    return gsonBuilder</span>
+<span class="fc" id="L160">        .serializeNulls()</span>
+<span class="fc" id="L161">        .create();</span>
+  }
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({ElementType.FIELD})
+  private static @interface Foo {
+    // Field tag only annotation
+  }
+
+  private static class SampleObjectForTest {
+    @Foo
+    private final int annotatedField;
+    private final String stringField;
+    private final long longField;
+
+    public SampleObjectForTest() {
+<span class="fc" id="L177">      this(5, &quot;someDefaultValue&quot;, 12345L);</span>
+<span class="fc" id="L178">    }</span>
+
+<span class="fc" id="L180">    public SampleObjectForTest(int annotatedField, String stringField, long longField) {</span>
+<span class="fc" id="L181">      this.annotatedField = annotatedField;</span>
+<span class="fc" id="L182">      this.stringField = stringField;</span>
+<span class="fc" id="L183">      this.longField = longField;</span>
+<span class="fc" id="L184">    }</span>
+  }
+
+  private static final class MyExclusionStrategy implements ExclusionStrategy {
+    private final Class&lt;?&gt; typeToSkip;
+
+<span class="fc" id="L190">    private MyExclusionStrategy(Class&lt;?&gt; typeToSkip) {</span>
+<span class="fc" id="L191">      this.typeToSkip = typeToSkip;</span>
+<span class="fc" id="L192">    }</span>
+
+    @Override public boolean shouldSkipClass(Class&lt;?&gt; clazz) {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">      return (clazz == typeToSkip);</span>
+    }
+
+    @Override public boolean shouldSkipField(FieldAttributes f) {
+<span class="fc bfc" id="L199" title="All 2 branches covered.">      return f.getAnnotation(Foo.class) != null;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

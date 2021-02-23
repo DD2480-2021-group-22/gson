@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GsonTypeAdapterTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson</a> &gt; <span class="el_source">GsonTypeAdapterTest.java</span></div><h1>GsonTypeAdapterTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson;
+
+import java.lang.reflect.Type;
+import java.math.BigInteger;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import junit.framework.TestCase;
+
+/**
+ * Contains numerous tests involving registered type converters with a Gson instance.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L31">public class GsonTypeAdapterTest extends TestCase {</span>
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L36">    super.setUp();</span>
+<span class="fc" id="L37">    gson = new GsonBuilder()</span>
+<span class="fc" id="L38">        .registerTypeAdapter(AtomicLong.class, new ExceptionTypeAdapter())</span>
+<span class="fc" id="L39">        .registerTypeAdapter(AtomicInteger.class, new AtomicIntegerTypeAdapter())</span>
+<span class="fc" id="L40">        .create();</span>
+<span class="fc" id="L41">  }</span>
+
+  public void testDefaultTypeAdapterThrowsParseException() throws Exception {
+    try {
+<span class="nc" id="L45">      gson.fromJson(&quot;{\&quot;abc\&quot;:123}&quot;, BigInteger.class);</span>
+<span class="nc" id="L46">      fail(&quot;Should have thrown a JsonParseException&quot;);</span>
+<span class="pc" id="L47">    } catch (JsonParseException expected) { }</span>
+<span class="fc" id="L48">  }</span>
+
+  public void testTypeAdapterThrowsException() throws Exception {
+    try {
+<span class="nc" id="L52">      gson.toJson(new AtomicLong(0));</span>
+<span class="nc" id="L53">      fail(&quot;Type Adapter should have thrown an exception&quot;);</span>
+<span class="pc" id="L54">    } catch (IllegalStateException expected) { }</span>
+
+    try {
+<span class="nc" id="L57">      gson.fromJson(&quot;123&quot;, AtomicLong.class);</span>
+<span class="nc" id="L58">      fail(&quot;Type Adapter should have thrown an exception&quot;);</span>
+<span class="pc" id="L59">    } catch (JsonParseException expected) { }</span>
+<span class="fc" id="L60">  }</span>
+
+  public void testTypeAdapterProperlyConvertsTypes() throws Exception {
+<span class="fc" id="L63">    int intialValue = 1;</span>
+<span class="fc" id="L64">    AtomicInteger atomicInt = new AtomicInteger(intialValue);</span>
+<span class="fc" id="L65">    String json = gson.toJson(atomicInt);</span>
+<span class="fc" id="L66">    assertEquals(intialValue + 1, Integer.parseInt(json));</span>
+
+<span class="fc" id="L68">    atomicInt = gson.fromJson(json, AtomicInteger.class);</span>
+<span class="fc" id="L69">    assertEquals(intialValue, atomicInt.get());</span>
+<span class="fc" id="L70">  }</span>
+
+  public void testTypeAdapterDoesNotAffectNonAdaptedTypes() throws Exception {
+<span class="fc" id="L73">    String expected = &quot;blah&quot;;</span>
+<span class="fc" id="L74">    String actual = gson.toJson(expected);</span>
+<span class="fc" id="L75">    assertEquals(&quot;\&quot;&quot; + expected + &quot;\&quot;&quot;, actual);</span>
+
+<span class="fc" id="L77">    actual = gson.fromJson(actual, String.class);</span>
+<span class="fc" id="L78">    assertEquals(expected, actual);</span>
+<span class="fc" id="L79">  }</span>
+
+  private static class ExceptionTypeAdapter
+      implements JsonSerializer&lt;AtomicLong&gt;, JsonDeserializer&lt;AtomicLong&gt; {
+    @Override public JsonElement serialize(
+        AtomicLong src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L85">      throw new IllegalStateException();</span>
+    }
+    @Override public AtomicLong deserialize(
+        JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="fc" id="L90">      throw new IllegalStateException();</span>
+    }
+  }
+
+  private static class AtomicIntegerTypeAdapter
+      implements JsonSerializer&lt;AtomicInteger&gt;, JsonDeserializer&lt;AtomicInteger&gt; {
+    @Override public JsonElement serialize(AtomicInteger src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L97">      return new JsonPrimitive(src.incrementAndGet());</span>
+    }
+
+    @Override public AtomicInteger deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="fc" id="L102">      int intValue = json.getAsInt();</span>
+<span class="fc" id="L103">      return new AtomicInteger(--intValue);</span>
+    }
+  }
+
+<span class="fc" id="L107">  static abstract class Abstract {</span>
+    String a;
+  }
+
+<span class="fc" id="L111">  static class Concrete extends Abstract {</span>
+    String b;
+  }
+
+  // https://groups.google.com/d/topic/google-gson/EBmOCa8kJPE/discussion
+  public void testDeserializerForAbstractClass() {
+<span class="fc" id="L117">    Concrete instance = new Concrete();</span>
+<span class="fc" id="L118">    instance.a = &quot;android&quot;;</span>
+<span class="fc" id="L119">    instance.b = &quot;beep&quot;;</span>
+<span class="fc" id="L120">    assertSerialized(&quot;{\&quot;a\&quot;:\&quot;android\&quot;}&quot;, Abstract.class, true, true, instance);</span>
+<span class="fc" id="L121">    assertSerialized(&quot;{\&quot;a\&quot;:\&quot;android\&quot;}&quot;, Abstract.class, true, false, instance);</span>
+<span class="fc" id="L122">    assertSerialized(&quot;{\&quot;a\&quot;:\&quot;android\&quot;}&quot;, Abstract.class, false, true, instance);</span>
+<span class="fc" id="L123">    assertSerialized(&quot;{\&quot;a\&quot;:\&quot;android\&quot;}&quot;, Abstract.class, false, false, instance);</span>
+<span class="fc" id="L124">    assertSerialized(&quot;{\&quot;b\&quot;:\&quot;beep\&quot;,\&quot;a\&quot;:\&quot;android\&quot;}&quot;, Concrete.class, true, true, instance);</span>
+<span class="fc" id="L125">    assertSerialized(&quot;{\&quot;b\&quot;:\&quot;beep\&quot;,\&quot;a\&quot;:\&quot;android\&quot;}&quot;, Concrete.class, true, false, instance);</span>
+<span class="fc" id="L126">    assertSerialized(&quot;{\&quot;b\&quot;:\&quot;beep\&quot;,\&quot;a\&quot;:\&quot;android\&quot;}&quot;, Concrete.class, false, true, instance);</span>
+<span class="fc" id="L127">    assertSerialized(&quot;{\&quot;b\&quot;:\&quot;beep\&quot;,\&quot;a\&quot;:\&quot;android\&quot;}&quot;, Concrete.class, false, false, instance);</span>
+<span class="fc" id="L128">  }</span>
+
+  private void assertSerialized(String expected, Class&lt;?&gt; instanceType, boolean registerAbstractDeserializer,
+      boolean registerAbstractHierarchyDeserializer, Object instance) {
+<span class="fc" id="L132">    JsonDeserializer&lt;Abstract&gt; deserializer = new JsonDeserializer&lt;Abstract&gt;() {</span>
+      public Abstract deserialize(JsonElement json, Type typeOfT,
+          JsonDeserializationContext context) throws JsonParseException {
+<span class="nc" id="L135">        throw new AssertionError();</span>
+      }
+    };
+<span class="fc" id="L138">    GsonBuilder builder = new GsonBuilder();</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">    if (registerAbstractDeserializer) {</span>
+<span class="fc" id="L140">      builder.registerTypeAdapter(Abstract.class, deserializer);</span>
+    }
+<span class="fc bfc" id="L142" title="All 2 branches covered.">    if (registerAbstractHierarchyDeserializer) {</span>
+<span class="fc" id="L143">      builder.registerTypeHierarchyAdapter(Abstract.class, deserializer);</span>
+    }
+<span class="fc" id="L145">    Gson gson = builder.create();</span>
+<span class="fc" id="L146">    assertEquals(expected, gson.toJson(instance, instanceType));</span>
+<span class="fc" id="L147">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

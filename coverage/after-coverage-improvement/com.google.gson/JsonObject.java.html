@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson</a> &gt; <span class="el_source">JsonObject.java</span></div><h1>JsonObject.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson;
+
+import com.google.gson.internal.LinkedTreeMap;
+
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * A class representing an object type in Json. An object consists of name-value pairs where names
+ * are strings, and values are any other type of {@link JsonElement}. This allows for a creating a
+ * tree of JsonElements. The member elements of this object are maintained in order they were added.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L32">public final class JsonObject extends JsonElement {</span>
+<span class="fc" id="L33">  private final LinkedTreeMap&lt;String, JsonElement&gt; members =</span>
+      new LinkedTreeMap&lt;String, JsonElement&gt;();
+
+  /**
+   * Creates a deep copy of this element and all its children
+   * @since 2.8.2
+   */
+  @Override
+  public JsonObject deepCopy() {
+<span class="fc" id="L42">    JsonObject result = new JsonObject();</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">    for (Map.Entry&lt;String, JsonElement&gt; entry : members.entrySet()) {</span>
+<span class="fc" id="L44">      result.add(entry.getKey(), entry.getValue().deepCopy());</span>
+<span class="fc" id="L45">    }</span>
+<span class="fc" id="L46">    return result;</span>
+  }
+
+  /**
+   * Adds a member, which is a name-value pair, to self. The name must be a String, but the value
+   * can be an arbitrary JsonElement, thereby allowing you to build a full tree of JsonElements
+   * rooted at this node.
+   *
+   * @param property name of the member.
+   * @param value the member object.
+   */
+  public void add(String property, JsonElement value) {
+<span class="fc bfc" id="L58" title="All 2 branches covered.">    members.put(property, value == null ? JsonNull.INSTANCE : value);</span>
+<span class="fc" id="L59">  }</span>
+
+  /**
+   * Removes the {@code property} from this {@link JsonObject}.
+   *
+   * @param property name of the member that should be removed.
+   * @return the {@link JsonElement} object that is being removed.
+   * @since 1.3
+   */
+  public JsonElement remove(String property) {
+<span class="fc" id="L69">    return members.remove(property);</span>
+  }
+
+  /**
+   * Convenience method to add a primitive member. The specified value is converted to a
+   * JsonPrimitive of String.
+   *
+   * @param property name of the member.
+   * @param value the string value associated with the member.
+   */
+  public void addProperty(String property, String value) {
+<span class="fc bfc" id="L80" title="All 2 branches covered.">    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));</span>
+<span class="fc" id="L81">  }</span>
+
+  /**
+   * Convenience method to add a primitive member. The specified value is converted to a
+   * JsonPrimitive of Number.
+   *
+   * @param property name of the member.
+   * @param value the number value associated with the member.
+   */
+  public void addProperty(String property, Number value) {
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));</span>
+<span class="fc" id="L92">  }</span>
+
+  /**
+   * Convenience method to add a boolean member. The specified value is converted to a
+   * JsonPrimitive of Boolean.
+   *
+   * @param property name of the member.
+   * @param value the number value associated with the member.
+   */
+  public void addProperty(String property, Boolean value) {
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));</span>
+<span class="fc" id="L103">  }</span>
+
+  /**
+   * Convenience method to add a char member. The specified value is converted to a
+   * JsonPrimitive of Character.
+   *
+   * @param property name of the member.
+   * @param value the number value associated with the member.
+   */
+  public void addProperty(String property, Character value) {
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));</span>
+<span class="fc" id="L114">  }</span>
+
+  /**
+   * Returns a set of members of this object. The set is ordered, and the order is in which the
+   * elements were added.
+   *
+   * @return a set of members of this object.
+   */
+  public Set&lt;Map.Entry&lt;String, JsonElement&gt;&gt; entrySet() {
+<span class="fc" id="L123">    return members.entrySet();</span>
+  }
+
+  /**
+   * Returns a set of members key values.
+   *
+   * @return a set of member keys as Strings
+   * @since 2.8.1
+   */
+  public Set&lt;String&gt; keySet() {
+<span class="fc" id="L133">    return members.keySet();</span>
+  }
+
+  /**
+   * Returns the number of key/value pairs in the object.
+   *
+   * @return the number of key/value pairs in the object.
+   */
+  public int size() {
+<span class="fc" id="L142">    return members.size();</span>
+  }
+
+  /**
+   * Convenience method to check if a member with the specified name is present in this object.
+   *
+   * @param memberName name of the member that is being checked for presence.
+   * @return true if there is a member with the specified name, false otherwise.
+   */
+  public boolean has(String memberName) {
+<span class="fc" id="L152">    return members.containsKey(memberName);</span>
+  }
+
+  /**
+   * Returns the member with the specified name.
+   *
+   * @param memberName name of the member that is being requested.
+   * @return the member matching the name. Null if no such member exists.
+   */
+  public JsonElement get(String memberName) {
+<span class="fc" id="L162">    return members.get(memberName);</span>
+  }
+
+  /**
+   * Convenience method to get the specified member as a JsonPrimitive element.
+   *
+   * @param memberName name of the member being requested.
+   * @return the JsonPrimitive corresponding to the specified member.
+   */
+  public JsonPrimitive getAsJsonPrimitive(String memberName) {
+<span class="nc" id="L172">    return (JsonPrimitive) members.get(memberName);</span>
+  }
+
+  /**
+   * Convenience method to get the specified member as a JsonArray.
+   *
+   * @param memberName name of the member being requested.
+   * @return the JsonArray corresponding to the specified member.
+   */
+  public JsonArray getAsJsonArray(String memberName) {
+<span class="nc" id="L182">    return (JsonArray) members.get(memberName);</span>
+  }
+
+  /**
+   * Convenience method to get the specified member as a JsonObject.
+   *
+   * @param memberName name of the member being requested.
+   * @return the JsonObject corresponding to the specified member.
+   */
+  public JsonObject getAsJsonObject(String memberName) {
+<span class="nc" id="L192">    return (JsonObject) members.get(memberName);</span>
+  }
+
+  @Override
+  public boolean equals(Object o) {
+<span class="fc bfc" id="L197" title="All 4 branches covered.">    return (o == this) || (o instanceof JsonObject</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        &amp;&amp; ((JsonObject) o).members.equals(members));</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="fc" id="L203">    return members.hashCode();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UnsafeReflectionAccessor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal.reflect</a> &gt; <span class="el_source">UnsafeReflectionAccessor.java</span></div><h1>UnsafeReflectionAccessor.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2017 The Gson authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.internal.reflect;
+
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+import com.google.gson.JsonIOException;
+
+/**
+ * An implementation of {@link ReflectionAccessor} based on {@link Unsafe}.
+ * &lt;p&gt;
+ * NOTE: This implementation is designed for Java 9. Although it should work with earlier Java releases, it is better to
+ * use {@link PreJava9ReflectionAccessor} for them.
+ */
+@SuppressWarnings({&quot;unchecked&quot;, &quot;rawtypes&quot;})
+<span class="fc" id="L31">final class UnsafeReflectionAccessor extends ReflectionAccessor {</span>
+
+  private static Class unsafeClass;
+<span class="fc" id="L34">  private final Object theUnsafe = getUnsafeInstance();</span>
+<span class="fc" id="L35">  private final Field overrideField = getOverrideField();</span>
+
+  /** {@inheritDoc} */
+  @Override
+  public void makeAccessible(AccessibleObject ao) {
+<span class="fc" id="L40">    boolean success = makeAccessibleWithUnsafe(ao);</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">    if (!success) {</span>
+      try {
+        // unsafe couldn't be found, so try using accessible anyway
+<span class="nc" id="L44">        ao.setAccessible(true);</span>
+<span class="nc" id="L45">      } catch (SecurityException e) {</span>
+<span class="nc" id="L46">        throw new JsonIOException(&quot;Gson couldn't modify fields for &quot; + ao</span>
+          + &quot;\nand sun.misc.Unsafe not found.\nEither write a custom type adapter,&quot;
+          + &quot; or make fields accessible, or include sun.misc.Unsafe.&quot;, e);
+<span class="nc" id="L49">      }</span>
+    }
+<span class="fc" id="L51">  }</span>
+
+  // Visible for testing only
+  boolean makeAccessibleWithUnsafe(AccessibleObject ao) {
+<span class="pc bpc" id="L55" title="2 of 4 branches missed.">    if (theUnsafe != null &amp;&amp; overrideField != null) {</span>
+      try {
+<span class="fc" id="L57">        Method method = unsafeClass.getMethod(&quot;objectFieldOffset&quot;, Field.class);</span>
+<span class="fc" id="L58">        long overrideOffset = (Long) method.invoke(theUnsafe, overrideField);  // long overrideOffset = theUnsafe.objectFieldOffset(overrideField);</span>
+<span class="fc" id="L59">        Method putBooleanMethod = unsafeClass.getMethod(&quot;putBoolean&quot;,  Object.class, long.class, boolean.class);</span>
+<span class="fc" id="L60">        putBooleanMethod.invoke(theUnsafe, ao, overrideOffset, true); // theUnsafe.putBoolean(ao, overrideOffset, true);</span>
+<span class="fc" id="L61">        return true;</span>
+<span class="nc" id="L62">      } catch (Exception ignored) { // do nothing</span>
+      }
+    }
+<span class="nc" id="L65">    return false;</span>
+  }
+
+  private static Object getUnsafeInstance() {
+    try {
+<span class="fc" id="L70">      unsafeClass = Class.forName(&quot;sun.misc.Unsafe&quot;);</span>
+<span class="fc" id="L71">      Field unsafeField = unsafeClass.getDeclaredField(&quot;theUnsafe&quot;);</span>
+<span class="fc" id="L72">      unsafeField.setAccessible(true);</span>
+<span class="fc" id="L73">      return unsafeField.get(null);</span>
+<span class="nc" id="L74">    } catch (Exception e) {</span>
+<span class="nc" id="L75">      return null;</span>
+    }
+  }
+
+  private static Field getOverrideField() {
+    try {
+<span class="fc" id="L81">      return AccessibleObject.class.getDeclaredField(&quot;override&quot;);</span>
+<span class="nc" id="L82">    } catch (NoSuchFieldException e) {</span>
+<span class="nc" id="L83">      return null;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

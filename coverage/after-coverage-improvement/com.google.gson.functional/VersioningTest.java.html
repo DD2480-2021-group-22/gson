@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VersioningTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">VersioningTest.java</span></div><h1>VersioningTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Since;
+import com.google.gson.annotations.Until;
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+
+import junit.framework.TestCase;
+
+/**
+ * Functional tests for versioning support in Gson.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L32">public class VersioningTest extends TestCase {</span>
+  private static final int A = 0;
+  private static final int B = 1;
+  private static final int C = 2;
+  private static final int D = 3;
+
+  private GsonBuilder builder;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L42">    super.setUp();</span>
+<span class="fc" id="L43">    builder = new GsonBuilder();</span>
+<span class="fc" id="L44">  }</span>
+
+  public void testVersionedUntilSerialization() {
+<span class="fc" id="L47">    Version1 target = new Version1();</span>
+<span class="fc" id="L48">    Gson gson = builder.setVersion(1.29).create();</span>
+<span class="fc" id="L49">    String json = gson.toJson(target);</span>
+<span class="fc" id="L50">    assertTrue(json.contains(&quot;\&quot;a\&quot;:&quot; + A));</span>
+
+<span class="fc" id="L52">    gson = builder.setVersion(1.3).create();</span>
+<span class="fc" id="L53">    json = gson.toJson(target);</span>
+<span class="fc" id="L54">    assertFalse(json.contains(&quot;\&quot;a\&quot;:&quot; + A));</span>
+<span class="fc" id="L55">  }</span>
+
+  public void testVersionedUntilDeserialization() {
+<span class="fc" id="L58">    Gson gson = builder.setVersion(1.3).create();</span>
+<span class="fc" id="L59">    String json = &quot;{\&quot;a\&quot;:3,\&quot;b\&quot;:4,\&quot;c\&quot;:5}&quot;;</span>
+<span class="fc" id="L60">    Version1 version1 = gson.fromJson(json, Version1.class);</span>
+<span class="fc" id="L61">    assertEquals(A, version1.a);</span>
+<span class="fc" id="L62">  }</span>
+
+  public void testVersionedClassesSerialization() {
+<span class="fc" id="L65">    Gson gson = builder.setVersion(1.0).create();</span>
+<span class="fc" id="L66">    String json1 = gson.toJson(new Version1());</span>
+<span class="fc" id="L67">    String json2 = gson.toJson(new Version1_1());</span>
+<span class="fc" id="L68">    assertEquals(json1, json2);</span>
+<span class="fc" id="L69">  }</span>
+
+  public void testVersionedClassesDeserialization() {
+<span class="fc" id="L72">    Gson gson = builder.setVersion(1.0).create();</span>
+<span class="fc" id="L73">    String json = &quot;{\&quot;a\&quot;:3,\&quot;b\&quot;:4,\&quot;c\&quot;:5}&quot;;</span>
+<span class="fc" id="L74">    Version1 version1 = gson.fromJson(json, Version1.class);</span>
+<span class="fc" id="L75">    assertEquals(3, version1.a);</span>
+<span class="fc" id="L76">    assertEquals(4, version1.b);</span>
+<span class="fc" id="L77">    Version1_1 version1_1 = gson.fromJson(json, Version1_1.class);</span>
+<span class="fc" id="L78">    assertEquals(3, version1_1.a);</span>
+<span class="fc" id="L79">    assertEquals(4, version1_1.b);</span>
+<span class="fc" id="L80">    assertEquals(C, version1_1.c);</span>
+<span class="fc" id="L81">  }</span>
+
+  public void testIgnoreLaterVersionClassSerialization() {
+<span class="fc" id="L84">    Gson gson = builder.setVersion(1.0).create();</span>
+<span class="fc" id="L85">    assertEquals(&quot;null&quot;, gson.toJson(new Version1_2()));</span>
+<span class="fc" id="L86">  }</span>
+
+  public void testIgnoreLaterVersionClassDeserialization() {
+<span class="fc" id="L89">    Gson gson = builder.setVersion(1.0).create();</span>
+<span class="fc" id="L90">    String json = &quot;{\&quot;a\&quot;:3,\&quot;b\&quot;:4,\&quot;c\&quot;:5,\&quot;d\&quot;:6}&quot;;</span>
+<span class="fc" id="L91">    Version1_2 version1_2 = gson.fromJson(json, Version1_2.class);</span>
+    // Since the class is versioned to be after 1.0, we expect null
+    // This is the new behavior in Gson 2.0
+<span class="fc" id="L94">    assertNull(version1_2);</span>
+<span class="fc" id="L95">  }</span>
+
+  public void testVersionedGsonWithUnversionedClassesSerialization() {
+<span class="fc" id="L98">    Gson gson = builder.setVersion(1.0).create();</span>
+<span class="fc" id="L99">    BagOfPrimitives target = new BagOfPrimitives(10, 20, false, &quot;stringValue&quot;);</span>
+<span class="fc" id="L100">    assertEquals(target.getExpectedJson(), gson.toJson(target));</span>
+<span class="fc" id="L101">  }</span>
+
+  public void testVersionedGsonWithUnversionedClassesDeserialization() {
+<span class="fc" id="L104">    Gson gson = builder.setVersion(1.0).create();</span>
+<span class="fc" id="L105">    String json = &quot;{\&quot;longValue\&quot;:10,\&quot;intValue\&quot;:20,\&quot;booleanValue\&quot;:false}&quot;;</span>
+
+<span class="fc" id="L107">    BagOfPrimitives expected = new BagOfPrimitives();</span>
+<span class="fc" id="L108">    expected.longValue = 10;</span>
+<span class="fc" id="L109">    expected.intValue = 20;</span>
+<span class="fc" id="L110">    expected.booleanValue = false;</span>
+<span class="fc" id="L111">    BagOfPrimitives actual = gson.fromJson(json, BagOfPrimitives.class);</span>
+<span class="fc" id="L112">    assertEquals(expected, actual);</span>
+<span class="fc" id="L113">  }</span>
+
+  public void testVersionedGsonMixingSinceAndUntilSerialization() {
+<span class="fc" id="L116">    Gson gson = builder.setVersion(1.0).create();</span>
+<span class="fc" id="L117">    SinceUntilMixing target = new SinceUntilMixing();</span>
+<span class="fc" id="L118">    String json = gson.toJson(target);</span>
+<span class="fc" id="L119">    assertFalse(json.contains(&quot;\&quot;b\&quot;:&quot; + B));</span>
+
+<span class="fc" id="L121">    gson = builder.setVersion(1.2).create();</span>
+<span class="fc" id="L122">    json = gson.toJson(target);</span>
+<span class="fc" id="L123">    assertTrue(json.contains(&quot;\&quot;b\&quot;:&quot; + B));</span>
+
+<span class="fc" id="L125">    gson = builder.setVersion(1.3).create();</span>
+<span class="fc" id="L126">    json = gson.toJson(target);</span>
+<span class="fc" id="L127">    assertFalse(json.contains(&quot;\&quot;b\&quot;:&quot; + B));</span>
+<span class="fc" id="L128">  }</span>
+
+  public void testVersionedGsonMixingSinceAndUntilDeserialization() {
+<span class="fc" id="L131">    String json = &quot;{\&quot;a\&quot;:5,\&quot;b\&quot;:6}&quot;;</span>
+<span class="fc" id="L132">    Gson gson = builder.setVersion(1.0).create();</span>
+<span class="fc" id="L133">    SinceUntilMixing result = gson.fromJson(json, SinceUntilMixing.class);</span>
+<span class="fc" id="L134">    assertEquals(5, result.a);</span>
+<span class="fc" id="L135">    assertEquals(B, result.b);</span>
+
+<span class="fc" id="L137">    gson = builder.setVersion(1.2).create();</span>
+<span class="fc" id="L138">    result = gson.fromJson(json, SinceUntilMixing.class);</span>
+<span class="fc" id="L139">    assertEquals(5, result.a);</span>
+<span class="fc" id="L140">    assertEquals(6, result.b);</span>
+
+<span class="fc" id="L142">    gson = builder.setVersion(1.3).create();</span>
+<span class="fc" id="L143">    result = gson.fromJson(json, SinceUntilMixing.class);</span>
+<span class="fc" id="L144">    assertEquals(5, result.a);</span>
+<span class="fc" id="L145">    assertEquals(B, result.b);</span>
+<span class="fc" id="L146">  }</span>
+
+<span class="fc" id="L148">  private static class Version1 {</span>
+<span class="fc" id="L149">    @Until(1.3) int a = A;</span>
+<span class="fc" id="L150">    @Since(1.0) int b = B;</span>
+  }
+
+<span class="fc" id="L153">  private static class Version1_1 extends Version1 {</span>
+<span class="fc" id="L154">    @Since(1.1) int c = C;</span>
+  }
+
+  @Since(1.2)
+<span class="fc" id="L158">  private static class Version1_2 extends Version1_1 {</span>
+<span class="fc" id="L159">    @SuppressWarnings(&quot;unused&quot;)</span>
+    int d = D;
+  }
+
+<span class="fc" id="L163">  private static class SinceUntilMixing {</span>
+<span class="fc" id="L164">    int a = A;</span>
+
+<span class="fc" id="L166">    @Since(1.1)</span>
+    @Until(1.3)
+    int b = B;
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

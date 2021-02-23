@@ -1,0 +1,655 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MapTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">MapTest.java</span></div><h1>MapTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.InstanceCreator;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.common.TestTypes;
+import com.google.gson.internal.$Gson$Types;
+import com.google.gson.reflect.TypeToken;
+
+import junit.framework.TestCase;
+
+/**
+ * Functional test for Json serialization and deserialization for Maps
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L54">public class MapTest extends TestCase {</span>
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L59">    super.setUp();</span>
+<span class="fc" id="L60">    gson = new Gson();</span>
+<span class="fc" id="L61">  }</span>
+
+  public void testMapSerialization() {
+<span class="fc" id="L64">    Map&lt;String, Integer&gt; map = new LinkedHashMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L65">    map.put(&quot;a&quot;, 1);</span>
+<span class="fc" id="L66">    map.put(&quot;b&quot;, 2);</span>
+<span class="fc" id="L67">    Type typeOfMap = new TypeToken&lt;Map&lt;String, Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L68">    String json = gson.toJson(map, typeOfMap);</span>
+<span class="fc" id="L69">    assertTrue(json.contains(&quot;\&quot;a\&quot;:1&quot;));</span>
+<span class="fc" id="L70">    assertTrue(json.contains(&quot;\&quot;b\&quot;:2&quot;));</span>
+<span class="fc" id="L71">  }</span>
+
+  public void testMapDeserialization() {
+<span class="fc" id="L74">    String json = &quot;{\&quot;a\&quot;:1,\&quot;b\&quot;:2}&quot;;</span>
+<span class="fc" id="L75">    Type typeOfMap = new TypeToken&lt;Map&lt;String,Integer&gt;&gt;(){}.getType();</span>
+<span class="fc" id="L76">    Map&lt;String, Integer&gt; target = gson.fromJson(json, typeOfMap);</span>
+<span class="fc" id="L77">    assertEquals(1, target.get(&quot;a&quot;).intValue());</span>
+<span class="fc" id="L78">    assertEquals(2, target.get(&quot;b&quot;).intValue());</span>
+<span class="fc" id="L79">  }</span>
+
+  @SuppressWarnings({&quot;unchecked&quot;, &quot;rawtypes&quot;})
+  public void testRawMapSerialization() {
+<span class="fc" id="L83">    Map map = new LinkedHashMap();</span>
+<span class="fc" id="L84">    map.put(&quot;a&quot;, 1);</span>
+<span class="fc" id="L85">    map.put(&quot;b&quot;, &quot;string&quot;);</span>
+<span class="fc" id="L86">    String json = gson.toJson(map);</span>
+<span class="fc" id="L87">    assertTrue(json.contains(&quot;\&quot;a\&quot;:1&quot;));</span>
+<span class="fc" id="L88">    assertTrue(json.contains(&quot;\&quot;b\&quot;:\&quot;string\&quot;&quot;));</span>
+<span class="fc" id="L89">  }</span>
+
+  public void testMapSerializationEmpty() {
+<span class="fc" id="L92">    Map&lt;String, Integer&gt; map = new LinkedHashMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L93">    Type typeOfMap = new TypeToken&lt;Map&lt;String, Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L94">    String json = gson.toJson(map, typeOfMap);</span>
+<span class="fc" id="L95">    assertEquals(&quot;{}&quot;, json);</span>
+<span class="fc" id="L96">  }</span>
+
+  public void testMapDeserializationEmpty() {
+<span class="fc" id="L99">    Type typeOfMap = new TypeToken&lt;Map&lt;String, Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L100">    Map&lt;String, Integer&gt; map = gson.fromJson(&quot;{}&quot;, typeOfMap);</span>
+<span class="fc" id="L101">    assertTrue(map.isEmpty());</span>
+<span class="fc" id="L102">  }</span>
+
+  public void testMapSerializationWithNullValue() {
+<span class="fc" id="L105">    Map&lt;String, Integer&gt; map = new LinkedHashMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L106">    map.put(&quot;abc&quot;, null);</span>
+<span class="fc" id="L107">    Type typeOfMap = new TypeToken&lt;Map&lt;String, Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L108">    String json = gson.toJson(map, typeOfMap);</span>
+
+    // Maps are represented as JSON objects, so ignoring null field
+<span class="fc" id="L111">    assertEquals(&quot;{}&quot;, json);</span>
+<span class="fc" id="L112">  }</span>
+
+  public void testMapDeserializationWithNullValue() {
+<span class="fc" id="L115">    Type typeOfMap = new TypeToken&lt;Map&lt;String, Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L116">    Map&lt;String, Integer&gt; map = gson.fromJson(&quot;{\&quot;abc\&quot;:null}&quot;, typeOfMap);</span>
+<span class="fc" id="L117">    assertEquals(1, map.size());</span>
+<span class="fc" id="L118">    assertNull(map.get(&quot;abc&quot;));</span>
+<span class="fc" id="L119">  }</span>
+
+  public void testMapSerializationWithNullValueButSerializeNulls() {
+<span class="fc" id="L122">    gson = new GsonBuilder().serializeNulls().create();</span>
+<span class="fc" id="L123">    Map&lt;String, Integer&gt; map = new LinkedHashMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L124">    map.put(&quot;abc&quot;, null);</span>
+<span class="fc" id="L125">    Type typeOfMap = new TypeToken&lt;Map&lt;String, Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L126">    String json = gson.toJson(map, typeOfMap);</span>
+
+<span class="fc" id="L128">    assertEquals(&quot;{\&quot;abc\&quot;:null}&quot;, json);</span>
+<span class="fc" id="L129">  }</span>
+
+  public void testMapSerializationWithNullKey() {
+<span class="fc" id="L132">    Map&lt;String, Integer&gt; map = new LinkedHashMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L133">    map.put(null, 123);</span>
+<span class="fc" id="L134">    Type typeOfMap = new TypeToken&lt;Map&lt;String, Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L135">    String json = gson.toJson(map, typeOfMap);</span>
+
+<span class="fc" id="L137">    assertEquals(&quot;{\&quot;null\&quot;:123}&quot;, json);</span>
+<span class="fc" id="L138">  }</span>
+
+  public void testMapDeserializationWithNullKey() {
+<span class="fc" id="L141">    Type typeOfMap = new TypeToken&lt;Map&lt;String, Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L142">    Map&lt;String, Integer&gt; map = gson.fromJson(&quot;{\&quot;null\&quot;:123}&quot;, typeOfMap);</span>
+<span class="fc" id="L143">    assertEquals(1, map.size());</span>
+<span class="fc" id="L144">    assertEquals(123, map.get(&quot;null&quot;).intValue());</span>
+<span class="fc" id="L145">    assertNull(map.get(null));</span>
+
+<span class="fc" id="L147">    map = gson.fromJson(&quot;{null:123}&quot;, typeOfMap);</span>
+<span class="fc" id="L148">    assertEquals(1, map.size());</span>
+<span class="fc" id="L149">    assertEquals(123, map.get(&quot;null&quot;).intValue());</span>
+<span class="fc" id="L150">    assertNull(map.get(null));</span>
+<span class="fc" id="L151">  }</span>
+
+  public void testMapSerializationWithIntegerKeys() {
+<span class="fc" id="L154">    Map&lt;Integer, String&gt; map = new LinkedHashMap&lt;Integer, String&gt;();</span>
+<span class="fc" id="L155">    map.put(123, &quot;456&quot;);</span>
+<span class="fc" id="L156">    Type typeOfMap = new TypeToken&lt;Map&lt;Integer, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L157">    String json = gson.toJson(map, typeOfMap);</span>
+
+<span class="fc" id="L159">    assertEquals(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, json);</span>
+<span class="fc" id="L160">  }</span>
+
+  public void testMapDeserializationWithIntegerKeys() {
+<span class="fc" id="L163">    Type typeOfMap = new TypeToken&lt;Map&lt;Integer, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L164">    Map&lt;Integer, String&gt; map = gson.fromJson(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, typeOfMap);</span>
+<span class="fc" id="L165">    assertEquals(1, map.size());</span>
+<span class="fc" id="L166">    assertTrue(map.containsKey(123));</span>
+<span class="fc" id="L167">    assertEquals(&quot;456&quot;, map.get(123));</span>
+<span class="fc" id="L168">  }</span>
+
+  public void testMapDeserializationWithUnquotedIntegerKeys() {
+<span class="fc" id="L171">    Type typeOfMap = new TypeToken&lt;Map&lt;Integer, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L172">    Map&lt;Integer, String&gt; map = gson.fromJson(&quot;{123:\&quot;456\&quot;}&quot;, typeOfMap);</span>
+<span class="fc" id="L173">    assertEquals(1, map.size());</span>
+<span class="fc" id="L174">    assertTrue(map.containsKey(123));</span>
+<span class="fc" id="L175">    assertEquals(&quot;456&quot;, map.get(123));</span>
+<span class="fc" id="L176">  }</span>
+
+  public void testMapDeserializationWithLongKeys() {
+<span class="fc" id="L179">    long longValue = 9876543210L;</span>
+<span class="fc" id="L180">    String json = String.format(&quot;{\&quot;%d\&quot;:\&quot;456\&quot;}&quot;, longValue);</span>
+<span class="fc" id="L181">    Type typeOfMap = new TypeToken&lt;Map&lt;Long, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L182">    Map&lt;Long, String&gt; map = gson.fromJson(json, typeOfMap);</span>
+<span class="fc" id="L183">    assertEquals(1, map.size());</span>
+<span class="fc" id="L184">    assertTrue(map.containsKey(longValue));</span>
+<span class="fc" id="L185">    assertEquals(&quot;456&quot;, map.get(longValue));</span>
+<span class="fc" id="L186">  }</span>
+
+  public void testMapDeserializationWithUnquotedLongKeys() {
+<span class="fc" id="L189">    long longKey = 9876543210L;</span>
+<span class="fc" id="L190">    String json = String.format(&quot;{%d:\&quot;456\&quot;}&quot;, longKey);</span>
+<span class="fc" id="L191">    Type typeOfMap = new TypeToken&lt;Map&lt;Long, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L192">    Map&lt;Long, String&gt; map = gson.fromJson(json, typeOfMap);</span>
+<span class="fc" id="L193">    assertEquals(1, map.size());</span>
+<span class="fc" id="L194">    assertTrue(map.containsKey(longKey));</span>
+<span class="fc" id="L195">    assertEquals(&quot;456&quot;, map.get(longKey));</span>
+<span class="fc" id="L196">  }</span>
+
+  public void testHashMapDeserialization() throws Exception {
+<span class="fc" id="L199">    Type typeOfMap = new TypeToken&lt;HashMap&lt;Integer, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L200">    HashMap&lt;Integer, String&gt; map = gson.fromJson(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, typeOfMap);</span>
+<span class="fc" id="L201">    assertEquals(1, map.size());</span>
+<span class="fc" id="L202">    assertTrue(map.containsKey(123));</span>
+<span class="fc" id="L203">    assertEquals(&quot;456&quot;, map.get(123));</span>
+<span class="fc" id="L204">  }</span>
+
+  public void testSortedMap() throws Exception {
+<span class="fc" id="L207">    Type typeOfMap = new TypeToken&lt;SortedMap&lt;Integer, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L208">    SortedMap&lt;Integer, String&gt; map = gson.fromJson(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, typeOfMap);</span>
+<span class="fc" id="L209">    assertEquals(1, map.size());</span>
+<span class="fc" id="L210">    assertTrue(map.containsKey(123));</span>
+<span class="fc" id="L211">    assertEquals(&quot;456&quot;, map.get(123));</span>
+<span class="fc" id="L212">  }</span>
+
+  public void testConcurrentMap() throws Exception {
+<span class="fc" id="L215">    Type typeOfMap = new TypeToken&lt;ConcurrentMap&lt;Integer, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L216">    ConcurrentMap&lt;Integer, String&gt; map = gson.fromJson(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, typeOfMap);</span>
+<span class="fc" id="L217">    assertEquals(1, map.size());</span>
+<span class="fc" id="L218">    assertTrue(map.containsKey(123));</span>
+<span class="fc" id="L219">    assertEquals(&quot;456&quot;, map.get(123));</span>
+<span class="fc" id="L220">    String json = gson.toJson(map);</span>
+<span class="fc" id="L221">    assertEquals(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, json);</span>
+<span class="fc" id="L222">  }</span>
+
+  public void testConcurrentHashMap() throws Exception {
+<span class="fc" id="L225">    Type typeOfMap = new TypeToken&lt;ConcurrentHashMap&lt;Integer, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L226">    ConcurrentHashMap&lt;Integer, String&gt; map = gson.fromJson(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, typeOfMap);</span>
+<span class="fc" id="L227">    assertEquals(1, map.size());</span>
+<span class="fc" id="L228">    assertTrue(map.containsKey(123));</span>
+<span class="fc" id="L229">    assertEquals(&quot;456&quot;, map.get(123));</span>
+<span class="fc" id="L230">    String json = gson.toJson(map);</span>
+<span class="fc" id="L231">    assertEquals(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, json);</span>
+<span class="fc" id="L232">  }</span>
+
+  public void testConcurrentNavigableMap() throws Exception {
+<span class="fc" id="L235">    Type typeOfMap = new TypeToken&lt;ConcurrentNavigableMap&lt;Integer, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L236">    ConcurrentNavigableMap&lt;Integer, String&gt; map = gson.fromJson(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, typeOfMap);</span>
+<span class="fc" id="L237">    assertEquals(1, map.size());</span>
+<span class="fc" id="L238">    assertTrue(map.containsKey(123));</span>
+<span class="fc" id="L239">    assertEquals(&quot;456&quot;, map.get(123));</span>
+<span class="fc" id="L240">    String json = gson.toJson(map);</span>
+<span class="fc" id="L241">    assertEquals(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, json);</span>
+<span class="fc" id="L242">  }</span>
+
+  public void testConcurrentSkipListMap() throws Exception {
+<span class="fc" id="L245">    Type typeOfMap = new TypeToken&lt;ConcurrentSkipListMap&lt;Integer, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L246">    ConcurrentSkipListMap&lt;Integer, String&gt; map = gson.fromJson(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, typeOfMap);</span>
+<span class="fc" id="L247">    assertEquals(1, map.size());</span>
+<span class="fc" id="L248">    assertTrue(map.containsKey(123));</span>
+<span class="fc" id="L249">    assertEquals(&quot;456&quot;, map.get(123));</span>
+<span class="fc" id="L250">    String json = gson.toJson(map);</span>
+<span class="fc" id="L251">    assertEquals(&quot;{\&quot;123\&quot;:\&quot;456\&quot;}&quot;, json);</span>
+<span class="fc" id="L252">  }</span>
+
+  public void testParameterizedMapSubclassSerialization() {
+<span class="fc" id="L255">    MyParameterizedMap&lt;String, String&gt; map = new MyParameterizedMap&lt;String, String&gt;(10);</span>
+<span class="fc" id="L256">    map.put(&quot;a&quot;, &quot;b&quot;);</span>
+<span class="fc" id="L257">    Type type = new TypeToken&lt;MyParameterizedMap&lt;String, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L258">    String json = gson.toJson(map, type);</span>
+<span class="fc" id="L259">    assertTrue(json.contains(&quot;\&quot;a\&quot;:\&quot;b\&quot;&quot;));</span>
+<span class="fc" id="L260">  }</span>
+
+  @SuppressWarnings({ &quot;unused&quot;, &quot;serial&quot; })
+  private static class MyParameterizedMap&lt;K, V&gt; extends LinkedHashMap&lt;K, V&gt; {
+    final int foo;
+<span class="fc" id="L265">    MyParameterizedMap(int foo) {</span>
+<span class="fc" id="L266">      this.foo = foo;</span>
+<span class="fc" id="L267">    }</span>
+  }
+
+  public void testMapSubclassSerialization() {
+<span class="fc" id="L271">    MyMap map = new MyMap();</span>
+<span class="fc" id="L272">    map.put(&quot;a&quot;, &quot;b&quot;);</span>
+<span class="fc" id="L273">    String json = gson.toJson(map, MyMap.class);</span>
+<span class="fc" id="L274">    assertTrue(json.contains(&quot;\&quot;a\&quot;:\&quot;b\&quot;&quot;));</span>
+<span class="fc" id="L275">  }</span>
+
+  public void testMapStandardSubclassDeserialization() {
+<span class="fc" id="L278">    String json = &quot;{a:'1',b:'2'}&quot;;</span>
+<span class="fc" id="L279">    Type type = new TypeToken&lt;LinkedHashMap&lt;String, String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L280">    LinkedHashMap&lt;String, Integer&gt; map = gson.fromJson(json, type);</span>
+<span class="fc" id="L281">    assertEquals(&quot;1&quot;, map.get(&quot;a&quot;));</span>
+<span class="fc" id="L282">    assertEquals(&quot;2&quot;, map.get(&quot;b&quot;));</span>
+<span class="fc" id="L283">  }</span>
+
+  public void testMapSubclassDeserialization() {
+<span class="fc" id="L286">    Gson gson = new GsonBuilder().registerTypeAdapter(MyMap.class, new InstanceCreator&lt;MyMap&gt;() {</span>
+      public MyMap createInstance(Type type) {
+<span class="fc" id="L288">        return new MyMap();</span>
+      }
+<span class="fc" id="L290">    }).create();</span>
+<span class="fc" id="L291">    String json = &quot;{\&quot;a\&quot;:1,\&quot;b\&quot;:2}&quot;;</span>
+<span class="fc" id="L292">    MyMap map = gson.fromJson(json, MyMap.class);</span>
+<span class="fc" id="L293">    assertEquals(&quot;1&quot;, map.get(&quot;a&quot;));</span>
+<span class="fc" id="L294">    assertEquals(&quot;2&quot;, map.get(&quot;b&quot;));</span>
+<span class="fc" id="L295">  }</span>
+
+  public void testCustomSerializerForSpecificMapType() {
+<span class="fc" id="L298">    Type type = $Gson$Types.newParameterizedTypeWithOwner(</span>
+        null, Map.class, String.class, Long.class);
+<span class="fc" id="L300">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L301">        .registerTypeAdapter(type, new JsonSerializer&lt;Map&lt;String, Long&gt;&gt;() {</span>
+          public JsonElement serialize(Map&lt;String, Long&gt; src, Type typeOfSrc,
+              JsonSerializationContext context) {
+<span class="fc" id="L304">            JsonArray array = new JsonArray();</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">            for (long value : src.values()) {</span>
+<span class="fc" id="L306">              array.add(new JsonPrimitive(value));</span>
+<span class="fc" id="L307">            }</span>
+<span class="fc" id="L308">            return array;</span>
+          }
+<span class="fc" id="L310">        }).create();</span>
+
+<span class="fc" id="L312">    Map&lt;String, Long&gt; src = new LinkedHashMap&lt;String, Long&gt;();</span>
+<span class="fc" id="L313">    src.put(&quot;one&quot;, 1L);</span>
+<span class="fc" id="L314">    src.put(&quot;two&quot;, 2L);</span>
+<span class="fc" id="L315">    src.put(&quot;three&quot;, 3L);</span>
+
+<span class="fc" id="L317">    assertEquals(&quot;[1,2,3]&quot;, gson.toJson(src, type));</span>
+<span class="fc" id="L318">  }</span>
+
+  /**
+   * Created in response to http://code.google.com/p/google-gson/issues/detail?id=99
+   */
+<span class="fc" id="L323">  private static class ClassWithAMap {</span>
+<span class="fc" id="L324">    Map&lt;String, String&gt; map = new TreeMap&lt;String, String&gt;();</span>
+  }
+
+  /**
+   * Created in response to http://code.google.com/p/google-gson/issues/detail?id=99
+   */
+  public void testMapSerializationWithNullValues() {
+<span class="fc" id="L331">    ClassWithAMap target = new ClassWithAMap();</span>
+<span class="fc" id="L332">    target.map.put(&quot;name1&quot;, null);</span>
+<span class="fc" id="L333">    target.map.put(&quot;name2&quot;, &quot;value2&quot;);</span>
+<span class="fc" id="L334">    String json = gson.toJson(target);</span>
+<span class="fc" id="L335">    assertFalse(json.contains(&quot;name1&quot;));</span>
+<span class="fc" id="L336">    assertTrue(json.contains(&quot;name2&quot;));</span>
+<span class="fc" id="L337">  }</span>
+
+  /**
+   * Created in response to http://code.google.com/p/google-gson/issues/detail?id=99
+   */
+  public void testMapSerializationWithNullValuesSerialized() {
+<span class="fc" id="L343">    Gson gson = new GsonBuilder().serializeNulls().create();</span>
+<span class="fc" id="L344">    ClassWithAMap target = new ClassWithAMap();</span>
+<span class="fc" id="L345">    target.map.put(&quot;name1&quot;, null);</span>
+<span class="fc" id="L346">    target.map.put(&quot;name2&quot;, &quot;value2&quot;);</span>
+<span class="fc" id="L347">    String json = gson.toJson(target);</span>
+<span class="fc" id="L348">    assertTrue(json.contains(&quot;name1&quot;));</span>
+<span class="fc" id="L349">    assertTrue(json.contains(&quot;name2&quot;));</span>
+<span class="fc" id="L350">  }</span>
+
+  public void testMapSerializationWithWildcardValues() {
+<span class="fc" id="L353">    Map&lt;String, ? extends Collection&lt;? extends Integer&gt;&gt; map =</span>
+        new LinkedHashMap&lt;String, Collection&lt;Integer&gt;&gt;();
+<span class="fc" id="L355">    map.put(&quot;test&quot;, null);</span>
+<span class="fc" id="L356">    Type typeOfMap =</span>
+<span class="fc" id="L357">        new TypeToken&lt;Map&lt;String, ? extends Collection&lt;? extends Integer&gt;&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L358">    String json = gson.toJson(map, typeOfMap);</span>
+
+<span class="fc" id="L360">    assertEquals(&quot;{}&quot;, json);</span>
+<span class="fc" id="L361">  }</span>
+
+  public void testMapDeserializationWithWildcardValues() {
+<span class="fc" id="L364">    Type typeOfMap = new TypeToken&lt;Map&lt;String, ? extends Long&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L365">    Map&lt;String, ? extends Long&gt; map = gson.fromJson(&quot;{\&quot;test\&quot;:123}&quot;, typeOfMap);</span>
+<span class="fc" id="L366">    assertEquals(1, map.size());</span>
+<span class="fc" id="L367">    assertEquals(Long.valueOf(123L), map.get(&quot;test&quot;));</span>
+<span class="fc" id="L368">  }</span>
+
+
+<span class="fc" id="L371">  private static class MyMap extends LinkedHashMap&lt;String, String&gt; {</span>
+    private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L374">    @SuppressWarnings(&quot;unused&quot;)</span>
+    int foo = 10;
+  }
+
+  /**
+   * From bug report http://code.google.com/p/google-gson/issues/detail?id=95
+   */
+  public void testMapOfMapSerialization() {
+<span class="fc" id="L382">    Map&lt;String, Map&lt;String, String&gt;&gt; map = new HashMap&lt;String, Map&lt;String, String&gt;&gt;();</span>
+<span class="fc" id="L383">    Map&lt;String, String&gt; nestedMap = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L384">    nestedMap.put(&quot;1&quot;, &quot;1&quot;);</span>
+<span class="fc" id="L385">    nestedMap.put(&quot;2&quot;, &quot;2&quot;);</span>
+<span class="fc" id="L386">    map.put(&quot;nestedMap&quot;, nestedMap);</span>
+<span class="fc" id="L387">    String json = gson.toJson(map);</span>
+<span class="fc" id="L388">    assertTrue(json.contains(&quot;nestedMap&quot;));</span>
+<span class="fc" id="L389">    assertTrue(json.contains(&quot;\&quot;1\&quot;:\&quot;1\&quot;&quot;));</span>
+<span class="fc" id="L390">    assertTrue(json.contains(&quot;\&quot;2\&quot;:\&quot;2\&quot;&quot;));</span>
+<span class="fc" id="L391">  }</span>
+
+  /**
+   * From bug report http://code.google.com/p/google-gson/issues/detail?id=95
+   */
+  public void testMapOfMapDeserialization() {
+<span class="fc" id="L397">    String json = &quot;{nestedMap:{'2':'2','1':'1'}}&quot;;</span>
+<span class="fc" id="L398">    Type type = new TypeToken&lt;Map&lt;String, Map&lt;String, String&gt;&gt;&gt;(){}.getType();</span>
+<span class="fc" id="L399">    Map&lt;String, Map&lt;String, String&gt;&gt; map = gson.fromJson(json, type);</span>
+<span class="fc" id="L400">    Map&lt;String, String&gt; nested = map.get(&quot;nestedMap&quot;);</span>
+<span class="fc" id="L401">    assertEquals(&quot;1&quot;, nested.get(&quot;1&quot;));</span>
+<span class="fc" id="L402">    assertEquals(&quot;2&quot;, nested.get(&quot;2&quot;));</span>
+<span class="fc" id="L403">  }</span>
+
+  /**
+   * From bug report http://code.google.com/p/google-gson/issues/detail?id=178
+   */
+  public void testMapWithQuotes() {
+<span class="fc" id="L409">    Map&lt;String, String&gt; map = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L410">    map.put(&quot;a\&quot;b&quot;, &quot;c\&quot;d&quot;);</span>
+<span class="fc" id="L411">    String json = gson.toJson(map);</span>
+<span class="fc" id="L412">    assertEquals(&quot;{\&quot;a\\\&quot;b\&quot;:\&quot;c\\\&quot;d\&quot;}&quot;, json);</span>
+<span class="fc" id="L413">  }</span>
+
+  /**
+   * From issue 227.
+   */
+  public void testWriteMapsWithEmptyStringKey() {
+<span class="fc" id="L419">    Map&lt;String, Boolean&gt; map = new HashMap&lt;String, Boolean&gt;();</span>
+<span class="fc" id="L420">    map.put(&quot;&quot;, true);</span>
+<span class="fc" id="L421">    assertEquals(&quot;{\&quot;\&quot;:true}&quot;, gson.toJson(map));</span>
+
+<span class="fc" id="L423">  }</span>
+
+  public void testReadMapsWithEmptyStringKey() {
+<span class="fc" id="L426">    Map&lt;String, Boolean&gt; map = gson.fromJson(&quot;{\&quot;\&quot;:true}&quot;, new TypeToken&lt;Map&lt;String, Boolean&gt;&gt;() {}.getType());</span>
+<span class="fc" id="L427">    assertEquals(Boolean.TRUE, map.get(&quot;&quot;));</span>
+<span class="fc" id="L428">  }</span>
+
+  /**
+   * From bug report http://code.google.com/p/google-gson/issues/detail?id=204
+   */
+  public void testSerializeMaps() {
+<span class="fc" id="L434">    Map&lt;String, Object&gt; map = new LinkedHashMap&lt;String, Object&gt;();</span>
+<span class="fc" id="L435">    map.put(&quot;a&quot;, 12);</span>
+<span class="fc" id="L436">    map.put(&quot;b&quot;, null);</span>
+
+<span class="fc" id="L438">    LinkedHashMap&lt;String, Object&gt; innerMap = new LinkedHashMap&lt;String, Object&gt;();</span>
+<span class="fc" id="L439">    innerMap.put(&quot;test&quot;, 1);</span>
+<span class="fc" id="L440">    innerMap.put(&quot;TestStringArray&quot;, new String[] { &quot;one&quot;, &quot;two&quot; });</span>
+<span class="fc" id="L441">    map.put(&quot;c&quot;, innerMap);</span>
+
+<span class="fc" id="L443">    assertEquals(&quot;{\&quot;a\&quot;:12,\&quot;b\&quot;:null,\&quot;c\&quot;:{\&quot;test\&quot;:1,\&quot;TestStringArray\&quot;:[\&quot;one\&quot;,\&quot;two\&quot;]}}&quot;,</span>
+<span class="fc" id="L444">        new GsonBuilder().serializeNulls().create().toJson(map));</span>
+<span class="fc" id="L445">    assertEquals(&quot;{\n  \&quot;a\&quot;: 12,\n  \&quot;b\&quot;: null,\n  \&quot;c\&quot;: &quot;</span>
+  		+ &quot;{\n    \&quot;test\&quot;: 1,\n    \&quot;TestStringArray\&quot;: &quot;
+  		+ &quot;[\n      \&quot;one\&quot;,\n      \&quot;two\&quot;\n    ]\n  }\n}&quot;,
+<span class="fc" id="L448">        new GsonBuilder().setPrettyPrinting().serializeNulls().create().toJson(map));</span>
+<span class="fc" id="L449">    assertEquals(&quot;{\&quot;a\&quot;:12,\&quot;c\&quot;:{\&quot;test\&quot;:1,\&quot;TestStringArray\&quot;:[\&quot;one\&quot;,\&quot;two\&quot;]}}&quot;,</span>
+<span class="fc" id="L450">        new GsonBuilder().create().toJson(map));</span>
+<span class="fc" id="L451">    assertEquals(&quot;{\n  \&quot;a\&quot;: 12,\n  \&quot;c\&quot;: &quot;</span>
+        + &quot;{\n    \&quot;test\&quot;: 1,\n    \&quot;TestStringArray\&quot;: &quot;
+        + &quot;[\n      \&quot;one\&quot;,\n      \&quot;two\&quot;\n    ]\n  }\n}&quot;,
+<span class="fc" id="L454">        new GsonBuilder().setPrettyPrinting().create().toJson(map));</span>
+
+<span class="fc" id="L456">    innerMap.put(&quot;d&quot;, &quot;e&quot;);</span>
+<span class="fc" id="L457">    assertEquals(&quot;{\&quot;a\&quot;:12,\&quot;c\&quot;:{\&quot;test\&quot;:1,\&quot;TestStringArray\&quot;:[\&quot;one\&quot;,\&quot;two\&quot;],\&quot;d\&quot;:\&quot;e\&quot;}}&quot;,</span>
+<span class="fc" id="L458">        new Gson().toJson(map));</span>
+<span class="fc" id="L459">  }</span>
+
+  public final void testInterfaceTypeMap() {
+<span class="fc" id="L462">    MapClass element = new MapClass();</span>
+<span class="fc" id="L463">    TestTypes.Sub subType = new TestTypes.Sub();</span>
+<span class="fc" id="L464">    element.addBase(&quot;Test&quot;, subType);</span>
+<span class="fc" id="L465">    element.addSub(&quot;Test&quot;, subType);</span>
+
+<span class="fc" id="L467">    String subTypeJson = new Gson().toJson(subType);</span>
+<span class="fc" id="L468">    String expected = &quot;{\&quot;bases\&quot;:{\&quot;Test\&quot;:&quot; + subTypeJson + &quot;},&quot;</span>
+      + &quot;\&quot;subs\&quot;:{\&quot;Test\&quot;:&quot; + subTypeJson + &quot;}}&quot;;
+
+<span class="fc" id="L471">    Gson gsonWithComplexKeys = new GsonBuilder()</span>
+<span class="fc" id="L472">        .enableComplexMapKeySerialization()</span>
+<span class="fc" id="L473">        .create();</span>
+<span class="fc" id="L474">    String json = gsonWithComplexKeys.toJson(element);</span>
+<span class="fc" id="L475">    assertEquals(expected, json);</span>
+
+<span class="fc" id="L477">    Gson gson = new Gson();</span>
+<span class="fc" id="L478">    json = gson.toJson(element);</span>
+<span class="fc" id="L479">    assertEquals(expected, json);</span>
+<span class="fc" id="L480">  }</span>
+
+  public final void testInterfaceTypeMapWithSerializer() {
+<span class="fc" id="L483">    MapClass element = new MapClass();</span>
+<span class="fc" id="L484">    TestTypes.Sub subType = new TestTypes.Sub();</span>
+<span class="fc" id="L485">    element.addBase(&quot;Test&quot;, subType);</span>
+<span class="fc" id="L486">    element.addSub(&quot;Test&quot;, subType);</span>
+
+<span class="fc" id="L488">    Gson tempGson = new Gson();</span>
+<span class="fc" id="L489">    String subTypeJson = tempGson.toJson(subType);</span>
+<span class="fc" id="L490">    final JsonElement baseTypeJsonElement = tempGson.toJsonTree(subType, TestTypes.Base.class);</span>
+<span class="fc" id="L491">    String baseTypeJson = tempGson.toJson(baseTypeJsonElement);</span>
+<span class="fc" id="L492">    String expected = &quot;{\&quot;bases\&quot;:{\&quot;Test\&quot;:&quot; + baseTypeJson + &quot;},&quot;</span>
+        + &quot;\&quot;subs\&quot;:{\&quot;Test\&quot;:&quot; + subTypeJson + &quot;}}&quot;;
+
+<span class="fc" id="L495">    JsonSerializer&lt;TestTypes.Base&gt; baseTypeAdapter = new JsonSerializer&lt;TestTypes.Base&gt;() {</span>
+      public JsonElement serialize(TestTypes.Base src, Type typeOfSrc,
+          JsonSerializationContext context) {
+<span class="fc" id="L498">        return baseTypeJsonElement;</span>
+      }
+    };
+
+<span class="fc" id="L502">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L503">        .enableComplexMapKeySerialization()</span>
+<span class="fc" id="L504">        .registerTypeAdapter(TestTypes.Base.class, baseTypeAdapter)</span>
+<span class="fc" id="L505">        .create();</span>
+<span class="fc" id="L506">    String json = gson.toJson(element);</span>
+<span class="fc" id="L507">    assertEquals(expected, json);</span>
+
+<span class="fc" id="L509">    gson = new GsonBuilder()</span>
+<span class="fc" id="L510">        .registerTypeAdapter(TestTypes.Base.class, baseTypeAdapter)</span>
+<span class="fc" id="L511">        .create();</span>
+<span class="fc" id="L512">    json = gson.toJson(element);</span>
+<span class="fc" id="L513">    assertEquals(expected, json);</span>
+<span class="fc" id="L514">  }</span>
+
+  public void testGeneralMapField() throws Exception {
+<span class="fc" id="L517">    MapWithGeneralMapParameters map = new MapWithGeneralMapParameters();</span>
+<span class="fc" id="L518">    map.map.put(&quot;string&quot;, &quot;testString&quot;);</span>
+<span class="fc" id="L519">    map.map.put(&quot;stringArray&quot;, new String[]{&quot;one&quot;, &quot;two&quot;});</span>
+<span class="fc" id="L520">    map.map.put(&quot;objectArray&quot;, new Object[]{1, 2L, &quot;three&quot;});</span>
+
+<span class="fc" id="L522">    String expected = &quot;{\&quot;map\&quot;:{\&quot;string\&quot;:\&quot;testString\&quot;,\&quot;stringArray\&quot;:&quot;</span>
+        + &quot;[\&quot;one\&quot;,\&quot;two\&quot;],\&quot;objectArray\&quot;:[1,2,\&quot;three\&quot;]}}&quot;;
+<span class="fc" id="L524">    assertEquals(expected, gson.toJson(map));</span>
+
+<span class="fc" id="L526">    gson = new GsonBuilder()</span>
+<span class="fc" id="L527">        .enableComplexMapKeySerialization()</span>
+<span class="fc" id="L528">        .create();</span>
+<span class="fc" id="L529">    assertEquals(expected, gson.toJson(map));</span>
+<span class="fc" id="L530">  }</span>
+
+  public void testComplexKeysSerialization() {
+<span class="fc" id="L533">    Map&lt;Point, String&gt; map = new LinkedHashMap&lt;Point, String&gt;();</span>
+<span class="fc" id="L534">    map.put(new Point(2, 3), &quot;a&quot;);</span>
+<span class="fc" id="L535">    map.put(new Point(5, 7), &quot;b&quot;);</span>
+<span class="fc" id="L536">    String json = &quot;{\&quot;2,3\&quot;:\&quot;a\&quot;,\&quot;5,7\&quot;:\&quot;b\&quot;}&quot;;</span>
+<span class="fc" id="L537">    assertEquals(json, gson.toJson(map, new TypeToken&lt;Map&lt;Point, String&gt;&gt;() {}.getType()));</span>
+<span class="fc" id="L538">    assertEquals(json, gson.toJson(map, Map.class));</span>
+<span class="fc" id="L539">  }</span>
+
+  public void testComplexKeysDeserialization() {
+<span class="fc" id="L542">    String json = &quot;{'2,3':'a','5,7':'b'}&quot;;</span>
+    try {
+<span class="pc" id="L544">      gson.fromJson(json, new TypeToken&lt;Map&lt;Point, String&gt;&gt;() {}.getType());</span>
+<span class="nc" id="L545">      fail();</span>
+<span class="fc" id="L546">    } catch (JsonParseException expected) {</span>
+<span class="nc" id="L547">    }</span>
+<span class="fc" id="L548">  }</span>
+
+  public void testStringKeyDeserialization() {
+<span class="fc" id="L551">    String json = &quot;{'2,3':'a','5,7':'b'}&quot;;</span>
+<span class="fc" id="L552">    Map&lt;String, String&gt; map = new LinkedHashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L553">    map.put(&quot;2,3&quot;, &quot;a&quot;);</span>
+<span class="fc" id="L554">    map.put(&quot;5,7&quot;, &quot;b&quot;);</span>
+<span class="fc" id="L555">    assertEquals(map, gson.fromJson(json, new TypeToken&lt;Map&lt;String, String&gt;&gt;() {}.getType()));</span>
+<span class="fc" id="L556">  }</span>
+
+  public void testNumberKeyDeserialization() {
+<span class="fc" id="L559">    String json = &quot;{'2.3':'a','5.7':'b'}&quot;;</span>
+<span class="fc" id="L560">    Map&lt;Double, String&gt; map = new LinkedHashMap&lt;Double, String&gt;();</span>
+<span class="fc" id="L561">    map.put(2.3, &quot;a&quot;);</span>
+<span class="fc" id="L562">    map.put(5.7, &quot;b&quot;);</span>
+<span class="fc" id="L563">    assertEquals(map, gson.fromJson(json, new TypeToken&lt;Map&lt;Double, String&gt;&gt;() {}.getType()));</span>
+<span class="fc" id="L564">  }</span>
+
+  public void testBooleanKeyDeserialization() {
+<span class="fc" id="L567">    String json = &quot;{'true':'a','false':'b'}&quot;;</span>
+<span class="fc" id="L568">    Map&lt;Boolean, String&gt; map = new LinkedHashMap&lt;Boolean, String&gt;();</span>
+<span class="fc" id="L569">    map.put(true, &quot;a&quot;);</span>
+<span class="fc" id="L570">    map.put(false, &quot;b&quot;);</span>
+<span class="fc" id="L571">    assertEquals(map, gson.fromJson(json, new TypeToken&lt;Map&lt;Boolean, String&gt;&gt;() {}.getType()));</span>
+<span class="fc" id="L572">  }</span>
+
+  public void testMapDeserializationWithDuplicateKeys() {
+    try {
+<span class="pc" id="L576">      gson.fromJson(&quot;{'a':1,'a':2}&quot;, new TypeToken&lt;Map&lt;String, Integer&gt;&gt;() {}.getType());</span>
+<span class="nc" id="L577">      fail();</span>
+<span class="fc" id="L578">    } catch (JsonSyntaxException expected) {</span>
+<span class="nc" id="L579">    }</span>
+<span class="fc" id="L580">  }</span>
+
+  public void testSerializeMapOfMaps() {
+<span class="fc" id="L583">    Type type = new TypeToken&lt;Map&lt;String, Map&lt;String, String&gt;&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L584">    Map&lt;String, Map&lt;String, String&gt;&gt; map = newMap(</span>
+<span class="fc" id="L585">        &quot;a&quot;, newMap(&quot;ka1&quot;, &quot;va1&quot;, &quot;ka2&quot;, &quot;va2&quot;),</span>
+<span class="fc" id="L586">        &quot;b&quot;, newMap(&quot;kb1&quot;, &quot;vb1&quot;, &quot;kb2&quot;, &quot;vb2&quot;));</span>
+<span class="fc" id="L587">    assertEquals(&quot;{'a':{'ka1':'va1','ka2':'va2'},'b':{'kb1':'vb1','kb2':'vb2'}}&quot;,</span>
+<span class="fc" id="L588">        gson.toJson(map, type).replace('&quot;', '\''));</span>
+<span class="fc" id="L589">  }</span>
+
+  public void testDeerializeMapOfMaps() {
+<span class="fc" id="L592">    Type type = new TypeToken&lt;Map&lt;String, Map&lt;String, String&gt;&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L593">    Map&lt;String, Map&lt;String, String&gt;&gt; map = newMap(</span>
+<span class="fc" id="L594">        &quot;a&quot;, newMap(&quot;ka1&quot;, &quot;va1&quot;, &quot;ka2&quot;, &quot;va2&quot;),</span>
+<span class="fc" id="L595">        &quot;b&quot;, newMap(&quot;kb1&quot;, &quot;vb1&quot;, &quot;kb2&quot;, &quot;vb2&quot;));</span>
+<span class="fc" id="L596">    String json = &quot;{'a':{'ka1':'va1','ka2':'va2'},'b':{'kb1':'vb1','kb2':'vb2'}}&quot;;</span>
+<span class="fc" id="L597">    assertEquals(map, gson.fromJson(json, type));</span>
+<span class="fc" id="L598">  }</span>
+
+  private &lt;K, V&gt; Map&lt;K, V&gt; newMap(K key1, V value1, K key2, V value2) {
+<span class="fc" id="L601">    Map&lt;K, V&gt; result = new LinkedHashMap&lt;K, V&gt;();</span>
+<span class="fc" id="L602">    result.put(key1, value1);</span>
+<span class="fc" id="L603">    result.put(key2, value2);</span>
+<span class="fc" id="L604">    return result;</span>
+  }
+
+  public void testMapNamePromotionWithJsonElementReader() {
+<span class="fc" id="L608">    String json = &quot;{'2.3':'a'}&quot;;</span>
+<span class="fc" id="L609">    Map&lt;Double, String&gt; map = new LinkedHashMap&lt;Double, String&gt;();</span>
+<span class="fc" id="L610">    map.put(2.3, &quot;a&quot;);</span>
+<span class="fc" id="L611">    JsonElement tree = JsonParser.parseString(json);</span>
+<span class="fc" id="L612">    assertEquals(map, gson.fromJson(tree, new TypeToken&lt;Map&lt;Double, String&gt;&gt;() {}.getType()));</span>
+<span class="fc" id="L613">  }</span>
+
+  static class Point {
+    private final int x;
+    private final int y;
+
+<span class="fc" id="L619">    Point(int x, int y) {</span>
+<span class="fc" id="L620">      this.x = x;</span>
+<span class="fc" id="L621">      this.y = y;</span>
+<span class="fc" id="L622">    }</span>
+
+    @Override public boolean equals(Object o) {
+<span class="nc bnc" id="L625" title="All 6 branches missed.">      return o instanceof Point &amp;&amp; x == ((Point) o).x &amp;&amp; y == ((Point) o).y;</span>
+    }
+
+    @Override public int hashCode() {
+<span class="fc" id="L629">      return x * 37 + y;</span>
+    }
+
+    @Override public String toString() {
+<span class="fc" id="L633">      return x + &quot;,&quot; + y;</span>
+    }
+  }
+
+<span class="fc" id="L637">  static final class MapClass {</span>
+<span class="fc" id="L638">    private final Map&lt;String, TestTypes.Base&gt; bases = new HashMap&lt;String, TestTypes.Base&gt;();</span>
+<span class="fc" id="L639">    private final Map&lt;String, TestTypes.Sub&gt; subs = new HashMap&lt;String, TestTypes.Sub&gt;();</span>
+
+    public final void addBase(String name, TestTypes.Base value) {
+<span class="fc" id="L642">      bases.put(name, value);</span>
+<span class="fc" id="L643">    }</span>
+
+    public final void addSub(String name, TestTypes.Sub value) {
+<span class="fc" id="L646">      subs.put(name, value);</span>
+<span class="fc" id="L647">    }</span>
+  }
+
+<span class="fc" id="L650">  static final class MapWithGeneralMapParameters {</span>
+<span class="fc" id="L651">    @SuppressWarnings({&quot;rawtypes&quot;, &quot;unchecked&quot;})</span>
+    final Map&lt;String, Object&gt; map = new LinkedHashMap();
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

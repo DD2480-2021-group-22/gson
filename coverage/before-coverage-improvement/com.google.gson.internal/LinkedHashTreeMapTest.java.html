@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LinkedHashTreeMapTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal</a> &gt; <span class="el_source">LinkedHashTreeMapTest.java</span></div><h1>LinkedHashTreeMapTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2012 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.internal;
+
+import com.google.gson.common.MoreAsserts;
+import com.google.gson.internal.LinkedHashTreeMap.AvlBuilder;
+import com.google.gson.internal.LinkedHashTreeMap.AvlIterator;
+import com.google.gson.internal.LinkedHashTreeMap.Node;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import junit.framework.TestCase;
+
+<span class="fc" id="L30">public final class LinkedHashTreeMapTest extends TestCase {</span>
+  public void testIterationOrder() {
+<span class="fc" id="L32">    LinkedHashTreeMap&lt;String, String&gt; map = new LinkedHashTreeMap&lt;String, String&gt;();</span>
+<span class="fc" id="L33">    map.put(&quot;a&quot;, &quot;android&quot;);</span>
+<span class="fc" id="L34">    map.put(&quot;c&quot;, &quot;cola&quot;);</span>
+<span class="fc" id="L35">    map.put(&quot;b&quot;, &quot;bbq&quot;);</span>
+<span class="fc" id="L36">    assertIterationOrder(map.keySet(), &quot;a&quot;, &quot;c&quot;, &quot;b&quot;);</span>
+<span class="fc" id="L37">    assertIterationOrder(map.values(), &quot;android&quot;, &quot;cola&quot;, &quot;bbq&quot;);</span>
+<span class="fc" id="L38">  }</span>
+
+  public void testRemoveRootDoesNotDoubleUnlink() {
+<span class="fc" id="L41">    LinkedHashTreeMap&lt;String, String&gt; map = new LinkedHashTreeMap&lt;String, String&gt;();</span>
+<span class="fc" id="L42">    map.put(&quot;a&quot;, &quot;android&quot;);</span>
+<span class="fc" id="L43">    map.put(&quot;c&quot;, &quot;cola&quot;);</span>
+<span class="fc" id="L44">    map.put(&quot;b&quot;, &quot;bbq&quot;);</span>
+<span class="fc" id="L45">    Iterator&lt;Map.Entry&lt;String,String&gt;&gt; it = map.entrySet().iterator();</span>
+<span class="fc" id="L46">    it.next();</span>
+<span class="fc" id="L47">    it.next();</span>
+<span class="fc" id="L48">    it.next();</span>
+<span class="fc" id="L49">    it.remove();</span>
+<span class="fc" id="L50">    assertIterationOrder(map.keySet(), &quot;a&quot;, &quot;c&quot;);</span>
+<span class="fc" id="L51">  }</span>
+
+  public void testPutNullKeyFails() {
+<span class="fc" id="L54">    LinkedHashTreeMap&lt;String, String&gt; map = new LinkedHashTreeMap&lt;String, String&gt;();</span>
+    try {
+<span class="nc" id="L56">      map.put(null, &quot;android&quot;);</span>
+<span class="nc" id="L57">      fail();</span>
+<span class="fc" id="L58">    } catch (NullPointerException expected) {</span>
+<span class="nc" id="L59">    }</span>
+<span class="fc" id="L60">  }</span>
+
+  public void testPutNonComparableKeyFails() {
+<span class="fc" id="L63">    LinkedHashTreeMap&lt;Object, String&gt; map = new LinkedHashTreeMap&lt;Object, String&gt;();</span>
+    try {
+<span class="nc" id="L65">      map.put(new Object(), &quot;android&quot;);</span>
+<span class="nc" id="L66">      fail();</span>
+<span class="pc" id="L67">    } catch (ClassCastException expected) {}</span>
+<span class="fc" id="L68">  }</span>
+
+  public void testContainsNonComparableKeyReturnsFalse() {
+<span class="fc" id="L71">    LinkedHashTreeMap&lt;String, String&gt; map = new LinkedHashTreeMap&lt;String, String&gt;();</span>
+<span class="fc" id="L72">    map.put(&quot;a&quot;, &quot;android&quot;);</span>
+<span class="fc" id="L73">    assertFalse(map.containsKey(new Object()));</span>
+<span class="fc" id="L74">  }</span>
+
+  public void testContainsNullKeyIsAlwaysFalse() {
+<span class="fc" id="L77">    LinkedHashTreeMap&lt;String, String&gt; map = new LinkedHashTreeMap&lt;String, String&gt;();</span>
+<span class="fc" id="L78">    map.put(&quot;a&quot;, &quot;android&quot;);</span>
+<span class="fc" id="L79">    assertFalse(map.containsKey(null));</span>
+<span class="fc" id="L80">  }</span>
+
+  public void testPutOverrides() throws Exception {
+<span class="fc" id="L83">    LinkedHashTreeMap&lt;String, String&gt; map = new LinkedHashTreeMap&lt;String, String&gt;();</span>
+<span class="fc" id="L84">    assertNull(map.put(&quot;d&quot;, &quot;donut&quot;));</span>
+<span class="fc" id="L85">    assertNull(map.put(&quot;e&quot;, &quot;eclair&quot;));</span>
+<span class="fc" id="L86">    assertNull(map.put(&quot;f&quot;, &quot;froyo&quot;));</span>
+<span class="fc" id="L87">    assertEquals(3, map.size());</span>
+
+<span class="fc" id="L89">    assertEquals(&quot;donut&quot;, map.get(&quot;d&quot;));</span>
+<span class="fc" id="L90">    assertEquals(&quot;donut&quot;, map.put(&quot;d&quot;, &quot;done&quot;));</span>
+<span class="fc" id="L91">    assertEquals(3, map.size());</span>
+<span class="fc" id="L92">  }</span>
+
+  public void testEmptyStringValues() {
+<span class="fc" id="L95">    LinkedHashTreeMap&lt;String, String&gt; map = new LinkedHashTreeMap&lt;String, String&gt;();</span>
+<span class="fc" id="L96">    map.put(&quot;a&quot;, &quot;&quot;);</span>
+<span class="fc" id="L97">    assertTrue(map.containsKey(&quot;a&quot;));</span>
+<span class="fc" id="L98">    assertEquals(&quot;&quot;, map.get(&quot;a&quot;));</span>
+<span class="fc" id="L99">  }</span>
+
+  // NOTE that this does not happen every time, but given the below predictable random,
+  // this test will consistently fail (assuming the initial size is 16 and rehashing
+  // size remains at 3/4)
+  public void testForceDoublingAndRehash() throws Exception {
+<span class="fc" id="L105">    Random random = new Random(1367593214724L);</span>
+<span class="fc" id="L106">    LinkedHashTreeMap&lt;String, String&gt; map = new LinkedHashTreeMap&lt;String, String&gt;();</span>
+<span class="fc" id="L107">    String[] keys = new String[1000];</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">    for (int i = 0; i &lt; keys.length; i++) {</span>
+<span class="fc" id="L109">      keys[i] = Integer.toString(Math.abs(random.nextInt()), 36) + &quot;-&quot; + i;</span>
+<span class="fc" id="L110">      map.put(keys[i], &quot;&quot; + i);</span>
+    }
+
+<span class="fc bfc" id="L113" title="All 2 branches covered.">    for (int i = 0; i &lt; keys.length; i++) {</span>
+<span class="fc" id="L114">      String key = keys[i];</span>
+<span class="fc" id="L115">      assertTrue(map.containsKey(key));</span>
+<span class="fc" id="L116">      assertEquals(&quot;&quot; + i, map.get(key));</span>
+    }
+<span class="fc" id="L118">  }</span>
+
+  public void testClear() {
+<span class="fc" id="L121">    LinkedHashTreeMap&lt;String, String&gt; map = new LinkedHashTreeMap&lt;String, String&gt;();</span>
+<span class="fc" id="L122">    map.put(&quot;a&quot;, &quot;android&quot;);</span>
+<span class="fc" id="L123">    map.put(&quot;c&quot;, &quot;cola&quot;);</span>
+<span class="fc" id="L124">    map.put(&quot;b&quot;, &quot;bbq&quot;);</span>
+<span class="fc" id="L125">    map.clear();</span>
+<span class="fc" id="L126">    assertIterationOrder(map.keySet());</span>
+<span class="fc" id="L127">    assertEquals(0, map.size());</span>
+<span class="fc" id="L128">  }</span>
+
+  public void testEqualsAndHashCode() throws Exception {
+<span class="fc" id="L131">    LinkedHashTreeMap&lt;String, Integer&gt; map1 = new LinkedHashTreeMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L132">    map1.put(&quot;A&quot;, 1);</span>
+<span class="fc" id="L133">    map1.put(&quot;B&quot;, 2);</span>
+<span class="fc" id="L134">    map1.put(&quot;C&quot;, 3);</span>
+<span class="fc" id="L135">    map1.put(&quot;D&quot;, 4);</span>
+
+<span class="fc" id="L137">    LinkedHashTreeMap&lt;String, Integer&gt; map2 = new LinkedHashTreeMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L138">    map2.put(&quot;C&quot;, 3);</span>
+<span class="fc" id="L139">    map2.put(&quot;B&quot;, 2);</span>
+<span class="fc" id="L140">    map2.put(&quot;D&quot;, 4);</span>
+<span class="fc" id="L141">    map2.put(&quot;A&quot;, 1);</span>
+
+<span class="fc" id="L143">    MoreAsserts.assertEqualsAndHashCode(map1, map2);</span>
+<span class="fc" id="L144">  }</span>
+
+  public void testAvlWalker() {
+<span class="fc" id="L147">    assertAvlWalker(node(node(&quot;a&quot;), &quot;b&quot;, node(&quot;c&quot;)),</span>
+        &quot;a&quot;, &quot;b&quot;, &quot;c&quot;);
+<span class="fc" id="L149">    assertAvlWalker(node(node(node(&quot;a&quot;), &quot;b&quot;, node(&quot;c&quot;)), &quot;d&quot;, node(node(&quot;e&quot;), &quot;f&quot;, node(&quot;g&quot;))),</span>
+        &quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;, &quot;f&quot;, &quot;g&quot;);
+<span class="fc" id="L151">    assertAvlWalker(node(node(null, &quot;a&quot;, node(&quot;b&quot;)), &quot;c&quot;, node(node(&quot;d&quot;), &quot;e&quot;, null)),</span>
+        &quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;);
+<span class="fc" id="L153">    assertAvlWalker(node(null, &quot;a&quot;, node(null, &quot;b&quot;, node(null, &quot;c&quot;, node(&quot;d&quot;)))),</span>
+        &quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;);
+<span class="fc" id="L155">    assertAvlWalker(node(node(node(node(&quot;a&quot;), &quot;b&quot;, null), &quot;c&quot;, null), &quot;d&quot;, null),</span>
+        &quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;);
+<span class="fc" id="L157">  }</span>
+
+  private void assertAvlWalker(Node&lt;String, String&gt; root, String... values) {
+<span class="fc" id="L160">    AvlIterator&lt;String, String&gt; iterator = new AvlIterator&lt;String, String&gt;();</span>
+<span class="fc" id="L161">    iterator.reset(root);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">    for (String value : values) {</span>
+<span class="fc" id="L163">      assertEquals(value, iterator.next().getKey());</span>
+    }
+<span class="fc" id="L165">    assertNull(iterator.next());</span>
+<span class="fc" id="L166">  }</span>
+
+  public void testAvlBuilder() {
+<span class="fc" id="L169">    assertAvlBuilder(1, &quot;a&quot;);</span>
+<span class="fc" id="L170">    assertAvlBuilder(2, &quot;(. a b)&quot;);</span>
+<span class="fc" id="L171">    assertAvlBuilder(3, &quot;(a b c)&quot;);</span>
+<span class="fc" id="L172">    assertAvlBuilder(4, &quot;(a b (. c d))&quot;);</span>
+<span class="fc" id="L173">    assertAvlBuilder(5, &quot;(a b (c d e))&quot;);</span>
+<span class="fc" id="L174">    assertAvlBuilder(6, &quot;((. a b) c (d e f))&quot;);</span>
+<span class="fc" id="L175">    assertAvlBuilder(7, &quot;((a b c) d (e f g))&quot;);</span>
+<span class="fc" id="L176">    assertAvlBuilder(8, &quot;((a b c) d (e f (. g h)))&quot;);</span>
+<span class="fc" id="L177">    assertAvlBuilder(9, &quot;((a b c) d (e f (g h i)))&quot;);</span>
+<span class="fc" id="L178">    assertAvlBuilder(10, &quot;((a b c) d ((. e f) g (h i j)))&quot;);</span>
+<span class="fc" id="L179">    assertAvlBuilder(11, &quot;((a b c) d ((e f g) h (i j k)))&quot;);</span>
+<span class="fc" id="L180">    assertAvlBuilder(12, &quot;((a b (. c d)) e ((f g h) i (j k l)))&quot;);</span>
+<span class="fc" id="L181">    assertAvlBuilder(13, &quot;((a b (c d e)) f ((g h i) j (k l m)))&quot;);</span>
+<span class="fc" id="L182">    assertAvlBuilder(14, &quot;(((. a b) c (d e f)) g ((h i j) k (l m n)))&quot;);</span>
+<span class="fc" id="L183">    assertAvlBuilder(15, &quot;(((a b c) d (e f g)) h ((i j k) l (m n o)))&quot;);</span>
+<span class="fc" id="L184">    assertAvlBuilder(16, &quot;(((a b c) d (e f g)) h ((i j k) l (m n (. o p))))&quot;);</span>
+<span class="fc" id="L185">    assertAvlBuilder(30, &quot;((((. a b) c (d e f)) g ((h i j) k (l m n))) o &quot;</span>
+        + &quot;(((p q r) s (t u v)) w ((x y z) A (B C D))))&quot;);
+<span class="fc" id="L187">    assertAvlBuilder(31, &quot;((((a b c) d (e f g)) h ((i j k) l (m n o))) p &quot;</span>
+        + &quot;(((q r s) t (u v w)) x ((y z A) B (C D E))))&quot;);
+<span class="fc" id="L189">  }</span>
+
+  private void assertAvlBuilder(int size, String expected) {
+<span class="fc" id="L192">    char[] values = &quot;abcdefghijklmnopqrstuvwxyzABCDE&quot;.toCharArray();</span>
+<span class="fc" id="L193">    AvlBuilder&lt;String, String&gt; avlBuilder = new AvlBuilder&lt;String, String&gt;();</span>
+<span class="fc" id="L194">    avlBuilder.reset(size);</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="fc" id="L196">      avlBuilder.add(node(Character.toString(values[i])));</span>
+    }
+<span class="fc" id="L198">    assertTree(expected, avlBuilder.root());</span>
+<span class="fc" id="L199">  }</span>
+
+  public void testDoubleCapacity() {
+    @SuppressWarnings(&quot;unchecked&quot;) // Arrays and generics don't get along.
+<span class="fc" id="L203">    Node&lt;String, String&gt;[] oldTable = new Node[1];</span>
+<span class="fc" id="L204">    oldTable[0] = node(node(node(&quot;a&quot;), &quot;b&quot;, node(&quot;c&quot;)), &quot;d&quot;, node(node(&quot;e&quot;), &quot;f&quot;, node(&quot;g&quot;)));</span>
+
+<span class="fc" id="L206">    Node&lt;String, String&gt;[] newTable = LinkedHashTreeMap.doubleCapacity(oldTable);</span>
+<span class="fc" id="L207">    assertTree(&quot;(b d f)&quot;, newTable[0]); // Even hash codes!</span>
+<span class="fc" id="L208">    assertTree(&quot;(a c (. e g))&quot;, newTable[1]); // Odd hash codes!</span>
+<span class="fc" id="L209">  }</span>
+
+  public void testDoubleCapacityAllNodesOnLeft() {
+    @SuppressWarnings(&quot;unchecked&quot;) // Arrays and generics don't get along.
+<span class="fc" id="L213">    Node&lt;String, String&gt;[] oldTable = new Node[1];</span>
+<span class="fc" id="L214">    oldTable[0] = node(node(&quot;b&quot;), &quot;d&quot;, node(&quot;f&quot;));</span>
+
+<span class="fc" id="L216">    Node&lt;String, String&gt;[] newTable = LinkedHashTreeMap.doubleCapacity(oldTable);</span>
+<span class="fc" id="L217">    assertTree(&quot;(b d f)&quot;, newTable[0]); // Even hash codes!</span>
+<span class="fc" id="L218">    assertNull(newTable[1]); // Odd hash codes!</span>
+
+<span class="fc bfc" id="L220" title="All 2 branches covered.">    for (Node&lt;?, ?&gt; node : newTable) {</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">      if (node != null) {</span>
+<span class="fc" id="L222">        assertConsistent(node);</span>
+      }
+    }
+<span class="fc" id="L225">  }</span>
+
+<span class="fc" id="L227">  private static final Node&lt;String, String&gt; head = new Node&lt;String, String&gt;();</span>
+
+  private Node&lt;String, String&gt; node(String value) {
+<span class="fc" id="L230">    return new Node&lt;String, String&gt;(null, value, value.hashCode(), head, head);</span>
+  }
+
+  private Node&lt;String, String&gt; node(Node&lt;String, String&gt; left, String value,
+      Node&lt;String, String&gt; right) {
+<span class="fc" id="L235">    Node&lt;String, String&gt; result = node(value);</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">    if (left != null) {</span>
+<span class="fc" id="L237">      result.left = left;</span>
+<span class="fc" id="L238">      left.parent = result;</span>
+    }
+<span class="fc bfc" id="L240" title="All 2 branches covered.">    if (right != null) {</span>
+<span class="fc" id="L241">      result.right = right;</span>
+<span class="fc" id="L242">      right.parent = result;</span>
+    }
+<span class="fc" id="L244">    return result;</span>
+  }
+
+  private void assertTree(String expected, Node&lt;?, ?&gt; root) {
+<span class="fc" id="L248">    assertEquals(expected, toString(root));</span>
+<span class="fc" id="L249">    assertConsistent(root);</span>
+<span class="fc" id="L250">  }</span>
+
+  private void assertConsistent(Node&lt;?, ?&gt; node) {
+<span class="fc" id="L253">    int leftHeight = 0;</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">    if (node.left != null) {</span>
+<span class="fc" id="L255">      assertConsistent(node.left);</span>
+<span class="fc" id="L256">      assertSame(node, node.left.parent);</span>
+<span class="fc" id="L257">      leftHeight = node.left.height;</span>
+    }
+<span class="fc" id="L259">    int rightHeight = 0;</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">    if (node.right != null) {</span>
+<span class="fc" id="L261">      assertConsistent(node.right);</span>
+<span class="fc" id="L262">      assertSame(node, node.right.parent);</span>
+<span class="fc" id="L263">      rightHeight = node.right.height;</span>
+    }
+<span class="fc bfc" id="L265" title="All 2 branches covered.">    if (node.parent != null) {</span>
+<span class="pc bpc" id="L266" title="1 of 4 branches missed.">      assertTrue(node.parent.left == node || node.parent.right == node);</span>
+    }
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">    if (Math.max(leftHeight, rightHeight) + 1 != node.height) {</span>
+<span class="nc" id="L269">      fail();</span>
+    }
+<span class="fc" id="L271">  }</span>
+
+  private String toString(Node&lt;?, ?&gt; root) {
+<span class="fc bfc" id="L274" title="All 2 branches covered.">    if (root == null) {</span>
+<span class="fc" id="L275">      return &quot;.&quot;;</span>
+<span class="fc bfc" id="L276" title="All 4 branches covered.">    } else if (root.left == null &amp;&amp; root.right == null) {</span>
+<span class="fc" id="L277">      return String.valueOf(root.key);</span>
+    } else {
+<span class="fc" id="L279">      return String.format(&quot;(%s %s %s)&quot;, toString(root.left), root.key, toString(root.right));</span>
+    }
+  }
+
+  private &lt;T&gt; void assertIterationOrder(Iterable&lt;T&gt; actual, T... expected) {
+<span class="fc" id="L284">    ArrayList&lt;T&gt; actualList = new ArrayList&lt;T&gt;();</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">    for (T t : actual) {</span>
+<span class="fc" id="L286">      actualList.add(t);</span>
+<span class="fc" id="L287">    }</span>
+<span class="fc" id="L288">    assertEquals(Arrays.asList(expected), actualList);</span>
+<span class="fc" id="L289">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

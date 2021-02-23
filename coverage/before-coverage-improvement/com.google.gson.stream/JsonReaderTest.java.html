@@ -1,0 +1,1789 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonReaderTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.stream</a> &gt; <span class="el_source">JsonReaderTest.java</span></div><h1>JsonReaderTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2010 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.stream;
+
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Arrays;
+import junit.framework.TestCase;
+
+import static com.google.gson.stream.JsonToken.BEGIN_ARRAY;
+import static com.google.gson.stream.JsonToken.BEGIN_OBJECT;
+import static com.google.gson.stream.JsonToken.BOOLEAN;
+import static com.google.gson.stream.JsonToken.END_ARRAY;
+import static com.google.gson.stream.JsonToken.END_OBJECT;
+import static com.google.gson.stream.JsonToken.NAME;
+import static com.google.gson.stream.JsonToken.NULL;
+import static com.google.gson.stream.JsonToken.NUMBER;
+import static com.google.gson.stream.JsonToken.STRING;
+
+@SuppressWarnings(&quot;resource&quot;)
+<span class="fc" id="L37">public final class JsonReaderTest extends TestCase {</span>
+  public void testReadArray() throws IOException {
+<span class="fc" id="L39">    JsonReader reader = new JsonReader(reader(&quot;[true, true]&quot;));</span>
+<span class="fc" id="L40">    reader.beginArray();</span>
+<span class="fc" id="L41">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L42">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L43">    reader.endArray();</span>
+<span class="fc" id="L44">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L45">  }</span>
+
+  public void testReadEmptyArray() throws IOException {
+<span class="fc" id="L48">    JsonReader reader = new JsonReader(reader(&quot;[]&quot;));</span>
+<span class="fc" id="L49">    reader.beginArray();</span>
+<span class="fc" id="L50">    assertFalse(reader.hasNext());</span>
+<span class="fc" id="L51">    reader.endArray();</span>
+<span class="fc" id="L52">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L53">  }</span>
+
+  public void testReadObject() throws IOException {
+<span class="fc" id="L56">    JsonReader reader = new JsonReader(reader(</span>
+        &quot;{\&quot;a\&quot;: \&quot;android\&quot;, \&quot;b\&quot;: \&quot;banana\&quot;}&quot;));
+<span class="fc" id="L58">    reader.beginObject();</span>
+<span class="fc" id="L59">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L60">    assertEquals(&quot;android&quot;, reader.nextString());</span>
+<span class="fc" id="L61">    assertEquals(&quot;b&quot;, reader.nextName());</span>
+<span class="fc" id="L62">    assertEquals(&quot;banana&quot;, reader.nextString());</span>
+<span class="fc" id="L63">    reader.endObject();</span>
+<span class="fc" id="L64">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L65">  }</span>
+
+  public void testReadEmptyObject() throws IOException {
+<span class="fc" id="L68">    JsonReader reader = new JsonReader(reader(&quot;{}&quot;));</span>
+<span class="fc" id="L69">    reader.beginObject();</span>
+<span class="fc" id="L70">    assertFalse(reader.hasNext());</span>
+<span class="fc" id="L71">    reader.endObject();</span>
+<span class="fc" id="L72">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L73">  }</span>
+
+  public void testSkipArray() throws IOException {
+<span class="fc" id="L76">    JsonReader reader = new JsonReader(reader(</span>
+        &quot;{\&quot;a\&quot;: [\&quot;one\&quot;, \&quot;two\&quot;, \&quot;three\&quot;], \&quot;b\&quot;: 123}&quot;));
+<span class="fc" id="L78">    reader.beginObject();</span>
+<span class="fc" id="L79">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L80">    reader.skipValue();</span>
+<span class="fc" id="L81">    assertEquals(&quot;b&quot;, reader.nextName());</span>
+<span class="fc" id="L82">    assertEquals(123, reader.nextInt());</span>
+<span class="fc" id="L83">    reader.endObject();</span>
+<span class="fc" id="L84">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L85">  }</span>
+
+  public void testSkipArrayAfterPeek() throws Exception {
+<span class="fc" id="L88">    JsonReader reader = new JsonReader(reader(</span>
+        &quot;{\&quot;a\&quot;: [\&quot;one\&quot;, \&quot;two\&quot;, \&quot;three\&quot;], \&quot;b\&quot;: 123}&quot;));
+<span class="fc" id="L90">    reader.beginObject();</span>
+<span class="fc" id="L91">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L92">    assertEquals(BEGIN_ARRAY, reader.peek());</span>
+<span class="fc" id="L93">    reader.skipValue();</span>
+<span class="fc" id="L94">    assertEquals(&quot;b&quot;, reader.nextName());</span>
+<span class="fc" id="L95">    assertEquals(123, reader.nextInt());</span>
+<span class="fc" id="L96">    reader.endObject();</span>
+<span class="fc" id="L97">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L98">  }</span>
+
+  public void testSkipTopLevelObject() throws Exception {
+<span class="fc" id="L101">    JsonReader reader = new JsonReader(reader(</span>
+        &quot;{\&quot;a\&quot;: [\&quot;one\&quot;, \&quot;two\&quot;, \&quot;three\&quot;], \&quot;b\&quot;: 123}&quot;));
+<span class="fc" id="L103">    reader.skipValue();</span>
+<span class="fc" id="L104">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L105">  }</span>
+
+  public void testSkipObject() throws IOException {
+<span class="fc" id="L108">    JsonReader reader = new JsonReader(reader(</span>
+        &quot;{\&quot;a\&quot;: { \&quot;c\&quot;: [], \&quot;d\&quot;: [true, true, {}] }, \&quot;b\&quot;: \&quot;banana\&quot;}&quot;));
+<span class="fc" id="L110">    reader.beginObject();</span>
+<span class="fc" id="L111">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L112">    reader.skipValue();</span>
+<span class="fc" id="L113">    assertEquals(&quot;b&quot;, reader.nextName());</span>
+<span class="fc" id="L114">    reader.skipValue();</span>
+<span class="fc" id="L115">    reader.endObject();</span>
+<span class="fc" id="L116">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L117">  }</span>
+
+  public void testSkipObjectAfterPeek() throws Exception {
+<span class="fc" id="L120">    String json = &quot;{&quot; + &quot;  \&quot;one\&quot;: { \&quot;num\&quot;: 1 }&quot;</span>
+        + &quot;, \&quot;two\&quot;: { \&quot;num\&quot;: 2 }&quot; + &quot;, \&quot;three\&quot;: { \&quot;num\&quot;: 3 }&quot; + &quot;}&quot;;
+<span class="fc" id="L122">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L123">    reader.beginObject();</span>
+<span class="fc" id="L124">    assertEquals(&quot;one&quot;, reader.nextName());</span>
+<span class="fc" id="L125">    assertEquals(BEGIN_OBJECT, reader.peek());</span>
+<span class="fc" id="L126">    reader.skipValue();</span>
+<span class="fc" id="L127">    assertEquals(&quot;two&quot;, reader.nextName());</span>
+<span class="fc" id="L128">    assertEquals(BEGIN_OBJECT, reader.peek());</span>
+<span class="fc" id="L129">    reader.skipValue();</span>
+<span class="fc" id="L130">    assertEquals(&quot;three&quot;, reader.nextName());</span>
+<span class="fc" id="L131">    reader.skipValue();</span>
+<span class="fc" id="L132">    reader.endObject();</span>
+<span class="fc" id="L133">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L134">  }</span>
+
+  public void testSkipInteger() throws IOException {
+<span class="fc" id="L137">    JsonReader reader = new JsonReader(reader(</span>
+        &quot;{\&quot;a\&quot;:123456789,\&quot;b\&quot;:-123456789}&quot;));
+<span class="fc" id="L139">    reader.beginObject();</span>
+<span class="fc" id="L140">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L141">    reader.skipValue();</span>
+<span class="fc" id="L142">    assertEquals(&quot;b&quot;, reader.nextName());</span>
+<span class="fc" id="L143">    reader.skipValue();</span>
+<span class="fc" id="L144">    reader.endObject();</span>
+<span class="fc" id="L145">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L146">  }</span>
+
+  public void testSkipDouble() throws IOException {
+<span class="fc" id="L149">    JsonReader reader = new JsonReader(reader(</span>
+        &quot;{\&quot;a\&quot;:-123.456e-789,\&quot;b\&quot;:123456789.0}&quot;));
+<span class="fc" id="L151">    reader.beginObject();</span>
+<span class="fc" id="L152">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L153">    reader.skipValue();</span>
+<span class="fc" id="L154">    assertEquals(&quot;b&quot;, reader.nextName());</span>
+<span class="fc" id="L155">    reader.skipValue();</span>
+<span class="fc" id="L156">    reader.endObject();</span>
+<span class="fc" id="L157">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L158">  }</span>
+
+  public void testHelloWorld() throws IOException {
+<span class="fc" id="L161">    String json = &quot;{\n&quot; +</span>
+        &quot;   \&quot;hello\&quot;: true,\n&quot; +
+        &quot;   \&quot;foo\&quot;: [\&quot;world\&quot;]\n&quot; +
+        &quot;}&quot;;
+<span class="fc" id="L165">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L166">    reader.beginObject();</span>
+<span class="fc" id="L167">    assertEquals(&quot;hello&quot;, reader.nextName());</span>
+<span class="fc" id="L168">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L169">    assertEquals(&quot;foo&quot;, reader.nextName());</span>
+<span class="fc" id="L170">    reader.beginArray();</span>
+<span class="fc" id="L171">    assertEquals(&quot;world&quot;, reader.nextString());</span>
+<span class="fc" id="L172">    reader.endArray();</span>
+<span class="fc" id="L173">    reader.endObject();</span>
+<span class="fc" id="L174">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L175">  }</span>
+
+  public void testInvalidJsonInput() throws IOException {
+<span class="fc" id="L178">    String json = &quot;{\n&quot;</span>
+        + &quot;   \&quot;h\\ello\&quot;: true,\n&quot;
+        + &quot;   \&quot;foo\&quot;: [\&quot;world\&quot;]\n&quot;
+        + &quot;}&quot;;
+
+<span class="fc" id="L183">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L184">    reader.beginObject();</span>
+    try {
+<span class="nc" id="L186">      reader.nextName();</span>
+<span class="nc" id="L187">      fail();</span>
+<span class="fc" id="L188">    } catch (IOException expected) {</span>
+<span class="nc" id="L189">    }</span>
+<span class="fc" id="L190">  }</span>
+  
+  @SuppressWarnings(&quot;unused&quot;)
+  public void testNulls() {
+    try {
+<span class="nc" id="L195">      new JsonReader(null);</span>
+<span class="nc" id="L196">      fail();</span>
+<span class="fc" id="L197">    } catch (NullPointerException expected) {</span>
+<span class="nc" id="L198">    }</span>
+<span class="fc" id="L199">  }</span>
+
+  public void testEmptyString() {
+    try {
+<span class="nc" id="L203">      new JsonReader(reader(&quot;&quot;)).beginArray();</span>
+<span class="nc" id="L204">      fail();</span>
+<span class="fc" id="L205">    } catch (IOException expected) {</span>
+<span class="nc" id="L206">    }</span>
+    try {
+<span class="nc" id="L208">      new JsonReader(reader(&quot;&quot;)).beginObject();</span>
+<span class="nc" id="L209">      fail();</span>
+<span class="fc" id="L210">    } catch (IOException expected) {</span>
+<span class="nc" id="L211">    }</span>
+<span class="fc" id="L212">  }</span>
+
+  public void testCharacterUnescaping() throws IOException {
+<span class="fc" id="L215">    String json = &quot;[\&quot;a\&quot;,&quot;</span>
+        + &quot;\&quot;a\\\&quot;\&quot;,&quot;
+        + &quot;\&quot;\\\&quot;\&quot;,&quot;
+        + &quot;\&quot;:\&quot;,&quot;
+        + &quot;\&quot;,\&quot;,&quot;
+        + &quot;\&quot;\\b\&quot;,&quot;
+        + &quot;\&quot;\\f\&quot;,&quot;
+        + &quot;\&quot;\\n\&quot;,&quot;
+        + &quot;\&quot;\\r\&quot;,&quot;
+        + &quot;\&quot;\\t\&quot;,&quot;
+        + &quot;\&quot; \&quot;,&quot;
+        + &quot;\&quot;\\\\\&quot;,&quot;
+        + &quot;\&quot;{\&quot;,&quot;
+        + &quot;\&quot;}\&quot;,&quot;
+        + &quot;\&quot;[\&quot;,&quot;
+        + &quot;\&quot;]\&quot;,&quot;
+        + &quot;\&quot;\\u0000\&quot;,&quot;
+        + &quot;\&quot;\\u0019\&quot;,&quot;
+        + &quot;\&quot;\\u20AC\&quot;&quot;
+        + &quot;]&quot;;
+<span class="fc" id="L235">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L236">    reader.beginArray();</span>
+<span class="fc" id="L237">    assertEquals(&quot;a&quot;, reader.nextString());</span>
+<span class="fc" id="L238">    assertEquals(&quot;a\&quot;&quot;, reader.nextString());</span>
+<span class="fc" id="L239">    assertEquals(&quot;\&quot;&quot;, reader.nextString());</span>
+<span class="fc" id="L240">    assertEquals(&quot;:&quot;, reader.nextString());</span>
+<span class="fc" id="L241">    assertEquals(&quot;,&quot;, reader.nextString());</span>
+<span class="fc" id="L242">    assertEquals(&quot;\b&quot;, reader.nextString());</span>
+<span class="fc" id="L243">    assertEquals(&quot;\f&quot;, reader.nextString());</span>
+<span class="fc" id="L244">    assertEquals(&quot;\n&quot;, reader.nextString());</span>
+<span class="fc" id="L245">    assertEquals(&quot;\r&quot;, reader.nextString());</span>
+<span class="fc" id="L246">    assertEquals(&quot;\t&quot;, reader.nextString());</span>
+<span class="fc" id="L247">    assertEquals(&quot; &quot;, reader.nextString());</span>
+<span class="fc" id="L248">    assertEquals(&quot;\\&quot;, reader.nextString());</span>
+<span class="fc" id="L249">    assertEquals(&quot;{&quot;, reader.nextString());</span>
+<span class="fc" id="L250">    assertEquals(&quot;}&quot;, reader.nextString());</span>
+<span class="fc" id="L251">    assertEquals(&quot;[&quot;, reader.nextString());</span>
+<span class="fc" id="L252">    assertEquals(&quot;]&quot;, reader.nextString());</span>
+<span class="fc" id="L253">    assertEquals(&quot;\0&quot;, reader.nextString());</span>
+<span class="fc" id="L254">    assertEquals(&quot;\u0019&quot;, reader.nextString());</span>
+<span class="fc" id="L255">    assertEquals(&quot;\u20AC&quot;, reader.nextString());</span>
+<span class="fc" id="L256">    reader.endArray();</span>
+<span class="fc" id="L257">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L258">  }</span>
+
+  public void testUnescapingInvalidCharacters() throws IOException {
+<span class="fc" id="L261">    String json = &quot;[\&quot;\\u000g\&quot;]&quot;;</span>
+<span class="fc" id="L262">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L263">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L265">      reader.nextString();</span>
+<span class="nc" id="L266">      fail();</span>
+<span class="fc" id="L267">    } catch (NumberFormatException expected) {</span>
+<span class="nc" id="L268">    }</span>
+<span class="fc" id="L269">  }</span>
+
+  public void testUnescapingTruncatedCharacters() throws IOException {
+<span class="fc" id="L272">    String json = &quot;[\&quot;\\u000&quot;;</span>
+<span class="fc" id="L273">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L274">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L276">      reader.nextString();</span>
+<span class="nc" id="L277">      fail();</span>
+<span class="fc" id="L278">    } catch (IOException expected) {</span>
+<span class="nc" id="L279">    }</span>
+<span class="fc" id="L280">  }</span>
+
+  public void testUnescapingTruncatedSequence() throws IOException {
+<span class="fc" id="L283">    String json = &quot;[\&quot;\\&quot;;</span>
+<span class="fc" id="L284">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L285">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L287">      reader.nextString();</span>
+<span class="nc" id="L288">      fail();</span>
+<span class="fc" id="L289">    } catch (IOException expected) {</span>
+<span class="nc" id="L290">    }</span>
+<span class="fc" id="L291">  }</span>
+
+  public void testIntegersWithFractionalPartSpecified() throws IOException {
+<span class="fc" id="L294">    JsonReader reader = new JsonReader(reader(&quot;[1.0,1.0,1.0]&quot;));</span>
+<span class="fc" id="L295">    reader.beginArray();</span>
+<span class="fc" id="L296">    assertEquals(1.0, reader.nextDouble());</span>
+<span class="fc" id="L297">    assertEquals(1, reader.nextInt());</span>
+<span class="fc" id="L298">    assertEquals(1L, reader.nextLong());</span>
+<span class="fc" id="L299">  }</span>
+
+  public void testDoubles() throws IOException {
+<span class="fc" id="L302">    String json = &quot;[-0.0,&quot;</span>
+        + &quot;1.0,&quot;
+        + &quot;1.7976931348623157E308,&quot;
+        + &quot;4.9E-324,&quot;
+        + &quot;0.0,&quot;
+        + &quot;-0.5,&quot;
+        + &quot;2.2250738585072014E-308,&quot;
+        + &quot;3.141592653589793,&quot;
+        + &quot;2.718281828459045]&quot;;
+<span class="fc" id="L311">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L312">    reader.beginArray();</span>
+<span class="fc" id="L313">    assertEquals(-0.0, reader.nextDouble());</span>
+<span class="fc" id="L314">    assertEquals(1.0, reader.nextDouble());</span>
+<span class="fc" id="L315">    assertEquals(1.7976931348623157E308, reader.nextDouble());</span>
+<span class="fc" id="L316">    assertEquals(4.9E-324, reader.nextDouble());</span>
+<span class="fc" id="L317">    assertEquals(0.0, reader.nextDouble());</span>
+<span class="fc" id="L318">    assertEquals(-0.5, reader.nextDouble());</span>
+<span class="fc" id="L319">    assertEquals(2.2250738585072014E-308, reader.nextDouble());</span>
+<span class="fc" id="L320">    assertEquals(3.141592653589793, reader.nextDouble());</span>
+<span class="fc" id="L321">    assertEquals(2.718281828459045, reader.nextDouble());</span>
+<span class="fc" id="L322">    reader.endArray();</span>
+<span class="fc" id="L323">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L324">  }</span>
+
+  public void testStrictNonFiniteDoubles() throws IOException {
+<span class="fc" id="L327">    String json = &quot;[NaN]&quot;;</span>
+<span class="fc" id="L328">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L329">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L331">      reader.nextDouble();</span>
+<span class="nc" id="L332">      fail();</span>
+<span class="fc" id="L333">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L334">    }</span>
+<span class="fc" id="L335">  }</span>
+
+  public void testStrictQuotedNonFiniteDoubles() throws IOException {
+<span class="fc" id="L338">    String json = &quot;[\&quot;NaN\&quot;]&quot;;</span>
+<span class="fc" id="L339">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L340">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L342">      reader.nextDouble();</span>
+<span class="nc" id="L343">      fail();</span>
+<span class="fc" id="L344">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L345">    }</span>
+<span class="fc" id="L346">  }</span>
+
+  public void testLenientNonFiniteDoubles() throws IOException {
+<span class="fc" id="L349">    String json = &quot;[NaN, -Infinity, Infinity]&quot;;</span>
+<span class="fc" id="L350">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L351">    reader.setLenient(true);</span>
+<span class="fc" id="L352">    reader.beginArray();</span>
+<span class="fc" id="L353">    assertTrue(Double.isNaN(reader.nextDouble()));</span>
+<span class="fc" id="L354">    assertEquals(Double.NEGATIVE_INFINITY, reader.nextDouble());</span>
+<span class="fc" id="L355">    assertEquals(Double.POSITIVE_INFINITY, reader.nextDouble());</span>
+<span class="fc" id="L356">    reader.endArray();</span>
+<span class="fc" id="L357">  }</span>
+
+  public void testLenientQuotedNonFiniteDoubles() throws IOException {
+<span class="fc" id="L360">    String json = &quot;[\&quot;NaN\&quot;, \&quot;-Infinity\&quot;, \&quot;Infinity\&quot;]&quot;;</span>
+<span class="fc" id="L361">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L362">    reader.setLenient(true);</span>
+<span class="fc" id="L363">    reader.beginArray();</span>
+<span class="fc" id="L364">    assertTrue(Double.isNaN(reader.nextDouble()));</span>
+<span class="fc" id="L365">    assertEquals(Double.NEGATIVE_INFINITY, reader.nextDouble());</span>
+<span class="fc" id="L366">    assertEquals(Double.POSITIVE_INFINITY, reader.nextDouble());</span>
+<span class="fc" id="L367">    reader.endArray();</span>
+<span class="fc" id="L368">  }</span>
+
+  public void testStrictNonFiniteDoublesWithSkipValue() throws IOException {
+<span class="fc" id="L371">    String json = &quot;[NaN]&quot;;</span>
+<span class="fc" id="L372">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L373">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L375">      reader.skipValue();</span>
+<span class="nc" id="L376">      fail();</span>
+<span class="fc" id="L377">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L378">    }</span>
+<span class="fc" id="L379">  }</span>
+
+  public void testLongs() throws IOException {
+<span class="fc" id="L382">    String json = &quot;[0,0,0,&quot;</span>
+        + &quot;1,1,1,&quot;
+        + &quot;-1,-1,-1,&quot;
+        + &quot;-9223372036854775808,&quot;
+        + &quot;9223372036854775807]&quot;;
+<span class="fc" id="L387">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L388">    reader.beginArray();</span>
+<span class="fc" id="L389">    assertEquals(0L, reader.nextLong());</span>
+<span class="fc" id="L390">    assertEquals(0, reader.nextInt());</span>
+<span class="fc" id="L391">    assertEquals(0.0, reader.nextDouble());</span>
+<span class="fc" id="L392">    assertEquals(1L, reader.nextLong());</span>
+<span class="fc" id="L393">    assertEquals(1, reader.nextInt());</span>
+<span class="fc" id="L394">    assertEquals(1.0, reader.nextDouble());</span>
+<span class="fc" id="L395">    assertEquals(-1L, reader.nextLong());</span>
+<span class="fc" id="L396">    assertEquals(-1, reader.nextInt());</span>
+<span class="fc" id="L397">    assertEquals(-1.0, reader.nextDouble());</span>
+    try {
+<span class="nc" id="L399">      reader.nextInt();</span>
+<span class="nc" id="L400">      fail();</span>
+<span class="fc" id="L401">    } catch (NumberFormatException expected) {</span>
+<span class="nc" id="L402">    }</span>
+<span class="fc" id="L403">    assertEquals(Long.MIN_VALUE, reader.nextLong());</span>
+    try {
+<span class="nc" id="L405">      reader.nextInt();</span>
+<span class="nc" id="L406">      fail();</span>
+<span class="fc" id="L407">    } catch (NumberFormatException expected) {</span>
+<span class="nc" id="L408">    }</span>
+<span class="fc" id="L409">    assertEquals(Long.MAX_VALUE, reader.nextLong());</span>
+<span class="fc" id="L410">    reader.endArray();</span>
+<span class="fc" id="L411">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L412">  }</span>
+
+  public void disabled_testNumberWithOctalPrefix() throws IOException {
+<span class="nc" id="L415">    String json = &quot;[01]&quot;;</span>
+<span class="nc" id="L416">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="nc" id="L417">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L419">      reader.peek();</span>
+<span class="nc" id="L420">      fail();</span>
+<span class="nc" id="L421">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L422">    }</span>
+    try {
+<span class="nc" id="L424">      reader.nextInt();</span>
+<span class="nc" id="L425">      fail();</span>
+<span class="nc" id="L426">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L427">    }</span>
+    try {
+<span class="nc" id="L429">      reader.nextLong();</span>
+<span class="nc" id="L430">      fail();</span>
+<span class="nc" id="L431">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L432">    }</span>
+    try {
+<span class="nc" id="L434">      reader.nextDouble();</span>
+<span class="nc" id="L435">      fail();</span>
+<span class="nc" id="L436">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L437">    }</span>
+<span class="nc" id="L438">    assertEquals(&quot;01&quot;, reader.nextString());</span>
+<span class="nc" id="L439">    reader.endArray();</span>
+<span class="nc" id="L440">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="nc" id="L441">  }</span>
+
+  public void testBooleans() throws IOException {
+<span class="fc" id="L444">    JsonReader reader = new JsonReader(reader(&quot;[true,false]&quot;));</span>
+<span class="fc" id="L445">    reader.beginArray();</span>
+<span class="fc" id="L446">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L447">    assertEquals(false, reader.nextBoolean());</span>
+<span class="fc" id="L448">    reader.endArray();</span>
+<span class="fc" id="L449">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L450">  }</span>
+
+  public void testPeekingUnquotedStringsPrefixedWithBooleans() throws IOException {
+<span class="fc" id="L453">    JsonReader reader = new JsonReader(reader(&quot;[truey]&quot;));</span>
+<span class="fc" id="L454">    reader.setLenient(true);</span>
+<span class="fc" id="L455">    reader.beginArray();</span>
+<span class="fc" id="L456">    assertEquals(STRING, reader.peek());</span>
+    try {
+<span class="nc" id="L458">      reader.nextBoolean();</span>
+<span class="nc" id="L459">      fail();</span>
+<span class="fc" id="L460">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L461">    }</span>
+<span class="fc" id="L462">    assertEquals(&quot;truey&quot;, reader.nextString());</span>
+<span class="fc" id="L463">    reader.endArray();</span>
+<span class="fc" id="L464">  }</span>
+
+  public void testMalformedNumbers() throws IOException {
+<span class="fc" id="L467">    assertNotANumber(&quot;-&quot;);</span>
+<span class="fc" id="L468">    assertNotANumber(&quot;.&quot;);</span>
+
+    // exponent lacks digit
+<span class="fc" id="L471">    assertNotANumber(&quot;e&quot;);</span>
+<span class="fc" id="L472">    assertNotANumber(&quot;0e&quot;);</span>
+<span class="fc" id="L473">    assertNotANumber(&quot;.e&quot;);</span>
+<span class="fc" id="L474">    assertNotANumber(&quot;0.e&quot;);</span>
+<span class="fc" id="L475">    assertNotANumber(&quot;-.0e&quot;);</span>
+
+    // no integer
+<span class="fc" id="L478">    assertNotANumber(&quot;e1&quot;);</span>
+<span class="fc" id="L479">    assertNotANumber(&quot;.e1&quot;);</span>
+<span class="fc" id="L480">    assertNotANumber(&quot;-e1&quot;);</span>
+
+    // trailing characters
+<span class="fc" id="L483">    assertNotANumber(&quot;1x&quot;);</span>
+<span class="fc" id="L484">    assertNotANumber(&quot;1.1x&quot;);</span>
+<span class="fc" id="L485">    assertNotANumber(&quot;1e1x&quot;);</span>
+<span class="fc" id="L486">    assertNotANumber(&quot;1ex&quot;);</span>
+<span class="fc" id="L487">    assertNotANumber(&quot;1.1ex&quot;);</span>
+<span class="fc" id="L488">    assertNotANumber(&quot;1.1e1x&quot;);</span>
+
+    // fraction has no digit
+<span class="fc" id="L491">    assertNotANumber(&quot;0.&quot;);</span>
+<span class="fc" id="L492">    assertNotANumber(&quot;-0.&quot;);</span>
+<span class="fc" id="L493">    assertNotANumber(&quot;0.e1&quot;);</span>
+<span class="fc" id="L494">    assertNotANumber(&quot;-0.e1&quot;);</span>
+
+    // no leading digit
+<span class="fc" id="L497">    assertNotANumber(&quot;.0&quot;);</span>
+<span class="fc" id="L498">    assertNotANumber(&quot;-.0&quot;);</span>
+<span class="fc" id="L499">    assertNotANumber(&quot;.0e1&quot;);</span>
+<span class="fc" id="L500">    assertNotANumber(&quot;-.0e1&quot;);</span>
+<span class="fc" id="L501">  }</span>
+
+  private void assertNotANumber(String s) throws IOException {
+<span class="fc" id="L504">    JsonReader reader = new JsonReader(reader(&quot;[&quot; + s + &quot;]&quot;));</span>
+<span class="fc" id="L505">    reader.setLenient(true);</span>
+<span class="fc" id="L506">    reader.beginArray();</span>
+<span class="fc" id="L507">    assertEquals(JsonToken.STRING, reader.peek());</span>
+<span class="fc" id="L508">    assertEquals(s, reader.nextString());</span>
+<span class="fc" id="L509">    reader.endArray();</span>
+<span class="fc" id="L510">  }</span>
+
+  public void testPeekingUnquotedStringsPrefixedWithIntegers() throws IOException {
+<span class="fc" id="L513">    JsonReader reader = new JsonReader(reader(&quot;[12.34e5x]&quot;));</span>
+<span class="fc" id="L514">    reader.setLenient(true);</span>
+<span class="fc" id="L515">    reader.beginArray();</span>
+<span class="fc" id="L516">    assertEquals(STRING, reader.peek());</span>
+    try {
+<span class="nc" id="L518">      reader.nextInt();</span>
+<span class="nc" id="L519">      fail();</span>
+<span class="fc" id="L520">    } catch (NumberFormatException expected) {</span>
+<span class="nc" id="L521">    }</span>
+<span class="fc" id="L522">    assertEquals(&quot;12.34e5x&quot;, reader.nextString());</span>
+<span class="fc" id="L523">  }</span>
+
+  public void testPeekLongMinValue() throws IOException {
+<span class="fc" id="L526">    JsonReader reader = new JsonReader(reader(&quot;[-9223372036854775808]&quot;));</span>
+<span class="fc" id="L527">    reader.setLenient(true);</span>
+<span class="fc" id="L528">    reader.beginArray();</span>
+<span class="fc" id="L529">    assertEquals(NUMBER, reader.peek());</span>
+<span class="fc" id="L530">    assertEquals(-9223372036854775808L, reader.nextLong());</span>
+<span class="fc" id="L531">  }</span>
+
+  public void testPeekLongMaxValue() throws IOException {
+<span class="fc" id="L534">    JsonReader reader = new JsonReader(reader(&quot;[9223372036854775807]&quot;));</span>
+<span class="fc" id="L535">    reader.setLenient(true);</span>
+<span class="fc" id="L536">    reader.beginArray();</span>
+<span class="fc" id="L537">    assertEquals(NUMBER, reader.peek());</span>
+<span class="fc" id="L538">    assertEquals(9223372036854775807L, reader.nextLong());</span>
+<span class="fc" id="L539">  }</span>
+
+  public void testLongLargerThanMaxLongThatWrapsAround() throws IOException {
+<span class="fc" id="L542">    JsonReader reader = new JsonReader(reader(&quot;[22233720368547758070]&quot;));</span>
+<span class="fc" id="L543">    reader.setLenient(true);</span>
+<span class="fc" id="L544">    reader.beginArray();</span>
+<span class="fc" id="L545">    assertEquals(NUMBER, reader.peek());</span>
+    try {
+<span class="nc" id="L547">      reader.nextLong();</span>
+<span class="nc" id="L548">      fail();</span>
+<span class="fc" id="L549">    } catch (NumberFormatException expected) {</span>
+<span class="nc" id="L550">    }</span>
+<span class="fc" id="L551">  }</span>
+
+  public void testLongLargerThanMinLongThatWrapsAround() throws IOException {
+<span class="fc" id="L554">    JsonReader reader = new JsonReader(reader(&quot;[-22233720368547758070]&quot;));</span>
+<span class="fc" id="L555">    reader.setLenient(true);</span>
+<span class="fc" id="L556">    reader.beginArray();</span>
+<span class="fc" id="L557">    assertEquals(NUMBER, reader.peek());</span>
+    try {
+<span class="nc" id="L559">      reader.nextLong();</span>
+<span class="nc" id="L560">      fail();</span>
+<span class="fc" id="L561">    } catch (NumberFormatException expected) {</span>
+<span class="nc" id="L562">    }</span>
+<span class="fc" id="L563">  }</span>
+  
+  /**
+   * Issue 1053, negative zero.
+   * @throws Exception
+   */
+  public void testNegativeZero() throws Exception {
+<span class="fc" id="L570">	  	JsonReader reader = new JsonReader(reader(&quot;[-0]&quot;));</span>
+<span class="fc" id="L571">	    reader.setLenient(false);</span>
+<span class="fc" id="L572">	    reader.beginArray();</span>
+<span class="fc" id="L573">	    assertEquals(NUMBER, reader.peek());</span>
+<span class="fc" id="L574">	    assertEquals(&quot;-0&quot;, reader.nextString());</span>
+<span class="fc" id="L575">  }</span>
+
+  /**
+   * This test fails because there's no double for 9223372036854775808, and our
+   * long parsing uses Double.parseDouble() for fractional values.
+   */
+  public void disabled_testPeekLargerThanLongMaxValue() throws IOException {
+<span class="nc" id="L582">    JsonReader reader = new JsonReader(reader(&quot;[9223372036854775808]&quot;));</span>
+<span class="nc" id="L583">    reader.setLenient(true);</span>
+<span class="nc" id="L584">    reader.beginArray();</span>
+<span class="nc" id="L585">    assertEquals(NUMBER, reader.peek());</span>
+    try {
+<span class="nc" id="L587">      reader.nextLong();</span>
+<span class="nc" id="L588">      fail();</span>
+<span class="nc" id="L589">    } catch (NumberFormatException e) {</span>
+<span class="nc" id="L590">    }</span>
+<span class="nc" id="L591">  }</span>
+
+  /**
+   * This test fails because there's no double for -9223372036854775809, and our
+   * long parsing uses Double.parseDouble() for fractional values.
+   */
+  public void disabled_testPeekLargerThanLongMinValue() throws IOException {
+<span class="nc" id="L598">    JsonReader reader = new JsonReader(reader(&quot;[-9223372036854775809]&quot;));</span>
+<span class="nc" id="L599">    reader.setLenient(true);</span>
+<span class="nc" id="L600">    reader.beginArray();</span>
+<span class="nc" id="L601">    assertEquals(NUMBER, reader.peek());</span>
+    try {
+<span class="nc" id="L603">      reader.nextLong();</span>
+<span class="nc" id="L604">      fail();</span>
+<span class="nc" id="L605">    } catch (NumberFormatException expected) {</span>
+<span class="nc" id="L606">    }</span>
+<span class="nc" id="L607">    assertEquals(-9223372036854775809d, reader.nextDouble());</span>
+<span class="nc" id="L608">  }</span>
+
+  /**
+   * This test fails because there's no double for 9223372036854775806, and
+   * our long parsing uses Double.parseDouble() for fractional values.
+   */
+  public void disabled_testHighPrecisionLong() throws IOException {
+<span class="nc" id="L615">    String json = &quot;[9223372036854775806.000]&quot;;</span>
+<span class="nc" id="L616">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="nc" id="L617">    reader.beginArray();</span>
+<span class="nc" id="L618">    assertEquals(9223372036854775806L, reader.nextLong());</span>
+<span class="nc" id="L619">    reader.endArray();</span>
+<span class="nc" id="L620">  }</span>
+
+  public void testPeekMuchLargerThanLongMinValue() throws IOException {
+<span class="fc" id="L623">    JsonReader reader = new JsonReader(reader(&quot;[-92233720368547758080]&quot;));</span>
+<span class="fc" id="L624">    reader.setLenient(true);</span>
+<span class="fc" id="L625">    reader.beginArray();</span>
+<span class="fc" id="L626">    assertEquals(NUMBER, reader.peek());</span>
+    try {
+<span class="nc" id="L628">      reader.nextLong();</span>
+<span class="nc" id="L629">      fail();</span>
+<span class="fc" id="L630">    } catch (NumberFormatException expected) {</span>
+<span class="nc" id="L631">    }</span>
+<span class="fc" id="L632">    assertEquals(-92233720368547758080d, reader.nextDouble());</span>
+<span class="fc" id="L633">  }</span>
+
+  public void testQuotedNumberWithEscape() throws IOException {
+<span class="fc" id="L636">    JsonReader reader = new JsonReader(reader(&quot;[\&quot;12\u00334\&quot;]&quot;));</span>
+<span class="fc" id="L637">    reader.setLenient(true);</span>
+<span class="fc" id="L638">    reader.beginArray();</span>
+<span class="fc" id="L639">    assertEquals(STRING, reader.peek());</span>
+<span class="fc" id="L640">    assertEquals(1234, reader.nextInt());</span>
+<span class="fc" id="L641">  }</span>
+
+  public void testMixedCaseLiterals() throws IOException {
+<span class="fc" id="L644">    JsonReader reader = new JsonReader(reader(&quot;[True,TruE,False,FALSE,NULL,nulL]&quot;));</span>
+<span class="fc" id="L645">    reader.beginArray();</span>
+<span class="fc" id="L646">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L647">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L648">    assertEquals(false, reader.nextBoolean());</span>
+<span class="fc" id="L649">    assertEquals(false, reader.nextBoolean());</span>
+<span class="fc" id="L650">    reader.nextNull();</span>
+<span class="fc" id="L651">    reader.nextNull();</span>
+<span class="fc" id="L652">    reader.endArray();</span>
+<span class="fc" id="L653">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L654">  }</span>
+
+  public void testMissingValue() throws IOException {
+<span class="fc" id="L657">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:}&quot;));</span>
+<span class="fc" id="L658">    reader.beginObject();</span>
+<span class="fc" id="L659">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+    try {
+<span class="nc" id="L661">      reader.nextString();</span>
+<span class="nc" id="L662">      fail();</span>
+<span class="fc" id="L663">    } catch (IOException expected) {</span>
+<span class="nc" id="L664">    }</span>
+<span class="fc" id="L665">  }</span>
+
+  public void testPrematureEndOfInput() throws IOException {
+<span class="fc" id="L668">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:true,&quot;));</span>
+<span class="fc" id="L669">    reader.beginObject();</span>
+<span class="fc" id="L670">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L671">    assertEquals(true, reader.nextBoolean());</span>
+    try {
+<span class="nc" id="L673">      reader.nextName();</span>
+<span class="nc" id="L674">      fail();</span>
+<span class="fc" id="L675">    } catch (IOException expected) {</span>
+<span class="nc" id="L676">    }</span>
+<span class="fc" id="L677">  }</span>
+
+  public void testPrematurelyClosed() throws IOException {
+    try {
+<span class="fc" id="L681">      JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:[]}&quot;));</span>
+<span class="fc" id="L682">      reader.beginObject();</span>
+<span class="fc" id="L683">      reader.close();</span>
+<span class="nc" id="L684">      reader.nextName();</span>
+<span class="nc" id="L685">      fail();</span>
+<span class="fc" id="L686">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L687">    }</span>
+
+    try {
+<span class="fc" id="L690">      JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:[]}&quot;));</span>
+<span class="fc" id="L691">      reader.close();</span>
+<span class="nc" id="L692">      reader.beginObject();</span>
+<span class="nc" id="L693">      fail();</span>
+<span class="fc" id="L694">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L695">    }</span>
+
+    try {
+<span class="fc" id="L698">      JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:true}&quot;));</span>
+<span class="fc" id="L699">      reader.beginObject();</span>
+<span class="fc" id="L700">      reader.nextName();</span>
+<span class="fc" id="L701">      reader.peek();</span>
+<span class="fc" id="L702">      reader.close();</span>
+<span class="nc" id="L703">      reader.nextBoolean();</span>
+<span class="nc" id="L704">      fail();</span>
+<span class="fc" id="L705">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L706">    }</span>
+<span class="fc" id="L707">  }</span>
+
+  public void testNextFailuresDoNotAdvance() throws IOException {
+<span class="fc" id="L710">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:true}&quot;));</span>
+<span class="fc" id="L711">    reader.beginObject();</span>
+    try {
+<span class="nc" id="L713">      reader.nextString();</span>
+<span class="nc" id="L714">      fail();</span>
+<span class="fc" id="L715">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L716">    }</span>
+<span class="fc" id="L717">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+    try {
+<span class="nc" id="L719">      reader.nextName();</span>
+<span class="nc" id="L720">      fail();</span>
+<span class="fc" id="L721">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L722">    }</span>
+    try {
+<span class="nc" id="L724">      reader.beginArray();</span>
+<span class="nc" id="L725">      fail();</span>
+<span class="fc" id="L726">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L727">    }</span>
+    try {
+<span class="nc" id="L729">      reader.endArray();</span>
+<span class="nc" id="L730">      fail();</span>
+<span class="fc" id="L731">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L732">    }</span>
+    try {
+<span class="nc" id="L734">      reader.beginObject();</span>
+<span class="nc" id="L735">      fail();</span>
+<span class="fc" id="L736">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L737">    }</span>
+    try {
+<span class="nc" id="L739">      reader.endObject();</span>
+<span class="nc" id="L740">      fail();</span>
+<span class="fc" id="L741">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L742">    }</span>
+<span class="fc" id="L743">    assertEquals(true, reader.nextBoolean());</span>
+    try {
+<span class="nc" id="L745">      reader.nextString();</span>
+<span class="nc" id="L746">      fail();</span>
+<span class="fc" id="L747">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L748">    }</span>
+    try {
+<span class="nc" id="L750">      reader.nextName();</span>
+<span class="nc" id="L751">      fail();</span>
+<span class="fc" id="L752">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L753">    }</span>
+    try {
+<span class="nc" id="L755">      reader.beginArray();</span>
+<span class="nc" id="L756">      fail();</span>
+<span class="fc" id="L757">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L758">    }</span>
+    try {
+<span class="nc" id="L760">      reader.endArray();</span>
+<span class="nc" id="L761">      fail();</span>
+<span class="fc" id="L762">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L763">    }</span>
+<span class="fc" id="L764">    reader.endObject();</span>
+<span class="fc" id="L765">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L766">    reader.close();</span>
+<span class="fc" id="L767">  }</span>
+
+  public void testIntegerMismatchFailuresDoNotAdvance() throws IOException {
+<span class="fc" id="L770">    JsonReader reader = new JsonReader(reader(&quot;[1.5]&quot;));</span>
+<span class="fc" id="L771">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L773">      reader.nextInt();</span>
+<span class="nc" id="L774">      fail();</span>
+<span class="fc" id="L775">    } catch (NumberFormatException expected) {</span>
+<span class="nc" id="L776">    }</span>
+<span class="fc" id="L777">    assertEquals(1.5d, reader.nextDouble());</span>
+<span class="fc" id="L778">    reader.endArray();</span>
+<span class="fc" id="L779">  }</span>
+
+  public void testStringNullIsNotNull() throws IOException {
+<span class="fc" id="L782">    JsonReader reader = new JsonReader(reader(&quot;[\&quot;null\&quot;]&quot;));</span>
+<span class="fc" id="L783">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L785">      reader.nextNull();</span>
+<span class="nc" id="L786">      fail();</span>
+<span class="fc" id="L787">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L788">    }</span>
+<span class="fc" id="L789">  }</span>
+
+  public void testNullLiteralIsNotAString() throws IOException {
+<span class="fc" id="L792">    JsonReader reader = new JsonReader(reader(&quot;[null]&quot;));</span>
+<span class="fc" id="L793">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L795">      reader.nextString();</span>
+<span class="nc" id="L796">      fail();</span>
+<span class="fc" id="L797">    } catch (IllegalStateException expected) {</span>
+<span class="nc" id="L798">    }</span>
+<span class="fc" id="L799">  }</span>
+
+  public void testStrictNameValueSeparator() throws IOException {
+<span class="fc" id="L802">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;=true}&quot;));</span>
+<span class="fc" id="L803">    reader.beginObject();</span>
+<span class="fc" id="L804">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+    try {
+<span class="nc" id="L806">      reader.nextBoolean();</span>
+<span class="nc" id="L807">      fail();</span>
+<span class="fc" id="L808">    } catch (IOException expected) {</span>
+<span class="nc" id="L809">    }</span>
+
+<span class="fc" id="L811">    reader = new JsonReader(reader(&quot;{\&quot;a\&quot;=&gt;true}&quot;));</span>
+<span class="fc" id="L812">    reader.beginObject();</span>
+<span class="fc" id="L813">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+    try {
+<span class="nc" id="L815">      reader.nextBoolean();</span>
+<span class="nc" id="L816">      fail();</span>
+<span class="fc" id="L817">    } catch (IOException expected) {</span>
+<span class="nc" id="L818">    }</span>
+<span class="fc" id="L819">  }</span>
+
+  public void testLenientNameValueSeparator() throws IOException {
+<span class="fc" id="L822">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;=true}&quot;));</span>
+<span class="fc" id="L823">    reader.setLenient(true);</span>
+<span class="fc" id="L824">    reader.beginObject();</span>
+<span class="fc" id="L825">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L826">    assertEquals(true, reader.nextBoolean());</span>
+
+<span class="fc" id="L828">    reader = new JsonReader(reader(&quot;{\&quot;a\&quot;=&gt;true}&quot;));</span>
+<span class="fc" id="L829">    reader.setLenient(true);</span>
+<span class="fc" id="L830">    reader.beginObject();</span>
+<span class="fc" id="L831">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L832">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L833">  }</span>
+
+  public void testStrictNameValueSeparatorWithSkipValue() throws IOException {
+<span class="fc" id="L836">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;=true}&quot;));</span>
+<span class="fc" id="L837">    reader.beginObject();</span>
+<span class="fc" id="L838">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+    try {
+<span class="nc" id="L840">      reader.skipValue();</span>
+<span class="nc" id="L841">      fail();</span>
+<span class="fc" id="L842">    } catch (IOException expected) {</span>
+<span class="nc" id="L843">    }</span>
+
+<span class="fc" id="L845">    reader = new JsonReader(reader(&quot;{\&quot;a\&quot;=&gt;true}&quot;));</span>
+<span class="fc" id="L846">    reader.beginObject();</span>
+<span class="fc" id="L847">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+    try {
+<span class="nc" id="L849">      reader.skipValue();</span>
+<span class="nc" id="L850">      fail();</span>
+<span class="fc" id="L851">    } catch (IOException expected) {</span>
+<span class="nc" id="L852">    }</span>
+<span class="fc" id="L853">  }</span>
+
+  public void testCommentsInStringValue() throws Exception {
+<span class="fc" id="L856">    JsonReader reader = new JsonReader(reader(&quot;[\&quot;// comment\&quot;]&quot;));</span>
+<span class="fc" id="L857">    reader.beginArray();</span>
+<span class="fc" id="L858">    assertEquals(&quot;// comment&quot;, reader.nextString());</span>
+<span class="fc" id="L859">    reader.endArray();</span>
+
+<span class="fc" id="L861">    reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:\&quot;#someComment\&quot;}&quot;));</span>
+<span class="fc" id="L862">    reader.beginObject();</span>
+<span class="fc" id="L863">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L864">    assertEquals(&quot;#someComment&quot;, reader.nextString());</span>
+<span class="fc" id="L865">    reader.endObject();</span>
+
+<span class="fc" id="L867">    reader = new JsonReader(reader(&quot;{\&quot;#//a\&quot;:\&quot;#some //Comment\&quot;}&quot;));</span>
+<span class="fc" id="L868">    reader.beginObject();</span>
+<span class="fc" id="L869">    assertEquals(&quot;#//a&quot;, reader.nextName());</span>
+<span class="fc" id="L870">    assertEquals(&quot;#some //Comment&quot;, reader.nextString());</span>
+<span class="fc" id="L871">    reader.endObject();</span>
+<span class="fc" id="L872">  }</span>
+
+  public void testStrictComments() throws IOException {
+<span class="fc" id="L875">    JsonReader reader = new JsonReader(reader(&quot;[// comment \n true]&quot;));</span>
+<span class="fc" id="L876">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L878">      reader.nextBoolean();</span>
+<span class="nc" id="L879">      fail();</span>
+<span class="fc" id="L880">    } catch (IOException expected) {</span>
+<span class="nc" id="L881">    }</span>
+
+<span class="fc" id="L883">    reader = new JsonReader(reader(&quot;[# comment \n true]&quot;));</span>
+<span class="fc" id="L884">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L886">      reader.nextBoolean();</span>
+<span class="nc" id="L887">      fail();</span>
+<span class="fc" id="L888">    } catch (IOException expected) {</span>
+<span class="nc" id="L889">    }</span>
+
+<span class="fc" id="L891">    reader = new JsonReader(reader(&quot;[/* comment */ true]&quot;));</span>
+<span class="fc" id="L892">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L894">      reader.nextBoolean();</span>
+<span class="nc" id="L895">      fail();</span>
+<span class="fc" id="L896">    } catch (IOException expected) {</span>
+<span class="nc" id="L897">    }</span>
+<span class="fc" id="L898">  }</span>
+
+  public void testLenientComments() throws IOException {
+<span class="fc" id="L901">    JsonReader reader = new JsonReader(reader(&quot;[// comment \n true]&quot;));</span>
+<span class="fc" id="L902">    reader.setLenient(true);</span>
+<span class="fc" id="L903">    reader.beginArray();</span>
+<span class="fc" id="L904">    assertEquals(true, reader.nextBoolean());</span>
+
+<span class="fc" id="L906">    reader = new JsonReader(reader(&quot;[# comment \n true]&quot;));</span>
+<span class="fc" id="L907">    reader.setLenient(true);</span>
+<span class="fc" id="L908">    reader.beginArray();</span>
+<span class="fc" id="L909">    assertEquals(true, reader.nextBoolean());</span>
+
+<span class="fc" id="L911">    reader = new JsonReader(reader(&quot;[/* comment */ true]&quot;));</span>
+<span class="fc" id="L912">    reader.setLenient(true);</span>
+<span class="fc" id="L913">    reader.beginArray();</span>
+<span class="fc" id="L914">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L915">  }</span>
+
+  public void testStrictCommentsWithSkipValue() throws IOException {
+<span class="fc" id="L918">    JsonReader reader = new JsonReader(reader(&quot;[// comment \n true]&quot;));</span>
+<span class="fc" id="L919">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L921">      reader.skipValue();</span>
+<span class="nc" id="L922">      fail();</span>
+<span class="fc" id="L923">    } catch (IOException expected) {</span>
+<span class="nc" id="L924">    }</span>
+
+<span class="fc" id="L926">    reader = new JsonReader(reader(&quot;[# comment \n true]&quot;));</span>
+<span class="fc" id="L927">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L929">      reader.skipValue();</span>
+<span class="nc" id="L930">      fail();</span>
+<span class="fc" id="L931">    } catch (IOException expected) {</span>
+<span class="nc" id="L932">    }</span>
+
+<span class="fc" id="L934">    reader = new JsonReader(reader(&quot;[/* comment */ true]&quot;));</span>
+<span class="fc" id="L935">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L937">      reader.skipValue();</span>
+<span class="nc" id="L938">      fail();</span>
+<span class="fc" id="L939">    } catch (IOException expected) {</span>
+<span class="nc" id="L940">    }</span>
+<span class="fc" id="L941">  }</span>
+
+  public void testStrictUnquotedNames() throws IOException {
+<span class="fc" id="L944">    JsonReader reader = new JsonReader(reader(&quot;{a:true}&quot;));</span>
+<span class="fc" id="L945">    reader.beginObject();</span>
+    try {
+<span class="nc" id="L947">      reader.nextName();</span>
+<span class="nc" id="L948">      fail();</span>
+<span class="fc" id="L949">    } catch (IOException expected) {</span>
+<span class="nc" id="L950">    }</span>
+<span class="fc" id="L951">  }</span>
+
+  public void testLenientUnquotedNames() throws IOException {
+<span class="fc" id="L954">    JsonReader reader = new JsonReader(reader(&quot;{a:true}&quot;));</span>
+<span class="fc" id="L955">    reader.setLenient(true);</span>
+<span class="fc" id="L956">    reader.beginObject();</span>
+<span class="fc" id="L957">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L958">  }</span>
+
+  public void testStrictUnquotedNamesWithSkipValue() throws IOException {
+<span class="fc" id="L961">    JsonReader reader = new JsonReader(reader(&quot;{a:true}&quot;));</span>
+<span class="fc" id="L962">    reader.beginObject();</span>
+    try {
+<span class="nc" id="L964">      reader.skipValue();</span>
+<span class="nc" id="L965">      fail();</span>
+<span class="fc" id="L966">    } catch (IOException expected) {</span>
+<span class="nc" id="L967">    }</span>
+<span class="fc" id="L968">  }</span>
+
+  public void testStrictSingleQuotedNames() throws IOException {
+<span class="fc" id="L971">    JsonReader reader = new JsonReader(reader(&quot;{'a':true}&quot;));</span>
+<span class="fc" id="L972">    reader.beginObject();</span>
+    try {
+<span class="nc" id="L974">      reader.nextName();</span>
+<span class="nc" id="L975">      fail();</span>
+<span class="fc" id="L976">    } catch (IOException expected) {</span>
+<span class="nc" id="L977">    }</span>
+<span class="fc" id="L978">  }</span>
+
+  public void testLenientSingleQuotedNames() throws IOException {
+<span class="fc" id="L981">    JsonReader reader = new JsonReader(reader(&quot;{'a':true}&quot;));</span>
+<span class="fc" id="L982">    reader.setLenient(true);</span>
+<span class="fc" id="L983">    reader.beginObject();</span>
+<span class="fc" id="L984">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L985">  }</span>
+
+  public void testStrictSingleQuotedNamesWithSkipValue() throws IOException {
+<span class="fc" id="L988">    JsonReader reader = new JsonReader(reader(&quot;{'a':true}&quot;));</span>
+<span class="fc" id="L989">    reader.beginObject();</span>
+    try {
+<span class="nc" id="L991">      reader.skipValue();</span>
+<span class="nc" id="L992">      fail();</span>
+<span class="fc" id="L993">    } catch (IOException expected) {</span>
+<span class="nc" id="L994">    }</span>
+<span class="fc" id="L995">  }</span>
+
+  public void testStrictUnquotedStrings() throws IOException {
+<span class="fc" id="L998">    JsonReader reader = new JsonReader(reader(&quot;[a]&quot;));</span>
+<span class="fc" id="L999">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1001">      reader.nextString();</span>
+<span class="nc" id="L1002">      fail();</span>
+<span class="fc" id="L1003">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L1004">    }</span>
+<span class="fc" id="L1005">  }</span>
+
+  public void testStrictUnquotedStringsWithSkipValue() throws IOException {
+<span class="fc" id="L1008">    JsonReader reader = new JsonReader(reader(&quot;[a]&quot;));</span>
+<span class="fc" id="L1009">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1011">      reader.skipValue();</span>
+<span class="nc" id="L1012">      fail();</span>
+<span class="fc" id="L1013">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L1014">    }</span>
+<span class="fc" id="L1015">  }</span>
+
+  public void testLenientUnquotedStrings() throws IOException {
+<span class="fc" id="L1018">    JsonReader reader = new JsonReader(reader(&quot;[a]&quot;));</span>
+<span class="fc" id="L1019">    reader.setLenient(true);</span>
+<span class="fc" id="L1020">    reader.beginArray();</span>
+<span class="fc" id="L1021">    assertEquals(&quot;a&quot;, reader.nextString());</span>
+<span class="fc" id="L1022">  }</span>
+
+  public void testStrictSingleQuotedStrings() throws IOException {
+<span class="fc" id="L1025">    JsonReader reader = new JsonReader(reader(&quot;['a']&quot;));</span>
+<span class="fc" id="L1026">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1028">      reader.nextString();</span>
+<span class="nc" id="L1029">      fail();</span>
+<span class="fc" id="L1030">    } catch (IOException expected) {</span>
+<span class="nc" id="L1031">    }</span>
+<span class="fc" id="L1032">  }</span>
+
+  public void testLenientSingleQuotedStrings() throws IOException {
+<span class="fc" id="L1035">    JsonReader reader = new JsonReader(reader(&quot;['a']&quot;));</span>
+<span class="fc" id="L1036">    reader.setLenient(true);</span>
+<span class="fc" id="L1037">    reader.beginArray();</span>
+<span class="fc" id="L1038">    assertEquals(&quot;a&quot;, reader.nextString());</span>
+<span class="fc" id="L1039">  }</span>
+
+  public void testStrictSingleQuotedStringsWithSkipValue() throws IOException {
+<span class="fc" id="L1042">    JsonReader reader = new JsonReader(reader(&quot;['a']&quot;));</span>
+<span class="fc" id="L1043">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1045">      reader.skipValue();</span>
+<span class="nc" id="L1046">      fail();</span>
+<span class="fc" id="L1047">    } catch (IOException expected) {</span>
+<span class="nc" id="L1048">    }</span>
+<span class="fc" id="L1049">  }</span>
+
+  public void testStrictSemicolonDelimitedArray() throws IOException {
+<span class="fc" id="L1052">    JsonReader reader = new JsonReader(reader(&quot;[true;true]&quot;));</span>
+<span class="fc" id="L1053">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1055">      reader.nextBoolean();</span>
+<span class="nc" id="L1056">      reader.nextBoolean();</span>
+<span class="nc" id="L1057">      fail();</span>
+<span class="fc" id="L1058">    } catch (IOException expected) {</span>
+<span class="nc" id="L1059">    }</span>
+<span class="fc" id="L1060">  }</span>
+
+  public void testLenientSemicolonDelimitedArray() throws IOException {
+<span class="fc" id="L1063">    JsonReader reader = new JsonReader(reader(&quot;[true;true]&quot;));</span>
+<span class="fc" id="L1064">    reader.setLenient(true);</span>
+<span class="fc" id="L1065">    reader.beginArray();</span>
+<span class="fc" id="L1066">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L1067">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L1068">  }</span>
+
+  public void testStrictSemicolonDelimitedArrayWithSkipValue() throws IOException {
+<span class="fc" id="L1071">    JsonReader reader = new JsonReader(reader(&quot;[true;true]&quot;));</span>
+<span class="fc" id="L1072">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1074">      reader.skipValue();</span>
+<span class="nc" id="L1075">      reader.skipValue();</span>
+<span class="nc" id="L1076">      fail();</span>
+<span class="fc" id="L1077">    } catch (IOException expected) {</span>
+<span class="nc" id="L1078">    }</span>
+<span class="fc" id="L1079">  }</span>
+
+  public void testStrictSemicolonDelimitedNameValuePair() throws IOException {
+<span class="fc" id="L1082">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:true;\&quot;b\&quot;:true}&quot;));</span>
+<span class="fc" id="L1083">    reader.beginObject();</span>
+<span class="fc" id="L1084">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+    try {
+<span class="nc" id="L1086">      reader.nextBoolean();</span>
+<span class="nc" id="L1087">      reader.nextName();</span>
+<span class="nc" id="L1088">      fail();</span>
+<span class="fc" id="L1089">    } catch (IOException expected) {</span>
+<span class="nc" id="L1090">    }</span>
+<span class="fc" id="L1091">  }</span>
+
+  public void testLenientSemicolonDelimitedNameValuePair() throws IOException {
+<span class="fc" id="L1094">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:true;\&quot;b\&quot;:true}&quot;));</span>
+<span class="fc" id="L1095">    reader.setLenient(true);</span>
+<span class="fc" id="L1096">    reader.beginObject();</span>
+<span class="fc" id="L1097">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L1098">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L1099">    assertEquals(&quot;b&quot;, reader.nextName());</span>
+<span class="fc" id="L1100">  }</span>
+
+  public void testStrictSemicolonDelimitedNameValuePairWithSkipValue() throws IOException {
+<span class="fc" id="L1103">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:true;\&quot;b\&quot;:true}&quot;));</span>
+<span class="fc" id="L1104">    reader.beginObject();</span>
+<span class="fc" id="L1105">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+    try {
+<span class="nc" id="L1107">      reader.skipValue();</span>
+<span class="nc" id="L1108">      reader.skipValue();</span>
+<span class="nc" id="L1109">      fail();</span>
+<span class="fc" id="L1110">    } catch (IOException expected) {</span>
+<span class="nc" id="L1111">    }</span>
+<span class="fc" id="L1112">  }</span>
+
+  public void testStrictUnnecessaryArraySeparators() throws IOException {
+<span class="fc" id="L1115">    JsonReader reader = new JsonReader(reader(&quot;[true,,true]&quot;));</span>
+<span class="fc" id="L1116">    reader.beginArray();</span>
+<span class="fc" id="L1117">    assertEquals(true, reader.nextBoolean());</span>
+    try {
+<span class="nc" id="L1119">      reader.nextNull();</span>
+<span class="nc" id="L1120">      fail();</span>
+<span class="fc" id="L1121">    } catch (IOException expected) {</span>
+<span class="nc" id="L1122">    }</span>
+
+<span class="fc" id="L1124">    reader = new JsonReader(reader(&quot;[,true]&quot;));</span>
+<span class="fc" id="L1125">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1127">      reader.nextNull();</span>
+<span class="nc" id="L1128">      fail();</span>
+<span class="fc" id="L1129">    } catch (IOException expected) {</span>
+<span class="nc" id="L1130">    }</span>
+
+<span class="fc" id="L1132">    reader = new JsonReader(reader(&quot;[true,]&quot;));</span>
+<span class="fc" id="L1133">    reader.beginArray();</span>
+<span class="fc" id="L1134">    assertEquals(true, reader.nextBoolean());</span>
+    try {
+<span class="nc" id="L1136">      reader.nextNull();</span>
+<span class="nc" id="L1137">      fail();</span>
+<span class="fc" id="L1138">    } catch (IOException expected) {</span>
+<span class="nc" id="L1139">    }</span>
+
+<span class="fc" id="L1141">    reader = new JsonReader(reader(&quot;[,]&quot;));</span>
+<span class="fc" id="L1142">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1144">      reader.nextNull();</span>
+<span class="nc" id="L1145">      fail();</span>
+<span class="fc" id="L1146">    } catch (IOException expected) {</span>
+<span class="nc" id="L1147">    }</span>
+<span class="fc" id="L1148">  }</span>
+
+  public void testLenientUnnecessaryArraySeparators() throws IOException {
+<span class="fc" id="L1151">    JsonReader reader = new JsonReader(reader(&quot;[true,,true]&quot;));</span>
+<span class="fc" id="L1152">    reader.setLenient(true);</span>
+<span class="fc" id="L1153">    reader.beginArray();</span>
+<span class="fc" id="L1154">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L1155">    reader.nextNull();</span>
+<span class="fc" id="L1156">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L1157">    reader.endArray();</span>
+
+<span class="fc" id="L1159">    reader = new JsonReader(reader(&quot;[,true]&quot;));</span>
+<span class="fc" id="L1160">    reader.setLenient(true);</span>
+<span class="fc" id="L1161">    reader.beginArray();</span>
+<span class="fc" id="L1162">    reader.nextNull();</span>
+<span class="fc" id="L1163">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L1164">    reader.endArray();</span>
+
+<span class="fc" id="L1166">    reader = new JsonReader(reader(&quot;[true,]&quot;));</span>
+<span class="fc" id="L1167">    reader.setLenient(true);</span>
+<span class="fc" id="L1168">    reader.beginArray();</span>
+<span class="fc" id="L1169">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L1170">    reader.nextNull();</span>
+<span class="fc" id="L1171">    reader.endArray();</span>
+
+<span class="fc" id="L1173">    reader = new JsonReader(reader(&quot;[,]&quot;));</span>
+<span class="fc" id="L1174">    reader.setLenient(true);</span>
+<span class="fc" id="L1175">    reader.beginArray();</span>
+<span class="fc" id="L1176">    reader.nextNull();</span>
+<span class="fc" id="L1177">    reader.nextNull();</span>
+<span class="fc" id="L1178">    reader.endArray();</span>
+<span class="fc" id="L1179">  }</span>
+
+  public void testStrictUnnecessaryArraySeparatorsWithSkipValue() throws IOException {
+<span class="fc" id="L1182">    JsonReader reader = new JsonReader(reader(&quot;[true,,true]&quot;));</span>
+<span class="fc" id="L1183">    reader.beginArray();</span>
+<span class="fc" id="L1184">    assertEquals(true, reader.nextBoolean());</span>
+    try {
+<span class="nc" id="L1186">      reader.skipValue();</span>
+<span class="nc" id="L1187">      fail();</span>
+<span class="fc" id="L1188">    } catch (IOException expected) {</span>
+<span class="nc" id="L1189">    }</span>
+
+<span class="fc" id="L1191">    reader = new JsonReader(reader(&quot;[,true]&quot;));</span>
+<span class="fc" id="L1192">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1194">      reader.skipValue();</span>
+<span class="nc" id="L1195">      fail();</span>
+<span class="fc" id="L1196">    } catch (IOException expected) {</span>
+<span class="nc" id="L1197">    }</span>
+
+<span class="fc" id="L1199">    reader = new JsonReader(reader(&quot;[true,]&quot;));</span>
+<span class="fc" id="L1200">    reader.beginArray();</span>
+<span class="fc" id="L1201">    assertEquals(true, reader.nextBoolean());</span>
+    try {
+<span class="nc" id="L1203">      reader.skipValue();</span>
+<span class="nc" id="L1204">      fail();</span>
+<span class="fc" id="L1205">    } catch (IOException expected) {</span>
+<span class="nc" id="L1206">    }</span>
+
+<span class="fc" id="L1208">    reader = new JsonReader(reader(&quot;[,]&quot;));</span>
+<span class="fc" id="L1209">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1211">      reader.skipValue();</span>
+<span class="nc" id="L1212">      fail();</span>
+<span class="fc" id="L1213">    } catch (IOException expected) {</span>
+<span class="nc" id="L1214">    }</span>
+<span class="fc" id="L1215">  }</span>
+
+  public void testStrictMultipleTopLevelValues() throws IOException {
+<span class="fc" id="L1218">    JsonReader reader = new JsonReader(reader(&quot;[] []&quot;));</span>
+<span class="fc" id="L1219">    reader.beginArray();</span>
+<span class="fc" id="L1220">    reader.endArray();</span>
+    try {
+<span class="nc" id="L1222">      reader.peek();</span>
+<span class="nc" id="L1223">      fail();</span>
+<span class="fc" id="L1224">    } catch (IOException expected) {</span>
+<span class="nc" id="L1225">    }</span>
+<span class="fc" id="L1226">  }</span>
+
+  public void testLenientMultipleTopLevelValues() throws IOException {
+<span class="fc" id="L1229">    JsonReader reader = new JsonReader(reader(&quot;[] true {}&quot;));</span>
+<span class="fc" id="L1230">    reader.setLenient(true);</span>
+<span class="fc" id="L1231">    reader.beginArray();</span>
+<span class="fc" id="L1232">    reader.endArray();</span>
+<span class="fc" id="L1233">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L1234">    reader.beginObject();</span>
+<span class="fc" id="L1235">    reader.endObject();</span>
+<span class="fc" id="L1236">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L1237">  }</span>
+
+  public void testStrictMultipleTopLevelValuesWithSkipValue() throws IOException {
+<span class="fc" id="L1240">    JsonReader reader = new JsonReader(reader(&quot;[] []&quot;));</span>
+<span class="fc" id="L1241">    reader.beginArray();</span>
+<span class="fc" id="L1242">    reader.endArray();</span>
+    try {
+<span class="nc" id="L1244">      reader.skipValue();</span>
+<span class="nc" id="L1245">      fail();</span>
+<span class="fc" id="L1246">    } catch (IOException expected) {</span>
+<span class="nc" id="L1247">    }</span>
+<span class="fc" id="L1248">  }</span>
+
+  public void testTopLevelValueTypes() throws IOException {
+<span class="fc" id="L1251">    JsonReader reader1 = new JsonReader(reader(&quot;true&quot;));</span>
+<span class="fc" id="L1252">    assertTrue(reader1.nextBoolean());</span>
+<span class="fc" id="L1253">    assertEquals(JsonToken.END_DOCUMENT, reader1.peek());</span>
+
+<span class="fc" id="L1255">    JsonReader reader2 = new JsonReader(reader(&quot;false&quot;));</span>
+<span class="fc" id="L1256">    assertFalse(reader2.nextBoolean());</span>
+<span class="fc" id="L1257">    assertEquals(JsonToken.END_DOCUMENT, reader2.peek());</span>
+
+<span class="fc" id="L1259">    JsonReader reader3 = new JsonReader(reader(&quot;null&quot;));</span>
+<span class="fc" id="L1260">    assertEquals(JsonToken.NULL, reader3.peek());</span>
+<span class="fc" id="L1261">    reader3.nextNull();</span>
+<span class="fc" id="L1262">    assertEquals(JsonToken.END_DOCUMENT, reader3.peek());</span>
+
+<span class="fc" id="L1264">    JsonReader reader4 = new JsonReader(reader(&quot;123&quot;));</span>
+<span class="fc" id="L1265">    assertEquals(123, reader4.nextInt());</span>
+<span class="fc" id="L1266">    assertEquals(JsonToken.END_DOCUMENT, reader4.peek());</span>
+
+<span class="fc" id="L1268">    JsonReader reader5 = new JsonReader(reader(&quot;123.4&quot;));</span>
+<span class="fc" id="L1269">    assertEquals(123.4, reader5.nextDouble());</span>
+<span class="fc" id="L1270">    assertEquals(JsonToken.END_DOCUMENT, reader5.peek());</span>
+
+<span class="fc" id="L1272">    JsonReader reader6 = new JsonReader(reader(&quot;\&quot;a\&quot;&quot;));</span>
+<span class="fc" id="L1273">    assertEquals(&quot;a&quot;, reader6.nextString());</span>
+<span class="fc" id="L1274">    assertEquals(JsonToken.END_DOCUMENT, reader6.peek());</span>
+<span class="fc" id="L1275">  }</span>
+
+  public void testTopLevelValueTypeWithSkipValue() throws IOException {
+<span class="fc" id="L1278">    JsonReader reader = new JsonReader(reader(&quot;true&quot;));</span>
+<span class="fc" id="L1279">    reader.skipValue();</span>
+<span class="fc" id="L1280">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L1281">  }</span>
+
+  public void testStrictNonExecutePrefix() {
+<span class="fc" id="L1284">    JsonReader reader = new JsonReader(reader(&quot;)]}'\n []&quot;));</span>
+    try {
+<span class="nc" id="L1286">      reader.beginArray();</span>
+<span class="nc" id="L1287">      fail();</span>
+<span class="fc" id="L1288">    } catch (IOException expected) {</span>
+<span class="nc" id="L1289">    }</span>
+<span class="fc" id="L1290">  }</span>
+
+  public void testStrictNonExecutePrefixWithSkipValue() {
+<span class="fc" id="L1293">    JsonReader reader = new JsonReader(reader(&quot;)]}'\n []&quot;));</span>
+    try {
+<span class="nc" id="L1295">      reader.skipValue();</span>
+<span class="nc" id="L1296">      fail();</span>
+<span class="fc" id="L1297">    } catch (IOException expected) {</span>
+<span class="nc" id="L1298">    }</span>
+<span class="fc" id="L1299">  }</span>
+
+  public void testLenientNonExecutePrefix() throws IOException {
+<span class="fc" id="L1302">    JsonReader reader = new JsonReader(reader(&quot;)]}'\n []&quot;));</span>
+<span class="fc" id="L1303">    reader.setLenient(true);</span>
+<span class="fc" id="L1304">    reader.beginArray();</span>
+<span class="fc" id="L1305">    reader.endArray();</span>
+<span class="fc" id="L1306">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L1307">  }</span>
+
+  public void testLenientNonExecutePrefixWithLeadingWhitespace() throws IOException {
+<span class="fc" id="L1310">    JsonReader reader = new JsonReader(reader(&quot;\r\n \t)]}'\n []&quot;));</span>
+<span class="fc" id="L1311">    reader.setLenient(true);</span>
+<span class="fc" id="L1312">    reader.beginArray();</span>
+<span class="fc" id="L1313">    reader.endArray();</span>
+<span class="fc" id="L1314">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L1315">  }</span>
+
+  public void testLenientPartialNonExecutePrefix() {
+<span class="fc" id="L1318">    JsonReader reader = new JsonReader(reader(&quot;)]}' []&quot;));</span>
+<span class="fc" id="L1319">    reader.setLenient(true);</span>
+    try {
+<span class="fc" id="L1321">      assertEquals(&quot;)&quot;, reader.nextString());</span>
+<span class="nc" id="L1322">      reader.nextString();</span>
+<span class="nc" id="L1323">      fail();</span>
+<span class="fc" id="L1324">    } catch (IOException expected) {</span>
+<span class="nc" id="L1325">    }</span>
+<span class="fc" id="L1326">  }</span>
+
+  public void testBomIgnoredAsFirstCharacterOfDocument() throws IOException {
+<span class="fc" id="L1329">    JsonReader reader = new JsonReader(reader(&quot;\ufeff[]&quot;));</span>
+<span class="fc" id="L1330">    reader.beginArray();</span>
+<span class="fc" id="L1331">    reader.endArray();</span>
+<span class="fc" id="L1332">  }</span>
+
+  public void testBomForbiddenAsOtherCharacterInDocument() throws IOException {
+<span class="fc" id="L1335">    JsonReader reader = new JsonReader(reader(&quot;[\ufeff]&quot;));</span>
+<span class="fc" id="L1336">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1338">      reader.endArray();</span>
+<span class="nc" id="L1339">      fail();</span>
+<span class="fc" id="L1340">    } catch (IOException expected) {</span>
+<span class="nc" id="L1341">    }</span>
+<span class="fc" id="L1342">  }</span>
+
+  public void testFailWithPosition() throws IOException {
+<span class="fc" id="L1345">    testFailWithPosition(&quot;Expected value at line 6 column 5 path $[1]&quot;,</span>
+        &quot;[\n\n\n\n\n\&quot;a\&quot;,}]&quot;);
+<span class="fc" id="L1347">  }</span>
+
+  public void testFailWithPositionGreaterThanBufferSize() throws IOException {
+<span class="fc" id="L1350">    String spaces = repeat(' ', 8192);</span>
+<span class="fc" id="L1351">    testFailWithPosition(&quot;Expected value at line 6 column 5 path $[1]&quot;,</span>
+        &quot;[\n\n&quot; + spaces + &quot;\n\n\n\&quot;a\&quot;,}]&quot;);
+<span class="fc" id="L1353">  }</span>
+
+  public void testFailWithPositionOverSlashSlashEndOfLineComment() throws IOException {
+<span class="fc" id="L1356">    testFailWithPosition(&quot;Expected value at line 5 column 6 path $[1]&quot;,</span>
+        &quot;\n// foo\n\n//bar\r\n[\&quot;a\&quot;,}&quot;);
+<span class="fc" id="L1358">  }</span>
+
+  public void testFailWithPositionOverHashEndOfLineComment() throws IOException {
+<span class="fc" id="L1361">    testFailWithPosition(&quot;Expected value at line 5 column 6 path $[1]&quot;,</span>
+        &quot;\n# foo\n\n#bar\r\n[\&quot;a\&quot;,}&quot;);
+<span class="fc" id="L1363">  }</span>
+
+  public void testFailWithPositionOverCStyleComment() throws IOException {
+<span class="fc" id="L1366">    testFailWithPosition(&quot;Expected value at line 6 column 12 path $[1]&quot;,</span>
+        &quot;\n\n/* foo\n*\n*\r\nbar */[\&quot;a\&quot;,}&quot;);
+<span class="fc" id="L1368">  }</span>
+
+  public void testFailWithPositionOverQuotedString() throws IOException {
+<span class="fc" id="L1371">    testFailWithPosition(&quot;Expected value at line 5 column 3 path $[1]&quot;,</span>
+        &quot;[\&quot;foo\nbar\r\nbaz\n\&quot;,\n  }&quot;);
+<span class="fc" id="L1373">  }</span>
+
+  public void testFailWithPositionOverUnquotedString() throws IOException {
+<span class="fc" id="L1376">    testFailWithPosition(&quot;Expected value at line 5 column 2 path $[1]&quot;, &quot;[\n\nabcd\n\n,}&quot;);</span>
+<span class="fc" id="L1377">  }</span>
+
+  public void testFailWithEscapedNewlineCharacter() throws IOException {
+<span class="fc" id="L1380">    testFailWithPosition(&quot;Expected value at line 5 column 3 path $[1]&quot;, &quot;[\n\n\&quot;\\\n\n\&quot;,}&quot;);</span>
+<span class="fc" id="L1381">  }</span>
+
+  public void testFailWithPositionIsOffsetByBom() throws IOException {
+<span class="fc" id="L1384">    testFailWithPosition(&quot;Expected value at line 1 column 6 path $[1]&quot;,</span>
+        &quot;\ufeff[\&quot;a\&quot;,}]&quot;);
+<span class="fc" id="L1386">  }</span>
+
+  private void testFailWithPosition(String message, String json) throws IOException {
+    // Validate that it works reading the string normally.
+<span class="fc" id="L1390">    JsonReader reader1 = new JsonReader(reader(json));</span>
+<span class="fc" id="L1391">    reader1.setLenient(true);</span>
+<span class="fc" id="L1392">    reader1.beginArray();</span>
+<span class="fc" id="L1393">    reader1.nextString();</span>
+    try {
+<span class="nc" id="L1395">      reader1.peek();</span>
+<span class="nc" id="L1396">      fail();</span>
+<span class="fc" id="L1397">    } catch (IOException expected) {</span>
+<span class="fc" id="L1398">      assertEquals(message, expected.getMessage());</span>
+<span class="nc" id="L1399">    }</span>
+
+    // Also validate that it works when skipping.
+<span class="fc" id="L1402">    JsonReader reader2 = new JsonReader(reader(json));</span>
+<span class="fc" id="L1403">    reader2.setLenient(true);</span>
+<span class="fc" id="L1404">    reader2.beginArray();</span>
+<span class="fc" id="L1405">    reader2.skipValue();</span>
+    try {
+<span class="nc" id="L1407">      reader2.peek();</span>
+<span class="nc" id="L1408">      fail();</span>
+<span class="fc" id="L1409">    } catch (IOException expected) {</span>
+<span class="fc" id="L1410">      assertEquals(message, expected.getMessage());</span>
+<span class="nc" id="L1411">    }</span>
+<span class="fc" id="L1412">  }</span>
+
+  public void testFailWithPositionDeepPath() throws IOException {
+<span class="fc" id="L1415">    JsonReader reader = new JsonReader(reader(&quot;[1,{\&quot;a\&quot;:[2,3,}&quot;));</span>
+<span class="fc" id="L1416">    reader.beginArray();</span>
+<span class="fc" id="L1417">    reader.nextInt();</span>
+<span class="fc" id="L1418">    reader.beginObject();</span>
+<span class="fc" id="L1419">    reader.nextName();</span>
+<span class="fc" id="L1420">    reader.beginArray();</span>
+<span class="fc" id="L1421">    reader.nextInt();</span>
+<span class="fc" id="L1422">    reader.nextInt();</span>
+    try {
+<span class="nc" id="L1424">      reader.peek();</span>
+<span class="nc" id="L1425">      fail();</span>
+<span class="fc" id="L1426">    } catch (IOException expected) {</span>
+<span class="fc" id="L1427">      assertEquals(&quot;Expected value at line 1 column 14 path $[1].a[2]&quot;, expected.getMessage());</span>
+<span class="nc" id="L1428">    }</span>
+<span class="fc" id="L1429">  }</span>
+
+  public void testStrictVeryLongNumber() throws IOException {
+<span class="fc" id="L1432">    JsonReader reader = new JsonReader(reader(&quot;[0.&quot; + repeat('9', 8192) + &quot;]&quot;));</span>
+<span class="fc" id="L1433">    reader.beginArray();</span>
+    try {
+<span class="nc" id="L1435">      assertEquals(1d, reader.nextDouble());</span>
+<span class="nc" id="L1436">      fail();</span>
+<span class="fc" id="L1437">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L1438">    }</span>
+<span class="fc" id="L1439">  }</span>
+
+  public void testLenientVeryLongNumber() throws IOException {
+<span class="fc" id="L1442">    JsonReader reader = new JsonReader(reader(&quot;[0.&quot; + repeat('9', 8192) + &quot;]&quot;));</span>
+<span class="fc" id="L1443">    reader.setLenient(true);</span>
+<span class="fc" id="L1444">    reader.beginArray();</span>
+<span class="fc" id="L1445">    assertEquals(JsonToken.STRING, reader.peek());</span>
+<span class="fc" id="L1446">    assertEquals(1d, reader.nextDouble());</span>
+<span class="fc" id="L1447">    reader.endArray();</span>
+<span class="fc" id="L1448">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L1449">  }</span>
+
+  public void testVeryLongUnquotedLiteral() throws IOException {
+<span class="fc" id="L1452">    String literal = &quot;a&quot; + repeat('b', 8192) + &quot;c&quot;;</span>
+<span class="fc" id="L1453">    JsonReader reader = new JsonReader(reader(&quot;[&quot; + literal + &quot;]&quot;));</span>
+<span class="fc" id="L1454">    reader.setLenient(true);</span>
+<span class="fc" id="L1455">    reader.beginArray();</span>
+<span class="fc" id="L1456">    assertEquals(literal, reader.nextString());</span>
+<span class="fc" id="L1457">    reader.endArray();</span>
+<span class="fc" id="L1458">  }</span>
+
+  public void testDeeplyNestedArrays() throws IOException {
+    // this is nested 40 levels deep; Gson is tuned for nesting is 30 levels deep or fewer
+<span class="fc" id="L1462">    JsonReader reader = new JsonReader(reader(</span>
+        &quot;[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]&quot;));
+<span class="fc bfc" id="L1464" title="All 2 branches covered.">    for (int i = 0; i &lt; 40; i++) {</span>
+<span class="fc" id="L1465">      reader.beginArray();</span>
+    }
+<span class="fc" id="L1467">    assertEquals(&quot;$[0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0]&quot;</span>
+<span class="fc" id="L1468">        + &quot;[0][0][0][0][0][0][0][0][0][0][0][0][0][0]&quot;, reader.getPath());</span>
+<span class="fc bfc" id="L1469" title="All 2 branches covered.">    for (int i = 0; i &lt; 40; i++) {</span>
+<span class="fc" id="L1470">      reader.endArray();</span>
+    }
+<span class="fc" id="L1472">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L1473">  }</span>
+
+  public void testDeeplyNestedObjects() throws IOException {
+    // Build a JSON document structured like {&quot;a&quot;:{&quot;a&quot;:{&quot;a&quot;:{&quot;a&quot;:true}}}}, but 40 levels deep
+<span class="fc" id="L1477">    String array = &quot;{\&quot;a\&quot;:%s}&quot;;</span>
+<span class="fc" id="L1478">    String json = &quot;true&quot;;</span>
+<span class="fc bfc" id="L1479" title="All 2 branches covered.">    for (int i = 0; i &lt; 40; i++) {</span>
+<span class="fc" id="L1480">      json = String.format(array, json);</span>
+    }
+
+<span class="fc" id="L1483">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc bfc" id="L1484" title="All 2 branches covered.">    for (int i = 0; i &lt; 40; i++) {</span>
+<span class="fc" id="L1485">      reader.beginObject();</span>
+<span class="fc" id="L1486">      assertEquals(&quot;a&quot;, reader.nextName());</span>
+    }
+<span class="fc" id="L1488">    assertEquals(&quot;$.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a&quot;</span>
+<span class="fc" id="L1489">        + &quot;.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a&quot;, reader.getPath());</span>
+<span class="fc" id="L1490">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc bfc" id="L1491" title="All 2 branches covered.">    for (int i = 0; i &lt; 40; i++) {</span>
+<span class="fc" id="L1492">      reader.endObject();</span>
+    }
+<span class="fc" id="L1494">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L1495">  }</span>
+
+  // http://code.google.com/p/google-gson/issues/detail?id=409
+  public void testStringEndingInSlash() throws IOException {
+<span class="fc" id="L1499">    JsonReader reader = new JsonReader(reader(&quot;/&quot;));</span>
+<span class="fc" id="L1500">    reader.setLenient(true);</span>
+    try {
+<span class="nc" id="L1502">      reader.peek();</span>
+<span class="nc" id="L1503">      fail();</span>
+<span class="fc" id="L1504">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L1505">    }</span>
+<span class="fc" id="L1506">  }</span>
+
+  public void testDocumentWithCommentEndingInSlash() throws IOException {
+<span class="fc" id="L1509">    JsonReader reader = new JsonReader(reader(&quot;/* foo *//&quot;));</span>
+<span class="fc" id="L1510">    reader.setLenient(true);</span>
+    try {
+<span class="nc" id="L1512">      reader.peek();</span>
+<span class="nc" id="L1513">      fail();</span>
+<span class="fc" id="L1514">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L1515">    }</span>
+<span class="fc" id="L1516">  }</span>
+
+  public void testStringWithLeadingSlash() throws IOException {
+<span class="fc" id="L1519">    JsonReader reader = new JsonReader(reader(&quot;/x&quot;));</span>
+<span class="fc" id="L1520">    reader.setLenient(true);</span>
+    try {
+<span class="nc" id="L1522">      reader.peek();</span>
+<span class="nc" id="L1523">      fail();</span>
+<span class="fc" id="L1524">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L1525">    }</span>
+<span class="fc" id="L1526">  }</span>
+
+  public void testUnterminatedObject() throws IOException {
+<span class="fc" id="L1529">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:\&quot;android\&quot;x&quot;));</span>
+<span class="fc" id="L1530">    reader.setLenient(true);</span>
+<span class="fc" id="L1531">    reader.beginObject();</span>
+<span class="fc" id="L1532">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L1533">    assertEquals(&quot;android&quot;, reader.nextString());</span>
+    try {
+<span class="nc" id="L1535">      reader.peek();</span>
+<span class="nc" id="L1536">      fail();</span>
+<span class="fc" id="L1537">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L1538">    }</span>
+<span class="fc" id="L1539">  }</span>
+
+  public void testVeryLongQuotedString() throws IOException {
+<span class="fc" id="L1542">    char[] stringChars = new char[1024 * 16];</span>
+<span class="fc" id="L1543">    Arrays.fill(stringChars, 'x');</span>
+<span class="fc" id="L1544">    String string = new String(stringChars);</span>
+<span class="fc" id="L1545">    String json = &quot;[\&quot;&quot; + string + &quot;\&quot;]&quot;;</span>
+<span class="fc" id="L1546">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L1547">    reader.beginArray();</span>
+<span class="fc" id="L1548">    assertEquals(string, reader.nextString());</span>
+<span class="fc" id="L1549">    reader.endArray();</span>
+<span class="fc" id="L1550">  }</span>
+
+  public void testVeryLongUnquotedString() throws IOException {
+<span class="fc" id="L1553">    char[] stringChars = new char[1024 * 16];</span>
+<span class="fc" id="L1554">    Arrays.fill(stringChars, 'x');</span>
+<span class="fc" id="L1555">    String string = new String(stringChars);</span>
+<span class="fc" id="L1556">    String json = &quot;[&quot; + string + &quot;]&quot;;</span>
+<span class="fc" id="L1557">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L1558">    reader.setLenient(true);</span>
+<span class="fc" id="L1559">    reader.beginArray();</span>
+<span class="fc" id="L1560">    assertEquals(string, reader.nextString());</span>
+<span class="fc" id="L1561">    reader.endArray();</span>
+<span class="fc" id="L1562">  }</span>
+
+  public void testVeryLongUnterminatedString() throws IOException {
+<span class="fc" id="L1565">    char[] stringChars = new char[1024 * 16];</span>
+<span class="fc" id="L1566">    Arrays.fill(stringChars, 'x');</span>
+<span class="fc" id="L1567">    String string = new String(stringChars);</span>
+<span class="fc" id="L1568">    String json = &quot;[&quot; + string;</span>
+<span class="fc" id="L1569">    JsonReader reader = new JsonReader(reader(json));</span>
+<span class="fc" id="L1570">    reader.setLenient(true);</span>
+<span class="fc" id="L1571">    reader.beginArray();</span>
+<span class="fc" id="L1572">    assertEquals(string, reader.nextString());</span>
+    try {
+<span class="nc" id="L1574">      reader.peek();</span>
+<span class="nc" id="L1575">      fail();</span>
+<span class="fc" id="L1576">    } catch (EOFException expected) {</span>
+<span class="nc" id="L1577">    }</span>
+<span class="fc" id="L1578">  }</span>
+
+  public void testSkipVeryLongUnquotedString() throws IOException {
+<span class="fc" id="L1581">    JsonReader reader = new JsonReader(reader(&quot;[&quot; + repeat('x', 8192) + &quot;]&quot;));</span>
+<span class="fc" id="L1582">    reader.setLenient(true);</span>
+<span class="fc" id="L1583">    reader.beginArray();</span>
+<span class="fc" id="L1584">    reader.skipValue();</span>
+<span class="fc" id="L1585">    reader.endArray();</span>
+<span class="fc" id="L1586">  }</span>
+
+  public void testSkipTopLevelUnquotedString() throws IOException {
+<span class="fc" id="L1589">    JsonReader reader = new JsonReader(reader(repeat('x', 8192)));</span>
+<span class="fc" id="L1590">    reader.setLenient(true);</span>
+<span class="fc" id="L1591">    reader.skipValue();</span>
+<span class="fc" id="L1592">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L1593">  }</span>
+
+  public void testSkipVeryLongQuotedString() throws IOException {
+<span class="fc" id="L1596">    JsonReader reader = new JsonReader(reader(&quot;[\&quot;&quot; + repeat('x', 8192) + &quot;\&quot;]&quot;));</span>
+<span class="fc" id="L1597">    reader.beginArray();</span>
+<span class="fc" id="L1598">    reader.skipValue();</span>
+<span class="fc" id="L1599">    reader.endArray();</span>
+<span class="fc" id="L1600">  }</span>
+
+  public void testSkipTopLevelQuotedString() throws IOException {
+<span class="fc" id="L1603">    JsonReader reader = new JsonReader(reader(&quot;\&quot;&quot; + repeat('x', 8192) + &quot;\&quot;&quot;));</span>
+<span class="fc" id="L1604">    reader.setLenient(true);</span>
+<span class="fc" id="L1605">    reader.skipValue();</span>
+<span class="fc" id="L1606">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L1607">  }</span>
+
+  public void testStringAsNumberWithTruncatedExponent() throws IOException {
+<span class="fc" id="L1610">    JsonReader reader = new JsonReader(reader(&quot;[123e]&quot;));</span>
+<span class="fc" id="L1611">    reader.setLenient(true);</span>
+<span class="fc" id="L1612">    reader.beginArray();</span>
+<span class="fc" id="L1613">    assertEquals(STRING, reader.peek());</span>
+<span class="fc" id="L1614">  }</span>
+
+  public void testStringAsNumberWithDigitAndNonDigitExponent() throws IOException {
+<span class="fc" id="L1617">    JsonReader reader = new JsonReader(reader(&quot;[123e4b]&quot;));</span>
+<span class="fc" id="L1618">    reader.setLenient(true);</span>
+<span class="fc" id="L1619">    reader.beginArray();</span>
+<span class="fc" id="L1620">    assertEquals(STRING, reader.peek());</span>
+<span class="fc" id="L1621">  }</span>
+
+  public void testStringAsNumberWithNonDigitExponent() throws IOException {
+<span class="fc" id="L1624">    JsonReader reader = new JsonReader(reader(&quot;[123eb]&quot;));</span>
+<span class="fc" id="L1625">    reader.setLenient(true);</span>
+<span class="fc" id="L1626">    reader.beginArray();</span>
+<span class="fc" id="L1627">    assertEquals(STRING, reader.peek());</span>
+<span class="fc" id="L1628">  }</span>
+
+  public void testEmptyStringName() throws IOException {
+<span class="fc" id="L1631">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;\&quot;:true}&quot;));</span>
+<span class="fc" id="L1632">    reader.setLenient(true);</span>
+<span class="fc" id="L1633">    assertEquals(BEGIN_OBJECT, reader.peek());</span>
+<span class="fc" id="L1634">    reader.beginObject();</span>
+<span class="fc" id="L1635">    assertEquals(NAME, reader.peek());</span>
+<span class="fc" id="L1636">    assertEquals(&quot;&quot;, reader.nextName());</span>
+<span class="fc" id="L1637">    assertEquals(JsonToken.BOOLEAN, reader.peek());</span>
+<span class="fc" id="L1638">    assertEquals(true, reader.nextBoolean());</span>
+<span class="fc" id="L1639">    assertEquals(JsonToken.END_OBJECT, reader.peek());</span>
+<span class="fc" id="L1640">    reader.endObject();</span>
+<span class="fc" id="L1641">    assertEquals(JsonToken.END_DOCUMENT, reader.peek());</span>
+<span class="fc" id="L1642">  }</span>
+
+  public void testStrictExtraCommasInMaps() throws IOException {
+<span class="fc" id="L1645">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:\&quot;b\&quot;,}&quot;));</span>
+<span class="fc" id="L1646">    reader.beginObject();</span>
+<span class="fc" id="L1647">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L1648">    assertEquals(&quot;b&quot;, reader.nextString());</span>
+    try {
+<span class="nc" id="L1650">      reader.peek();</span>
+<span class="nc" id="L1651">      fail();</span>
+<span class="fc" id="L1652">    } catch (IOException expected) {</span>
+<span class="nc" id="L1653">    }</span>
+<span class="fc" id="L1654">  }</span>
+
+  public void testLenientExtraCommasInMaps() throws IOException {
+<span class="fc" id="L1657">    JsonReader reader = new JsonReader(reader(&quot;{\&quot;a\&quot;:\&quot;b\&quot;,}&quot;));</span>
+<span class="fc" id="L1658">    reader.setLenient(true);</span>
+<span class="fc" id="L1659">    reader.beginObject();</span>
+<span class="fc" id="L1660">    assertEquals(&quot;a&quot;, reader.nextName());</span>
+<span class="fc" id="L1661">    assertEquals(&quot;b&quot;, reader.nextString());</span>
+    try {
+<span class="nc" id="L1663">      reader.peek();</span>
+<span class="nc" id="L1664">      fail();</span>
+<span class="fc" id="L1665">    } catch (IOException expected) {</span>
+<span class="nc" id="L1666">    }</span>
+<span class="fc" id="L1667">  }</span>
+
+  private String repeat(char c, int count) {
+<span class="fc" id="L1670">    char[] array = new char[count];</span>
+<span class="fc" id="L1671">    Arrays.fill(array, c);</span>
+<span class="fc" id="L1672">    return new String(array);</span>
+  }
+
+  public void testMalformedDocuments() throws IOException {
+<span class="fc" id="L1676">    assertDocument(&quot;{]&quot;, BEGIN_OBJECT, IOException.class);</span>
+<span class="fc" id="L1677">    assertDocument(&quot;{,&quot;, BEGIN_OBJECT, IOException.class);</span>
+<span class="fc" id="L1678">    assertDocument(&quot;{{&quot;, BEGIN_OBJECT, IOException.class);</span>
+<span class="fc" id="L1679">    assertDocument(&quot;{[&quot;, BEGIN_OBJECT, IOException.class);</span>
+<span class="fc" id="L1680">    assertDocument(&quot;{:&quot;, BEGIN_OBJECT, IOException.class);</span>
+<span class="fc" id="L1681">    assertDocument(&quot;{\&quot;name\&quot;,&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1682">    assertDocument(&quot;{\&quot;name\&quot;,&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1683">    assertDocument(&quot;{\&quot;name\&quot;:}&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1684">    assertDocument(&quot;{\&quot;name\&quot;::&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1685">    assertDocument(&quot;{\&quot;name\&quot;:,&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1686">    assertDocument(&quot;{\&quot;name\&quot;=}&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1687">    assertDocument(&quot;{\&quot;name\&quot;=&gt;}&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1688">    assertDocument(&quot;{\&quot;name\&quot;=&gt;\&quot;string\&quot;:&quot;, BEGIN_OBJECT, NAME, STRING, IOException.class);</span>
+<span class="fc" id="L1689">    assertDocument(&quot;{\&quot;name\&quot;=&gt;\&quot;string\&quot;=&quot;, BEGIN_OBJECT, NAME, STRING, IOException.class);</span>
+<span class="fc" id="L1690">    assertDocument(&quot;{\&quot;name\&quot;=&gt;\&quot;string\&quot;=&gt;&quot;, BEGIN_OBJECT, NAME, STRING, IOException.class);</span>
+<span class="fc" id="L1691">    assertDocument(&quot;{\&quot;name\&quot;=&gt;\&quot;string\&quot;,&quot;, BEGIN_OBJECT, NAME, STRING, IOException.class);</span>
+<span class="fc" id="L1692">    assertDocument(&quot;{\&quot;name\&quot;=&gt;\&quot;string\&quot;,\&quot;name\&quot;&quot;, BEGIN_OBJECT, NAME, STRING, NAME);</span>
+<span class="fc" id="L1693">    assertDocument(&quot;[}&quot;, BEGIN_ARRAY, IOException.class);</span>
+<span class="fc" id="L1694">    assertDocument(&quot;[,]&quot;, BEGIN_ARRAY, NULL, NULL, END_ARRAY);</span>
+<span class="fc" id="L1695">    assertDocument(&quot;{&quot;, BEGIN_OBJECT, IOException.class);</span>
+<span class="fc" id="L1696">    assertDocument(&quot;{\&quot;name\&quot;&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1697">    assertDocument(&quot;{\&quot;name\&quot;,&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1698">    assertDocument(&quot;{'name'&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1699">    assertDocument(&quot;{'name',&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1700">    assertDocument(&quot;{name&quot;, BEGIN_OBJECT, NAME, IOException.class);</span>
+<span class="fc" id="L1701">    assertDocument(&quot;[&quot;, BEGIN_ARRAY, IOException.class);</span>
+<span class="fc" id="L1702">    assertDocument(&quot;[string&quot;, BEGIN_ARRAY, STRING, IOException.class);</span>
+<span class="fc" id="L1703">    assertDocument(&quot;[\&quot;string\&quot;&quot;, BEGIN_ARRAY, STRING, IOException.class);</span>
+<span class="fc" id="L1704">    assertDocument(&quot;['string'&quot;, BEGIN_ARRAY, STRING, IOException.class);</span>
+<span class="fc" id="L1705">    assertDocument(&quot;[123&quot;, BEGIN_ARRAY, NUMBER, IOException.class);</span>
+<span class="fc" id="L1706">    assertDocument(&quot;[123,&quot;, BEGIN_ARRAY, NUMBER, IOException.class);</span>
+<span class="fc" id="L1707">    assertDocument(&quot;{\&quot;name\&quot;:123&quot;, BEGIN_OBJECT, NAME, NUMBER, IOException.class);</span>
+<span class="fc" id="L1708">    assertDocument(&quot;{\&quot;name\&quot;:123,&quot;, BEGIN_OBJECT, NAME, NUMBER, IOException.class);</span>
+<span class="fc" id="L1709">    assertDocument(&quot;{\&quot;name\&quot;:\&quot;string\&quot;&quot;, BEGIN_OBJECT, NAME, STRING, IOException.class);</span>
+<span class="fc" id="L1710">    assertDocument(&quot;{\&quot;name\&quot;:\&quot;string\&quot;,&quot;, BEGIN_OBJECT, NAME, STRING, IOException.class);</span>
+<span class="fc" id="L1711">    assertDocument(&quot;{\&quot;name\&quot;:'string'&quot;, BEGIN_OBJECT, NAME, STRING, IOException.class);</span>
+<span class="fc" id="L1712">    assertDocument(&quot;{\&quot;name\&quot;:'string',&quot;, BEGIN_OBJECT, NAME, STRING, IOException.class);</span>
+<span class="fc" id="L1713">    assertDocument(&quot;{\&quot;name\&quot;:false&quot;, BEGIN_OBJECT, NAME, BOOLEAN, IOException.class);</span>
+<span class="fc" id="L1714">    assertDocument(&quot;{\&quot;name\&quot;:false,,&quot;, BEGIN_OBJECT, NAME, BOOLEAN, IOException.class);</span>
+<span class="fc" id="L1715">  }</span>
+
+  /**
+   * This test behave slightly differently in Gson 2.2 and earlier. It fails
+   * during peek rather than during nextString().
+   */
+  public void testUnterminatedStringFailure() throws IOException {
+<span class="fc" id="L1722">    JsonReader reader = new JsonReader(reader(&quot;[\&quot;string&quot;));</span>
+<span class="fc" id="L1723">    reader.setLenient(true);</span>
+<span class="fc" id="L1724">    reader.beginArray();</span>
+<span class="fc" id="L1725">    assertEquals(JsonToken.STRING, reader.peek());</span>
+    try {
+<span class="nc" id="L1727">      reader.nextString();</span>
+<span class="nc" id="L1728">      fail();</span>
+<span class="fc" id="L1729">    } catch (MalformedJsonException expected) {</span>
+<span class="nc" id="L1730">    }</span>
+<span class="fc" id="L1731">  }</span>
+
+  private void assertDocument(String document, Object... expectations) throws IOException {
+<span class="fc" id="L1734">    JsonReader reader = new JsonReader(reader(document));</span>
+<span class="fc" id="L1735">    reader.setLenient(true);</span>
+<span class="fc bfc" id="L1736" title="All 2 branches covered.">    for (Object expectation : expectations) {</span>
+<span class="fc bfc" id="L1737" title="All 2 branches covered.">      if (expectation == BEGIN_OBJECT) {</span>
+<span class="fc" id="L1738">        reader.beginObject();</span>
+<span class="fc bfc" id="L1739" title="All 2 branches covered.">      } else if (expectation == BEGIN_ARRAY) {</span>
+<span class="fc" id="L1740">        reader.beginArray();</span>
+<span class="pc bpc" id="L1741" title="1 of 2 branches missed.">      } else if (expectation == END_OBJECT) {</span>
+<span class="nc" id="L1742">        reader.endObject();</span>
+<span class="fc bfc" id="L1743" title="All 2 branches covered.">      } else if (expectation == END_ARRAY) {</span>
+<span class="fc" id="L1744">        reader.endArray();</span>
+<span class="fc bfc" id="L1745" title="All 2 branches covered.">      } else if (expectation == NAME) {</span>
+<span class="fc" id="L1746">        assertEquals(&quot;name&quot;, reader.nextName());</span>
+<span class="fc bfc" id="L1747" title="All 2 branches covered.">      } else if (expectation == BOOLEAN) {</span>
+<span class="fc" id="L1748">        assertEquals(false, reader.nextBoolean());</span>
+<span class="fc bfc" id="L1749" title="All 2 branches covered.">      } else if (expectation == STRING) {</span>
+<span class="fc" id="L1750">        assertEquals(&quot;string&quot;, reader.nextString());</span>
+<span class="fc bfc" id="L1751" title="All 2 branches covered.">      } else if (expectation == NUMBER) {</span>
+<span class="fc" id="L1752">        assertEquals(123, reader.nextInt());</span>
+<span class="fc bfc" id="L1753" title="All 2 branches covered.">      } else if (expectation == NULL) {</span>
+<span class="fc" id="L1754">        reader.nextNull();</span>
+<span class="pc bpc" id="L1755" title="1 of 2 branches missed.">      } else if (expectation == IOException.class) {</span>
+        try {
+<span class="nc" id="L1757">          reader.peek();</span>
+<span class="nc" id="L1758">          fail();</span>
+<span class="fc" id="L1759">        } catch (IOException expected) {</span>
+<span class="pc" id="L1760">        }</span>
+      } else {
+<span class="nc" id="L1762">        throw new AssertionError();</span>
+      }
+    }
+<span class="fc" id="L1765">  }</span>
+
+  /**
+   * Returns a reader that returns one character at a time.
+   */
+  private Reader reader(final String s) {
+<span class="fc" id="L1771">    /* if (true) */ return new StringReader(s);</span>
+    /* return new Reader() {
+      int position = 0;
+      @Override public int read(char[] buffer, int offset, int count) throws IOException {
+        if (position == s.length()) {
+          return -1;
+        } else if (count &gt; 0) {
+          buffer[offset] = s.charAt(position++);
+          return 1;
+        } else {
+          throw new IllegalArgumentException();
+        }
+      }
+      @Override public void close() throws IOException {
+      }
+    }; */
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

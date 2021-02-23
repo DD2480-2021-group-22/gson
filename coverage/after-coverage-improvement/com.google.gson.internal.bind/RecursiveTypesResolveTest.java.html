@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RecursiveTypesResolveTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal.bind</a> &gt; <span class="el_source">RecursiveTypesResolveTest.java</span></div><h1>RecursiveTypesResolveTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2017 Gson Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.internal.bind;
+
+import com.google.gson.Gson;
+import com.google.gson.TypeAdapter;
+import com.google.gson.internal.$Gson$Types;
+import junit.framework.TestCase;
+
+import java.io.PrintStream;
+import java.lang.ref.WeakReference;
+
+/**
+ * Test fixes for infinite recursion on {@link $Gson$Types#resolve(java.lang.reflect.Type, Class,
+ * java.lang.reflect.Type)}, described at &lt;a href=&quot;https://github.com/google/gson/issues/440&quot;&gt;Issue #440&lt;/a&gt;
+ * and similar issues.
+ * &lt;p&gt;
+ * These tests originally caused {@link StackOverflowError} because of infinite recursion on attempts to
+ * resolve generics on types, with an intermediate types like 'Foo2&amp;lt;? extends ? super ? extends ... ? extends A&amp;gt;'
+ */
+<span class="fc" id="L35">public class RecursiveTypesResolveTest extends TestCase {</span>
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class Foo1&lt;A&gt; {
+	public Foo2&lt;? extends A&gt; foo2;
+  }
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class Foo2&lt;B&gt; {
+    public Foo1&lt;? super B&gt; foo1;
+  }
+
+  /**
+   * Test simplest case of recursion.
+   */
+
+  public void testRecursiveResolveSimple() {
+<span class="fc" id="L51">    TypeAdapter&lt;Foo1&gt; adapter = new Gson().getAdapter(Foo1.class);</span>
+<span class="fc" id="L52">    assertNotNull(adapter);</span>
+<span class="fc" id="L53">  }</span>
+
+  /**
+   * Real-world samples, found in Issues #603 and #440.
+   */
+
+  public void testIssue603PrintStream() {
+<span class="fc" id="L60">    TypeAdapter&lt;PrintStream&gt; adapter = new Gson().getAdapter(PrintStream.class);</span>
+<span class="fc" id="L61">    assertNotNull(adapter);</span>
+<span class="fc" id="L62">  }</span>
+
+  public void testIssue440WeakReference() throws Exception {
+<span class="fc" id="L65">    TypeAdapter&lt;WeakReference&gt; adapter = new Gson().getAdapter(WeakReference.class);</span>
+<span class="fc" id="L66">    assertNotNull(adapter);</span>
+<span class="fc" id="L67">  }</span>
+
+  /**
+   * Tests belows check the behaviour of the methods changed for the fix.
+   */
+
+  public void testDoubleSupertype() {
+<span class="fc" id="L74">    assertEquals($Gson$Types.supertypeOf(Number.class),</span>
+<span class="fc" id="L75">            $Gson$Types.supertypeOf($Gson$Types.supertypeOf(Number.class)));</span>
+<span class="fc" id="L76">  }</span>
+
+  public void testDoubleSubtype() {
+<span class="fc" id="L79">    assertEquals($Gson$Types.subtypeOf(Number.class),</span>
+<span class="fc" id="L80">            $Gson$Types.subtypeOf($Gson$Types.subtypeOf(Number.class)));</span>
+<span class="fc" id="L81">  }</span>
+
+  public void testSuperSubtype() {
+<span class="fc" id="L84">    assertEquals($Gson$Types.subtypeOf(Object.class),</span>
+<span class="fc" id="L85">            $Gson$Types.supertypeOf($Gson$Types.subtypeOf(Number.class)));</span>
+<span class="fc" id="L86">  }</span>
+
+  public void testSubSupertype() {
+<span class="fc" id="L89">    assertEquals($Gson$Types.subtypeOf(Object.class),</span>
+<span class="fc" id="L90">            $Gson$Types.subtypeOf($Gson$Types.supertypeOf(Number.class)));</span>
+<span class="fc" id="L91">  }</span>
+
+  /**
+   * Tests for recursion while resolving type variables.
+   */
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class TestType&lt;X&gt; {
+    TestType&lt;? super X&gt; superType;
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class TestType2&lt;X, Y&gt; {
+    TestType2&lt;? super Y, ? super X&gt; superReversedType;
+  }
+
+  public void testRecursiveTypeVariablesResolve1() throws Exception {
+<span class="fc" id="L108">    TypeAdapter&lt;TestType&gt; adapter = new Gson().getAdapter(TestType.class);</span>
+<span class="fc" id="L109">    assertNotNull(adapter);</span>
+<span class="fc" id="L110">  }</span>
+
+  public void testRecursiveTypeVariablesResolve12() throws Exception {
+<span class="fc" id="L113">    TypeAdapter&lt;TestType2&gt; adapter = new Gson().getAdapter(TestType2.class);</span>
+<span class="fc" id="L114">    assertNotNull(adapter);</span>
+<span class="fc" id="L115">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

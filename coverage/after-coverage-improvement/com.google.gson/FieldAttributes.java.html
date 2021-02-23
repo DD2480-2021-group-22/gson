@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FieldAttributes.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson</a> &gt; <span class="el_source">FieldAttributes.java</span></div><h1>FieldAttributes.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2009 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson;
+
+import com.google.gson.internal.$Gson$Preconditions;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.Collection;
+
+/**
+ * A data object that stores attributes of a field.
+ *
+ * &lt;p&gt;This class is immutable; therefore, it can be safely shared across threads.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ *
+ * @since 1.4
+ */
+public final class FieldAttributes {
+  private final Field field;
+
+  /**
+   * Constructs a Field Attributes object from the {@code f}.
+   *
+   * @param f the field to pull attributes from
+   */
+<span class="fc" id="L44">  public FieldAttributes(Field f) {</span>
+<span class="fc" id="L45">    $Gson$Preconditions.checkNotNull(f);</span>
+<span class="fc" id="L46">    this.field = f;</span>
+<span class="fc" id="L47">  }</span>
+
+  /**
+   * @return the declaring class that contains this field
+   */
+  public Class&lt;?&gt; getDeclaringClass() {
+<span class="fc" id="L53">    return field.getDeclaringClass();</span>
+  }
+
+  /**
+   * @return the name of the field
+   */
+  public String getName() {
+<span class="fc" id="L60">    return field.getName();</span>
+  }
+
+  /**
+   * &lt;p&gt;For example, assume the following class definition:
+   * &lt;pre class=&quot;code&quot;&gt;
+   * public class Foo {
+   *   private String bar;
+   *   private List&amp;lt;String&amp;gt; red;
+   * }
+   *
+   * Type listParameterizedType = new TypeToken&amp;lt;List&amp;lt;String&amp;gt;&amp;gt;() {}.getType();
+   * &lt;/pre&gt;
+   *
+   * &lt;p&gt;This method would return {@code String.class} for the {@code bar} field and
+   * {@code listParameterizedType} for the {@code red} field.
+   *
+   * @return the specific type declared for this field
+   */
+  public Type getDeclaredType() {
+<span class="fc" id="L80">    return field.getGenericType();</span>
+  }
+
+  /**
+   * Returns the {@code Class} object that was declared for this field.
+   *
+   * &lt;p&gt;For example, assume the following class definition:
+   * &lt;pre class=&quot;code&quot;&gt;
+   * public class Foo {
+   *   private String bar;
+   *   private List&amp;lt;String&amp;gt; red;
+   * }
+   * &lt;/pre&gt;
+   *
+   * &lt;p&gt;This method would return {@code String.class} for the {@code bar} field and
+   * {@code List.class} for the {@code red} field.
+   *
+   * @return the specific class object that was declared for the field
+   */
+  public Class&lt;?&gt; getDeclaredClass() {
+<span class="fc" id="L100">    return field.getType();</span>
+  }
+
+  /**
+   * Return the {@code T} annotation object from this field if it exist; otherwise returns
+   * {@code null}.
+   *
+   * @param annotation the class of the annotation that will be retrieved
+   * @return the annotation instance if it is bound to the field; otherwise {@code null}
+   */
+  public &lt;T extends Annotation&gt; T getAnnotation(Class&lt;T&gt; annotation) {
+<span class="fc" id="L111">    return field.getAnnotation(annotation);</span>
+  }
+
+  /**
+   * Return the annotations that are present on this field.
+   *
+   * @return an array of all the annotations set on the field
+   * @since 1.4
+   */
+  public Collection&lt;Annotation&gt; getAnnotations() {
+<span class="nc" id="L121">    return Arrays.asList(field.getAnnotations());</span>
+  }
+
+  /**
+   * Returns {@code true} if the field is defined with the {@code modifier}.
+   *
+   * &lt;p&gt;This method is meant to be called as:
+   * &lt;pre class=&quot;code&quot;&gt;
+   * boolean hasPublicModifier = fieldAttribute.hasModifier(java.lang.reflect.Modifier.PUBLIC);
+   * &lt;/pre&gt;
+   *
+   * @see java.lang.reflect.Modifier
+   */
+  public boolean hasModifier(int modifier) {
+<span class="fc bfc" id="L135" title="All 2 branches covered.">    return (field.getModifiers() &amp; modifier) != 0;</span>
+  }
+
+  /**
+   * Returns the value of the field represented by this {@code Field}, on
+   * the specified object. The value is automatically wrapped in an
+   * object if it has a primitive type.
+   *
+   * @return the value of the represented field in object
+   * {@code obj}; primitive values are wrapped in an appropriate
+   * object before being returned
+   * @throws IllegalAccessException
+   * @throws IllegalArgumentException
+   */
+  Object get(Object instance) throws IllegalAccessException {
+<span class="nc" id="L150">    return field.get(instance);</span>
+  }
+
+  /**
+   * This is exposed internally only for the removing synthetic fields from the JSON output.
+   *
+   * @return true if the field is synthetic; otherwise false
+   */
+  boolean isSynthetic() {
+<span class="fc" id="L159">    return field.isSynthetic();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

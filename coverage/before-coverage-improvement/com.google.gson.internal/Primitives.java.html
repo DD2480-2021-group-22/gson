@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Primitives.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.internal</a> &gt; <span class="el_source">Primitives.java</span></div><h1>Primitives.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.internal;
+
+import java.lang.reflect.Type;
+
+/**
+ * Contains static utility methods pertaining to primitive types and their
+ * corresponding wrapper types.
+ *
+ * @author Kevin Bourrillion
+ */
+public final class Primitives {
+  private Primitives() {}
+
+  /**
+   * Returns true if this type is a primitive.
+   */
+  public static boolean isPrimitive(Type type) {
+<span class="pc bpc" id="L34" title="1 of 4 branches missed.">    return type instanceof Class&lt;?&gt; &amp;&amp; ((Class&lt;?&gt;) type).isPrimitive();</span>
+  }
+
+  /**
+   * Returns {@code true} if {@code type} is one of the nine
+   * primitive-wrapper types, such as {@link Integer}.
+   *
+   * @see Class#isPrimitive
+   */
+  public static boolean isWrapperType(Type type) {
+<span class="pc bpc" id="L44" title="8 of 18 branches missed.">    return type == Integer.class</span>
+        || type == Float.class
+        || type == Byte.class
+        || type == Double.class
+        || type == Long.class
+        || type == Character.class
+        || type == Boolean.class
+        || type == Short.class
+        || type == Void.class;
+  }
+
+  /**
+   * Returns the corresponding wrapper type of {@code type} if it is a primitive
+   * type; otherwise returns {@code type} itself. Idempotent.
+   * &lt;pre&gt;
+   *     wrap(int.class) == Integer.class
+   *     wrap(Integer.class) == Integer.class
+   *     wrap(String.class) == String.class
+   * &lt;/pre&gt;
+   */
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public static &lt;T&gt; Class&lt;T&gt; wrap(Class&lt;T&gt; type) {
+<span class="fc bfc" id="L66" title="All 2 branches covered.">    if (type == int.class) return (Class&lt;T&gt;) Integer.class;</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">    if (type == float.class) return (Class&lt;T&gt;) Float.class;</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">    if (type == byte.class) return (Class&lt;T&gt;) Byte.class;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">    if (type == double.class) return (Class&lt;T&gt;) Double.class;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">    if (type == long.class) return (Class&lt;T&gt;) Long.class;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">    if (type == char.class) return (Class&lt;T&gt;) Character.class;</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">    if (type == boolean.class) return (Class&lt;T&gt;) Boolean.class;</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">    if (type == short.class) return (Class&lt;T&gt;) Short.class;</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">    if (type == void.class) return (Class&lt;T&gt;) Void.class;</span>
+<span class="fc" id="L75">    return type;</span>
+  }
+
+  /**
+   * Returns the corresponding primitive type of {@code type} if it is a
+   * wrapper type; otherwise returns {@code type} itself. Idempotent.
+   * &lt;pre&gt;
+   *     unwrap(Integer.class) == int.class
+   *     unwrap(int.class) == int.class
+   *     unwrap(String.class) == String.class
+   * &lt;/pre&gt;
+   */
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public static &lt;T&gt; Class&lt;T&gt; unwrap(Class&lt;T&gt; type) {
+<span class="fc bfc" id="L89" title="All 2 branches covered.">    if (type == Integer.class) return (Class&lt;T&gt;) int.class;</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">    if (type == Float.class) return (Class&lt;T&gt;) float.class;</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">    if (type == Byte.class) return (Class&lt;T&gt;) byte.class;</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">    if (type == Double.class) return (Class&lt;T&gt;) double.class;</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">    if (type == Long.class) return (Class&lt;T&gt;) long.class;</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">    if (type == Character.class) return (Class&lt;T&gt;) char.class;</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">    if (type == Boolean.class) return (Class&lt;T&gt;) boolean.class;</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">    if (type == Short.class) return (Class&lt;T&gt;) short.class;</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">    if (type == Void.class) return (Class&lt;T&gt;) void.class;</span>
+<span class="fc" id="L98">    return type;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

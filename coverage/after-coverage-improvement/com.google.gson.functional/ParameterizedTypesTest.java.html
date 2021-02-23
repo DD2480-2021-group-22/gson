@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ParameterizedTypesTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">ParameterizedTypesTest.java</span></div><h1>ParameterizedTypesTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.ParameterizedTypeFixtures.MyParameterizedType;
+import com.google.gson.ParameterizedTypeFixtures.MyParameterizedTypeAdapter;
+import com.google.gson.ParameterizedTypeFixtures.MyParameterizedTypeInstanceCreator;
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+import com.google.gson.reflect.TypeToken;
+
+import junit.framework.TestCase;
+
+import java.io.Reader;
+import java.io.Serializable;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Functional tests for the serialization and deserialization of parameterized types in Gson.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L45">public class ParameterizedTypesTest extends TestCase {</span>
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L50">    super.setUp();</span>
+<span class="fc" id="L51">    gson = new Gson();</span>
+<span class="fc" id="L52">  }</span>
+
+  public void testParameterizedTypesSerialization() throws Exception {
+<span class="fc" id="L55">    MyParameterizedType&lt;Integer&gt; src = new MyParameterizedType&lt;Integer&gt;(10);</span>
+<span class="fc" id="L56">    Type typeOfSrc = new TypeToken&lt;MyParameterizedType&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L57">    String json = gson.toJson(src, typeOfSrc);</span>
+<span class="fc" id="L58">    assertEquals(src.getExpectedJson(), json);</span>
+<span class="fc" id="L59">  }</span>
+
+  public void testParameterizedTypeDeserialization() throws Exception {
+<span class="fc" id="L62">    BagOfPrimitives bag = new BagOfPrimitives();</span>
+<span class="fc" id="L63">    MyParameterizedType&lt;BagOfPrimitives&gt; expected = new MyParameterizedType&lt;BagOfPrimitives&gt;(bag);</span>
+<span class="fc" id="L64">    Type expectedType = new TypeToken&lt;MyParameterizedType&lt;BagOfPrimitives&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L65">    BagOfPrimitives bagDefaultInstance = new BagOfPrimitives();</span>
+<span class="fc" id="L66">    Gson gson = new GsonBuilder().registerTypeAdapter(</span>
+        expectedType, new MyParameterizedTypeInstanceCreator&lt;BagOfPrimitives&gt;(bagDefaultInstance))
+<span class="fc" id="L68">        .create();</span>
+
+<span class="fc" id="L70">    String json = expected.getExpectedJson();</span>
+<span class="fc" id="L71">    MyParameterizedType&lt;BagOfPrimitives&gt; actual = gson.fromJson(json, expectedType);</span>
+<span class="fc" id="L72">    assertEquals(expected, actual);</span>
+<span class="fc" id="L73">  }</span>
+
+  public void testTypesWithMultipleParametersSerialization() throws Exception {
+<span class="fc" id="L76">    MultiParameters&lt;Integer, Float, Double, String, BagOfPrimitives&gt; src =</span>
+<span class="fc" id="L77">        new MultiParameters&lt;Integer, Float, Double, String, BagOfPrimitives&gt;(10, 1.0F, 2.1D,</span>
+            &quot;abc&quot;, new BagOfPrimitives());
+<span class="fc" id="L79">    Type typeOfSrc = new TypeToken&lt;MultiParameters&lt;Integer, Float, Double, String,</span>
+<span class="fc" id="L80">        BagOfPrimitives&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L81">    String json = gson.toJson(src, typeOfSrc);</span>
+<span class="fc" id="L82">    String expected = &quot;{\&quot;a\&quot;:10,\&quot;b\&quot;:1.0,\&quot;c\&quot;:2.1,\&quot;d\&quot;:\&quot;abc\&quot;,&quot;</span>
+        + &quot;\&quot;e\&quot;:{\&quot;longValue\&quot;:0,\&quot;intValue\&quot;:0,\&quot;booleanValue\&quot;:false,\&quot;stringValue\&quot;:\&quot;\&quot;}}&quot;;
+<span class="fc" id="L84">    assertEquals(expected, json);</span>
+<span class="fc" id="L85">  }</span>
+
+  public void testTypesWithMultipleParametersDeserialization() throws Exception {
+<span class="fc" id="L88">    Type typeOfTarget = new TypeToken&lt;MultiParameters&lt;Integer, Float, Double, String,</span>
+<span class="fc" id="L89">        BagOfPrimitives&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L90">    String json = &quot;{\&quot;a\&quot;:10,\&quot;b\&quot;:1.0,\&quot;c\&quot;:2.1,\&quot;d\&quot;:\&quot;abc\&quot;,&quot;</span>
+        + &quot;\&quot;e\&quot;:{\&quot;longValue\&quot;:0,\&quot;intValue\&quot;:0,\&quot;booleanValue\&quot;:false,\&quot;stringValue\&quot;:\&quot;\&quot;}}&quot;;
+<span class="fc" id="L92">    MultiParameters&lt;Integer, Float, Double, String, BagOfPrimitives&gt; target =</span>
+<span class="fc" id="L93">        gson.fromJson(json, typeOfTarget);</span>
+<span class="fc" id="L94">    MultiParameters&lt;Integer, Float, Double, String, BagOfPrimitives&gt; expected =</span>
+<span class="fc" id="L95">        new MultiParameters&lt;Integer, Float, Double, String, BagOfPrimitives&gt;(10, 1.0F, 2.1D,</span>
+            &quot;abc&quot;, new BagOfPrimitives());
+<span class="fc" id="L97">    assertEquals(expected, target);</span>
+<span class="fc" id="L98">  }</span>
+
+  public void testParameterizedTypeWithCustomSerializer() {
+<span class="fc" id="L101">    Type ptIntegerType = new TypeToken&lt;MyParameterizedType&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L102">    Type ptStringType = new TypeToken&lt;MyParameterizedType&lt;String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L103">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L104">        .registerTypeAdapter(ptIntegerType, new MyParameterizedTypeAdapter&lt;Integer&gt;())</span>
+<span class="fc" id="L105">        .registerTypeAdapter(ptStringType, new MyParameterizedTypeAdapter&lt;String&gt;())</span>
+<span class="fc" id="L106">        .create();</span>
+<span class="fc" id="L107">    MyParameterizedType&lt;Integer&gt; intTarget = new MyParameterizedType&lt;Integer&gt;(10);</span>
+<span class="fc" id="L108">    String json = gson.toJson(intTarget, ptIntegerType);</span>
+<span class="fc" id="L109">    assertEquals(MyParameterizedTypeAdapter.&lt;Integer&gt;getExpectedJson(intTarget), json);</span>
+
+<span class="fc" id="L111">    MyParameterizedType&lt;String&gt; stringTarget = new MyParameterizedType&lt;String&gt;(&quot;abc&quot;);</span>
+<span class="fc" id="L112">    json = gson.toJson(stringTarget, ptStringType);</span>
+<span class="fc" id="L113">    assertEquals(MyParameterizedTypeAdapter.&lt;String&gt;getExpectedJson(stringTarget), json);</span>
+<span class="fc" id="L114">  }</span>
+
+  public void testParameterizedTypesWithCustomDeserializer() {
+<span class="fc" id="L117">    Type ptIntegerType = new TypeToken&lt;MyParameterizedType&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L118">    Type ptStringType = new TypeToken&lt;MyParameterizedType&lt;String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L119">    Gson gson = new GsonBuilder().registerTypeAdapter(</span>
+        ptIntegerType, new MyParameterizedTypeAdapter&lt;Integer&gt;())
+<span class="fc" id="L121">        .registerTypeAdapter(ptStringType, new MyParameterizedTypeAdapter&lt;String&gt;())</span>
+<span class="fc" id="L122">        .registerTypeAdapter(ptStringType, new MyParameterizedTypeInstanceCreator&lt;String&gt;(&quot;&quot;))</span>
+<span class="fc" id="L123">        .registerTypeAdapter(ptIntegerType,</span>
+<span class="fc" id="L124">            new MyParameterizedTypeInstanceCreator&lt;Integer&gt;(0))</span>
+<span class="fc" id="L125">        .create();</span>
+
+<span class="fc" id="L127">    MyParameterizedType&lt;Integer&gt; src = new MyParameterizedType&lt;Integer&gt;(10);</span>
+<span class="fc" id="L128">    String json = MyParameterizedTypeAdapter.&lt;Integer&gt;getExpectedJson(src);</span>
+<span class="fc" id="L129">    MyParameterizedType&lt;Integer&gt; intTarget = gson.fromJson(json, ptIntegerType);</span>
+<span class="fc" id="L130">    assertEquals(10, intTarget.value.intValue());</span>
+
+<span class="fc" id="L132">    MyParameterizedType&lt;String&gt; srcStr = new MyParameterizedType&lt;String&gt;(&quot;abc&quot;);</span>
+<span class="fc" id="L133">    json = MyParameterizedTypeAdapter.&lt;String&gt;getExpectedJson(srcStr);</span>
+<span class="fc" id="L134">    MyParameterizedType&lt;String&gt; stringTarget = gson.fromJson(json, ptStringType);</span>
+<span class="fc" id="L135">    assertEquals(&quot;abc&quot;, stringTarget.value);</span>
+<span class="fc" id="L136">  }</span>
+
+  public void testParameterizedTypesWithWriterSerialization() throws Exception {
+<span class="fc" id="L139">    Writer writer = new StringWriter();</span>
+<span class="fc" id="L140">    MyParameterizedType&lt;Integer&gt; src = new MyParameterizedType&lt;Integer&gt;(10);</span>
+<span class="fc" id="L141">    Type typeOfSrc = new TypeToken&lt;MyParameterizedType&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L142">    gson.toJson(src, typeOfSrc, writer);</span>
+<span class="fc" id="L143">    assertEquals(src.getExpectedJson(), writer.toString());</span>
+<span class="fc" id="L144">  }</span>
+
+  public void testParameterizedTypeWithReaderDeserialization() throws Exception {
+<span class="fc" id="L147">    BagOfPrimitives bag = new BagOfPrimitives();</span>
+<span class="fc" id="L148">    MyParameterizedType&lt;BagOfPrimitives&gt; expected = new MyParameterizedType&lt;BagOfPrimitives&gt;(bag);</span>
+<span class="fc" id="L149">    Type expectedType = new TypeToken&lt;MyParameterizedType&lt;BagOfPrimitives&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L150">    BagOfPrimitives bagDefaultInstance = new BagOfPrimitives();</span>
+<span class="fc" id="L151">    Gson gson = new GsonBuilder().registerTypeAdapter(</span>
+        expectedType, new MyParameterizedTypeInstanceCreator&lt;BagOfPrimitives&gt;(bagDefaultInstance))
+<span class="fc" id="L153">        .create();</span>
+
+<span class="fc" id="L155">    Reader json = new StringReader(expected.getExpectedJson());</span>
+<span class="fc" id="L156">    MyParameterizedType&lt;Integer&gt; actual = gson.fromJson(json, expectedType);</span>
+<span class="fc" id="L157">    assertEquals(expected, actual);</span>
+<span class="fc" id="L158">  }</span>
+
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public void testVariableTypeFieldsAndGenericArraysSerialization() throws Exception {
+<span class="fc" id="L162">    Integer obj = 0;</span>
+<span class="fc" id="L163">    Integer[] array = { 1, 2, 3 };</span>
+<span class="fc" id="L164">    List&lt;Integer&gt; list = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L165">    list.add(4);</span>
+<span class="fc" id="L166">    list.add(5);</span>
+<span class="fc" id="L167">    List&lt;Integer&gt;[] arrayOfLists = new List[] { list, list };</span>
+
+<span class="fc" id="L169">    Type typeOfSrc = new TypeToken&lt;ObjectWithTypeVariables&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L170">    ObjectWithTypeVariables&lt;Integer&gt; objToSerialize =</span>
+        new ObjectWithTypeVariables&lt;Integer&gt;(obj, array, list, arrayOfLists, list, arrayOfLists);
+<span class="fc" id="L172">    String json = gson.toJson(objToSerialize, typeOfSrc);</span>
+
+<span class="fc" id="L174">    assertEquals(objToSerialize.getExpectedJson(), json);</span>
+<span class="fc" id="L175">  }</span>
+
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public void testVariableTypeFieldsAndGenericArraysDeserialization() throws Exception {
+<span class="fc" id="L179">    Integer obj = 0;</span>
+<span class="fc" id="L180">    Integer[] array = { 1, 2, 3 };</span>
+<span class="fc" id="L181">    List&lt;Integer&gt; list = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L182">    list.add(4);</span>
+<span class="fc" id="L183">    list.add(5);</span>
+<span class="fc" id="L184">    List&lt;Integer&gt;[] arrayOfLists = new List[] { list, list };</span>
+
+<span class="fc" id="L186">    Type typeOfSrc = new TypeToken&lt;ObjectWithTypeVariables&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L187">    ObjectWithTypeVariables&lt;Integer&gt; objToSerialize =</span>
+        new ObjectWithTypeVariables&lt;Integer&gt;(obj, array, list, arrayOfLists, list, arrayOfLists);
+<span class="fc" id="L189">    String json = gson.toJson(objToSerialize, typeOfSrc);</span>
+<span class="fc" id="L190">    ObjectWithTypeVariables&lt;Integer&gt; objAfterDeserialization = gson.fromJson(json, typeOfSrc);</span>
+
+<span class="fc" id="L192">    assertEquals(objAfterDeserialization.getExpectedJson(), json);</span>
+<span class="fc" id="L193">  }</span>
+
+  public void testVariableTypeDeserialization() throws Exception {
+<span class="fc" id="L196">    Type typeOfSrc = new TypeToken&lt;ObjectWithTypeVariables&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L197">    ObjectWithTypeVariables&lt;Integer&gt; objToSerialize =</span>
+<span class="fc" id="L198">        new ObjectWithTypeVariables&lt;Integer&gt;(0, null, null, null, null, null);</span>
+<span class="fc" id="L199">    String json = gson.toJson(objToSerialize, typeOfSrc);</span>
+<span class="fc" id="L200">    ObjectWithTypeVariables&lt;Integer&gt; objAfterDeserialization = gson.fromJson(json, typeOfSrc);</span>
+
+<span class="fc" id="L202">    assertEquals(objAfterDeserialization.getExpectedJson(), json);</span>
+<span class="fc" id="L203">  }</span>
+
+  public void testVariableTypeArrayDeserialization() throws Exception {
+<span class="fc" id="L206">    Integer[] array = { 1, 2, 3 };</span>
+
+<span class="fc" id="L208">    Type typeOfSrc = new TypeToken&lt;ObjectWithTypeVariables&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L209">    ObjectWithTypeVariables&lt;Integer&gt; objToSerialize =</span>
+        new ObjectWithTypeVariables&lt;Integer&gt;(null, array, null, null, null, null);
+<span class="fc" id="L211">    String json = gson.toJson(objToSerialize, typeOfSrc);</span>
+<span class="fc" id="L212">    ObjectWithTypeVariables&lt;Integer&gt; objAfterDeserialization = gson.fromJson(json, typeOfSrc);</span>
+
+<span class="fc" id="L214">    assertEquals(objAfterDeserialization.getExpectedJson(), json);</span>
+<span class="fc" id="L215">  }</span>
+
+  public void testParameterizedTypeWithVariableTypeDeserialization() throws Exception {
+<span class="fc" id="L218">    List&lt;Integer&gt; list = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L219">    list.add(4);</span>
+<span class="fc" id="L220">    list.add(5);</span>
+
+<span class="fc" id="L222">    Type typeOfSrc = new TypeToken&lt;ObjectWithTypeVariables&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L223">    ObjectWithTypeVariables&lt;Integer&gt; objToSerialize =</span>
+        new ObjectWithTypeVariables&lt;Integer&gt;(null, null, list, null, null, null);
+<span class="fc" id="L225">    String json = gson.toJson(objToSerialize, typeOfSrc);</span>
+<span class="fc" id="L226">    ObjectWithTypeVariables&lt;Integer&gt; objAfterDeserialization = gson.fromJson(json, typeOfSrc);</span>
+
+<span class="fc" id="L228">    assertEquals(objAfterDeserialization.getExpectedJson(), json);</span>
+<span class="fc" id="L229">  }</span>
+
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public void testParameterizedTypeGenericArraysSerialization() throws Exception {
+<span class="fc" id="L233">    List&lt;Integer&gt; list = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L234">    list.add(1);</span>
+<span class="fc" id="L235">    list.add(2);</span>
+<span class="fc" id="L236">    List&lt;Integer&gt;[] arrayOfLists = new List[] { list, list };</span>
+
+<span class="fc" id="L238">    Type typeOfSrc = new TypeToken&lt;ObjectWithTypeVariables&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L239">    ObjectWithTypeVariables&lt;Integer&gt; objToSerialize =</span>
+        new ObjectWithTypeVariables&lt;Integer&gt;(null, null, null, arrayOfLists, null, null);
+<span class="fc" id="L241">    String json = gson.toJson(objToSerialize, typeOfSrc);</span>
+<span class="fc" id="L242">    assertEquals(&quot;{\&quot;arrayOfListOfTypeParameters\&quot;:[[1,2],[1,2]]}&quot;, json);</span>
+<span class="fc" id="L243">  }</span>
+
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public void testParameterizedTypeGenericArraysDeserialization() throws Exception {
+<span class="fc" id="L247">    List&lt;Integer&gt; list = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L248">    list.add(1);</span>
+<span class="fc" id="L249">    list.add(2);</span>
+<span class="fc" id="L250">    List&lt;Integer&gt;[] arrayOfLists = new List[] { list, list };</span>
+
+<span class="fc" id="L252">    Type typeOfSrc = new TypeToken&lt;ObjectWithTypeVariables&lt;Integer&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L253">    ObjectWithTypeVariables&lt;Integer&gt; objToSerialize =</span>
+        new ObjectWithTypeVariables&lt;Integer&gt;(null, null, null, arrayOfLists, null, null);
+<span class="fc" id="L255">    String json = gson.toJson(objToSerialize, typeOfSrc);</span>
+<span class="fc" id="L256">    ObjectWithTypeVariables&lt;Integer&gt; objAfterDeserialization = gson.fromJson(json, typeOfSrc);</span>
+
+<span class="fc" id="L258">    assertEquals(objAfterDeserialization.getExpectedJson(), json);</span>
+<span class="fc" id="L259">  }</span>
+
+  /**
+   * An test object that has fields that are type variables.
+   *
+   * @param &lt;T&gt; Enforce T to be a string to make writing the &quot;toExpectedJson&quot; method easier.
+   */
+  private static class ObjectWithTypeVariables&lt;T extends Number&gt; {
+    private final T typeParameterObj;
+    private final T[] typeParameterArray;
+    private final List&lt;T&gt; listOfTypeParameters;
+    private final List&lt;T&gt;[] arrayOfListOfTypeParameters;
+    private final List&lt;? extends T&gt; listOfWildcardTypeParameters;
+    private final List&lt;? extends T&gt;[] arrayOfListOfWildcardTypeParameters;
+
+    // For use by Gson
+    @SuppressWarnings(&quot;unused&quot;)
+    private ObjectWithTypeVariables() {
+<span class="fc" id="L277">      this(null, null, null, null, null, null);</span>
+<span class="fc" id="L278">    }</span>
+
+    public ObjectWithTypeVariables(T obj, T[] array, List&lt;T&gt; list, List&lt;T&gt;[] arrayOfList,
+<span class="fc" id="L281">        List&lt;? extends T&gt; wildcardList, List&lt;? extends T&gt;[] arrayOfWildcardList) {</span>
+<span class="fc" id="L282">      this.typeParameterObj = obj;</span>
+<span class="fc" id="L283">      this.typeParameterArray = array;</span>
+<span class="fc" id="L284">      this.listOfTypeParameters = list;</span>
+<span class="fc" id="L285">      this.arrayOfListOfTypeParameters = arrayOfList;</span>
+<span class="fc" id="L286">      this.listOfWildcardTypeParameters = wildcardList;</span>
+<span class="fc" id="L287">      this.arrayOfListOfWildcardTypeParameters = arrayOfWildcardList;</span>
+<span class="fc" id="L288">    }</span>
+
+    public String getExpectedJson() {
+<span class="fc" id="L291">      StringBuilder sb = new StringBuilder().append(&quot;{&quot;);</span>
+
+<span class="fc" id="L293">      boolean needsComma = false;</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">      if (typeParameterObj != null) {</span>
+<span class="fc" id="L295">        sb.append(&quot;\&quot;typeParameterObj\&quot;:&quot;).append(toString(typeParameterObj));</span>
+<span class="fc" id="L296">        needsComma = true;</span>
+      }
+
+<span class="fc bfc" id="L299" title="All 2 branches covered.">      if (typeParameterArray != null) {</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">        if (needsComma) {</span>
+<span class="fc" id="L301">          sb.append(',');</span>
+        }
+<span class="fc" id="L303">        sb.append(&quot;\&quot;typeParameterArray\&quot;:[&quot;);</span>
+<span class="fc" id="L304">        appendObjectsToBuilder(sb, Arrays.asList(typeParameterArray));</span>
+<span class="fc" id="L305">        sb.append(']');</span>
+<span class="fc" id="L306">        needsComma = true;</span>
+      }
+
+<span class="fc bfc" id="L309" title="All 2 branches covered.">      if (listOfTypeParameters != null) {</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">        if (needsComma) {</span>
+<span class="fc" id="L311">          sb.append(',');</span>
+        }
+<span class="fc" id="L313">        sb.append(&quot;\&quot;listOfTypeParameters\&quot;:[&quot;);</span>
+<span class="fc" id="L314">        appendObjectsToBuilder(sb, listOfTypeParameters);</span>
+<span class="fc" id="L315">        sb.append(']');</span>
+<span class="fc" id="L316">        needsComma = true;</span>
+      }
+
+<span class="fc bfc" id="L319" title="All 2 branches covered.">      if (arrayOfListOfTypeParameters != null) {</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">        if (needsComma) {</span>
+<span class="fc" id="L321">          sb.append(',');</span>
+        }
+<span class="fc" id="L323">        sb.append(&quot;\&quot;arrayOfListOfTypeParameters\&quot;:[&quot;);</span>
+<span class="fc" id="L324">        appendObjectsToBuilder(sb, arrayOfListOfTypeParameters);</span>
+<span class="fc" id="L325">        sb.append(']');</span>
+<span class="fc" id="L326">        needsComma = true;</span>
+      }
+
+<span class="fc bfc" id="L329" title="All 2 branches covered.">      if (listOfWildcardTypeParameters != null) {</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">        if (needsComma) {</span>
+<span class="fc" id="L331">          sb.append(',');</span>
+        }
+<span class="fc" id="L333">        sb.append(&quot;\&quot;listOfWildcardTypeParameters\&quot;:[&quot;);</span>
+<span class="fc" id="L334">        appendObjectsToBuilder(sb, listOfWildcardTypeParameters);</span>
+<span class="fc" id="L335">        sb.append(']');</span>
+<span class="fc" id="L336">        needsComma = true;</span>
+      }
+
+<span class="fc bfc" id="L339" title="All 2 branches covered.">      if (arrayOfListOfWildcardTypeParameters != null) {</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">        if (needsComma) {</span>
+<span class="fc" id="L341">          sb.append(',');</span>
+        }
+<span class="fc" id="L343">        sb.append(&quot;\&quot;arrayOfListOfWildcardTypeParameters\&quot;:[&quot;);</span>
+<span class="fc" id="L344">        appendObjectsToBuilder(sb, arrayOfListOfWildcardTypeParameters);</span>
+<span class="fc" id="L345">        sb.append(']');</span>
+<span class="fc" id="L346">        needsComma = true;</span>
+      }
+<span class="fc" id="L348">      sb.append('}');</span>
+<span class="fc" id="L349">      return sb.toString();</span>
+    }
+
+    private void appendObjectsToBuilder(StringBuilder sb, Iterable&lt;? extends T&gt; iterable) {
+<span class="fc" id="L353">      boolean isFirst = true;</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">      for (T obj : iterable) {</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">        if (!isFirst) {</span>
+<span class="fc" id="L356">          sb.append(',');</span>
+        }
+<span class="fc" id="L358">        isFirst = false;</span>
+<span class="fc" id="L359">        sb.append(toString(obj));</span>
+<span class="fc" id="L360">      }</span>
+<span class="fc" id="L361">    }</span>
+
+    private void appendObjectsToBuilder(StringBuilder sb, List&lt;? extends T&gt;[] arrayOfList) {
+<span class="fc" id="L364">      boolean isFirst = true;</span>
+<span class="fc bfc" id="L365" title="All 2 branches covered.">      for (List&lt;? extends T&gt; list : arrayOfList) {</span>
+<span class="fc bfc" id="L366" title="All 2 branches covered.">        if (!isFirst) {</span>
+<span class="fc" id="L367">          sb.append(',');</span>
+        }
+<span class="fc" id="L369">        isFirst = false;</span>
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">        if (list != null) {</span>
+<span class="fc" id="L371">          sb.append('[');</span>
+<span class="fc" id="L372">          appendObjectsToBuilder(sb, list);</span>
+<span class="fc" id="L373">          sb.append(']');</span>
+        } else {
+<span class="nc" id="L375">          sb.append(&quot;null&quot;);</span>
+        }
+      }
+<span class="fc" id="L378">    }</span>
+
+    public String toString(T obj) {
+<span class="fc" id="L381">      return obj.toString();</span>
+    }
+  }
+
+  private static class MultiParameters&lt;A, B, C, D, E&gt; {
+    A a;
+    B b;
+    C c;
+    D d;
+    E e;
+    // For use by Gson
+    @SuppressWarnings(&quot;unused&quot;)
+    private MultiParameters() {
+    }
+    MultiParameters(A a, B b, C c, D d, E e) {
+<span class="fc" id="L396">      super();</span>
+<span class="fc" id="L397">      this.a = a;</span>
+<span class="fc" id="L398">      this.b = b;</span>
+<span class="fc" id="L399">      this.c = c;</span>
+<span class="fc" id="L400">      this.d = d;</span>
+<span class="fc" id="L401">      this.e = e;</span>
+<span class="fc" id="L402">    }</span>
+    @Override
+    public int hashCode() {
+<span class="nc" id="L405">      final int prime = 31;</span>
+<span class="nc" id="L406">      int result = 1;</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">      result = prime * result + ((a == null) ? 0 : a.hashCode());</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">      result = prime * result + ((b == null) ? 0 : b.hashCode());</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">      result = prime * result + ((c == null) ? 0 : c.hashCode());</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">      result = prime * result + ((d == null) ? 0 : d.hashCode());</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">      result = prime * result + ((e == null) ? 0 : e.hashCode());</span>
+<span class="nc" id="L412">      return result;</span>
+    }
+    @Override
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public boolean equals(Object obj) {
+<span class="pc bpc" id="L417" title="1 of 2 branches missed.">      if (this == obj) {</span>
+<span class="nc" id="L418">        return true;</span>
+      }
+<span class="pc bpc" id="L420" title="1 of 2 branches missed.">      if (obj == null) {</span>
+<span class="nc" id="L421">        return false;</span>
+      }
+<span class="pc bpc" id="L423" title="1 of 2 branches missed.">      if (getClass() != obj.getClass()) {</span>
+<span class="nc" id="L424">        return false;</span>
+      }
+<span class="fc" id="L426">      MultiParameters&lt;A, B, C, D, E&gt; other = (MultiParameters&lt;A, B, C, D, E&gt;) obj;</span>
+<span class="pc bpc" id="L427" title="1 of 2 branches missed.">      if (a == null) {</span>
+<span class="nc bnc" id="L428" title="All 2 branches missed.">        if (other.a != null) {</span>
+<span class="nc" id="L429">          return false;</span>
+        }
+<span class="pc bpc" id="L431" title="1 of 2 branches missed.">      } else if (!a.equals(other.a)) {</span>
+<span class="nc" id="L432">        return false;</span>
+      }
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">      if (b == null) {</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">        if (other.b != null) {</span>
+<span class="nc" id="L436">          return false;</span>
+        }
+<span class="pc bpc" id="L438" title="1 of 2 branches missed.">      } else if (!b.equals(other.b)) {</span>
+<span class="nc" id="L439">        return false;</span>
+      }
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">      if (c == null) {</span>
+<span class="nc bnc" id="L442" title="All 2 branches missed.">        if (other.c != null) {</span>
+<span class="nc" id="L443">          return false;</span>
+        }
+<span class="pc bpc" id="L445" title="1 of 2 branches missed.">      } else if (!c.equals(other.c)) {</span>
+<span class="nc" id="L446">        return false;</span>
+      }
+<span class="pc bpc" id="L448" title="1 of 2 branches missed.">      if (d == null) {</span>
+<span class="nc bnc" id="L449" title="All 2 branches missed.">        if (other.d != null) {</span>
+<span class="nc" id="L450">          return false;</span>
+        }
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">      } else if (!d.equals(other.d)) {</span>
+<span class="nc" id="L453">        return false;</span>
+      }
+<span class="pc bpc" id="L455" title="1 of 2 branches missed.">      if (e == null) {</span>
+<span class="nc bnc" id="L456" title="All 2 branches missed.">        if (other.e != null) {</span>
+<span class="nc" id="L457">          return false;</span>
+        }
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">      } else if (!e.equals(other.e)) {</span>
+<span class="nc" id="L460">        return false;</span>
+      }
+<span class="fc" id="L462">      return true;</span>
+    }
+  }
+  
+  // Begin: tests to reproduce issue 103
+<span class="nc" id="L467">  private static class Quantity {</span>
+<span class="nc" id="L468">    @SuppressWarnings(&quot;unused&quot;)</span>
+    int q = 10;
+  }
+<span class="nc" id="L471">  private static class MyQuantity extends Quantity {</span>
+<span class="nc" id="L472">    @SuppressWarnings(&quot;unused&quot;)</span>
+    int q2 = 20;
+  }
+  private interface Measurable&lt;T&gt; {
+  }
+  private interface Field&lt;T&gt; {
+  }
+  private interface Immutable {
+  }
+  
+<span class="fc" id="L482">  public static final class Amount&lt;Q extends Quantity&gt; </span>
+      implements Measurable&lt;Q&gt;, Field&lt;Amount&lt;?&gt;&gt;, Serializable, Immutable {
+    private static final long serialVersionUID = -7560491093120970437L;
+
+<span class="fc" id="L486">    int value = 30;</span>
+  }
+  
+  public void testDeepParameterizedTypeSerialization() {
+<span class="fc" id="L490">    Amount&lt;MyQuantity&gt; amount = new Amount&lt;MyQuantity&gt;();</span>
+<span class="fc" id="L491">    String json = gson.toJson(amount);</span>
+<span class="fc" id="L492">    assertTrue(json.contains(&quot;value&quot;));</span>
+<span class="fc" id="L493">    assertTrue(json.contains(&quot;30&quot;));</span>
+<span class="fc" id="L494">  }</span>
+  
+  public void testDeepParameterizedTypeDeserialization() {
+<span class="fc" id="L497">    String json = &quot;{value:30}&quot;;</span>
+<span class="fc" id="L498">    Type type = new TypeToken&lt;Amount&lt;MyQuantity&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L499">    Amount&lt;MyQuantity&gt; amount = gson.fromJson(json, type);</span>
+<span class="fc" id="L500">    assertEquals(30, amount.value);</span>
+<span class="fc" id="L501">  }</span>
+  // End: tests to reproduce issue 103
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TypeTokenTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.reflect</a> &gt; <span class="el_source">TypeTokenTest.java</span></div><h1>TypeTokenTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2010 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.reflect;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.RandomAccess;
+import java.util.Set;
+import junit.framework.TestCase;
+
+/**
+ * @author Jesse Wilson
+ */
+@SuppressWarnings({&quot;deprecation&quot;})
+<span class="fc" id="L31">public final class TypeTokenTest extends TestCase {</span>
+
+<span class="fc" id="L33">  List&lt;Integer&gt; listOfInteger = null;</span>
+<span class="fc" id="L34">  List&lt;Number&gt; listOfNumber = null;</span>
+<span class="fc" id="L35">  List&lt;String&gt; listOfString = null;</span>
+<span class="fc" id="L36">  List&lt;?&gt; listOfUnknown = null;</span>
+<span class="fc" id="L37">  List&lt;Set&lt;String&gt;&gt; listOfSetOfString = null;</span>
+<span class="fc" id="L38">  List&lt;Set&lt;?&gt;&gt; listOfSetOfUnknown = null;</span>
+
+  public void testIsAssignableFromRawTypes() {
+<span class="fc" id="L41">    assertTrue(TypeToken.get(Object.class).isAssignableFrom(String.class));</span>
+<span class="fc" id="L42">    assertFalse(TypeToken.get(String.class).isAssignableFrom(Object.class));</span>
+<span class="fc" id="L43">    assertTrue(TypeToken.get(RandomAccess.class).isAssignableFrom(ArrayList.class));</span>
+<span class="fc" id="L44">    assertFalse(TypeToken.get(ArrayList.class).isAssignableFrom(RandomAccess.class));</span>
+<span class="fc" id="L45">  }</span>
+
+  public void testIsAssignableFromWithTypeParameters() throws Exception {
+<span class="fc" id="L48">    Type a = getClass().getDeclaredField(&quot;listOfInteger&quot;).getGenericType();</span>
+<span class="fc" id="L49">    Type b = getClass().getDeclaredField(&quot;listOfNumber&quot;).getGenericType();</span>
+<span class="fc" id="L50">    assertTrue(TypeToken.get(a).isAssignableFrom(a));</span>
+<span class="fc" id="L51">    assertTrue(TypeToken.get(b).isAssignableFrom(b));</span>
+
+    // listOfInteger = listOfNumber; // doesn't compile; must be false
+<span class="fc" id="L54">    assertFalse(TypeToken.get(a).isAssignableFrom(b));</span>
+    // listOfNumber = listOfInteger; // doesn't compile; must be false
+<span class="fc" id="L56">    assertFalse(TypeToken.get(b).isAssignableFrom(a));</span>
+<span class="fc" id="L57">  }</span>
+
+  public void testIsAssignableFromWithBasicWildcards() throws Exception {
+<span class="fc" id="L60">    Type a = getClass().getDeclaredField(&quot;listOfString&quot;).getGenericType();</span>
+<span class="fc" id="L61">    Type b = getClass().getDeclaredField(&quot;listOfUnknown&quot;).getGenericType();</span>
+<span class="fc" id="L62">    assertTrue(TypeToken.get(a).isAssignableFrom(a));</span>
+<span class="fc" id="L63">    assertTrue(TypeToken.get(b).isAssignableFrom(b));</span>
+
+    // listOfString = listOfUnknown  // doesn't compile; must be false
+<span class="fc" id="L66">    assertFalse(TypeToken.get(a).isAssignableFrom(b));</span>
+<span class="fc" id="L67">    listOfUnknown = listOfString; // compiles; must be true</span>
+    // The following assertion is too difficult to support reliably, so disabling
+    // assertTrue(TypeToken.get(b).isAssignableFrom(a));
+<span class="fc" id="L70">  }</span>
+
+  public void testIsAssignableFromWithNestedWildcards() throws Exception {
+<span class="fc" id="L73">    Type a = getClass().getDeclaredField(&quot;listOfSetOfString&quot;).getGenericType();</span>
+<span class="fc" id="L74">    Type b = getClass().getDeclaredField(&quot;listOfSetOfUnknown&quot;).getGenericType();</span>
+<span class="fc" id="L75">    assertTrue(TypeToken.get(a).isAssignableFrom(a));</span>
+<span class="fc" id="L76">    assertTrue(TypeToken.get(b).isAssignableFrom(b));</span>
+
+    // listOfSetOfString = listOfSetOfUnknown; // doesn't compile; must be false
+<span class="fc" id="L79">    assertFalse(TypeToken.get(a).isAssignableFrom(b));</span>
+    // listOfSetOfUnknown = listOfSetOfString; // doesn't compile; must be false
+<span class="fc" id="L81">    assertFalse(TypeToken.get(b).isAssignableFrom(a));</span>
+<span class="fc" id="L82">  }</span>
+
+  public void testArrayFactory() {
+<span class="fc" id="L85">    TypeToken&lt;?&gt; expectedStringArray = new TypeToken&lt;String[]&gt;() {};</span>
+<span class="fc" id="L86">    assertEquals(expectedStringArray, TypeToken.getArray(String.class));</span>
+
+<span class="fc" id="L88">    TypeToken&lt;?&gt; expectedListOfStringArray = new TypeToken&lt;List&lt;String&gt;[]&gt;() {};</span>
+<span class="fc" id="L89">    Type listOfString = new TypeToken&lt;List&lt;String&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L90">    assertEquals(expectedListOfStringArray, TypeToken.getArray(listOfString));</span>
+<span class="fc" id="L91">  }</span>
+
+  public void testParameterizedFactory() {
+<span class="fc" id="L94">    TypeToken&lt;?&gt; expectedListOfString = new TypeToken&lt;List&lt;String&gt;&gt;() {};</span>
+<span class="fc" id="L95">    assertEquals(expectedListOfString, TypeToken.getParameterized(List.class, String.class));</span>
+
+<span class="fc" id="L97">    TypeToken&lt;?&gt; expectedMapOfStringToString = new TypeToken&lt;Map&lt;String, String&gt;&gt;() {};</span>
+<span class="fc" id="L98">    assertEquals(expectedMapOfStringToString, TypeToken.getParameterized(Map.class, String.class, String.class));</span>
+
+<span class="fc" id="L100">    TypeToken&lt;?&gt; expectedListOfListOfListOfString = new TypeToken&lt;List&lt;List&lt;List&lt;String&gt;&gt;&gt;&gt;() {};</span>
+<span class="fc" id="L101">    Type listOfString = TypeToken.getParameterized(List.class, String.class).getType();</span>
+<span class="fc" id="L102">    Type listOfListOfString = TypeToken.getParameterized(List.class, listOfString).getType();</span>
+<span class="fc" id="L103">    assertEquals(expectedListOfListOfListOfString, TypeToken.getParameterized(List.class, listOfListOfString));</span>
+<span class="fc" id="L104">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

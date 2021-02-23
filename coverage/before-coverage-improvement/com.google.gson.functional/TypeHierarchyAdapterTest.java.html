@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TypeHierarchyAdapterTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">TypeHierarchyAdapterTest.java</span></div><h1>TypeHierarchyAdapterTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2011 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
+import junit.framework.TestCase;
+
+/**
+ * Test that the hierarchy adapter works when subtypes are used.
+ */
+<span class="fc" id="L35">public final class TypeHierarchyAdapterTest extends TestCase {</span>
+
+  public void testTypeHierarchy() {
+<span class="fc" id="L38">    Manager andy = new Manager();</span>
+<span class="fc" id="L39">    andy.userid = &quot;andy&quot;;</span>
+<span class="fc" id="L40">    andy.startDate = 2005;</span>
+<span class="fc" id="L41">    andy.minions = new Employee[] {</span>
+        new Employee(&quot;inder&quot;, 2007),
+        new Employee(&quot;joel&quot;, 2006),
+        new Employee(&quot;jesse&quot;, 2006),
+    };
+
+<span class="fc" id="L47">    CEO eric = new CEO();</span>
+<span class="fc" id="L48">    eric.userid = &quot;eric&quot;;</span>
+<span class="fc" id="L49">    eric.startDate = 2001;</span>
+<span class="fc" id="L50">    eric.assistant = new Employee(&quot;jerome&quot;, 2006);</span>
+
+<span class="fc" id="L52">    eric.minions = new Employee[] {</span>
+        new Employee(&quot;larry&quot;, 1998),
+        new Employee(&quot;sergey&quot;, 1998),
+        andy,
+    };
+
+<span class="fc" id="L58">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L59">        .registerTypeHierarchyAdapter(Employee.class, new EmployeeAdapter())</span>
+<span class="fc" id="L60">        .setPrettyPrinting()</span>
+<span class="fc" id="L61">        .create();</span>
+
+<span class="fc" id="L63">    Company company = new Company();</span>
+<span class="fc" id="L64">    company.ceo = eric;</span>
+
+<span class="fc" id="L66">    String json = gson.toJson(company, Company.class);</span>
+<span class="fc" id="L67">    assertEquals(&quot;{\n&quot; +</span>
+        &quot;  \&quot;ceo\&quot;: {\n&quot; +
+        &quot;    \&quot;userid\&quot;: \&quot;eric\&quot;,\n&quot; +
+        &quot;    \&quot;startDate\&quot;: 2001,\n&quot; +
+        &quot;    \&quot;minions\&quot;: [\n&quot; +
+        &quot;      {\n&quot; +
+        &quot;        \&quot;userid\&quot;: \&quot;larry\&quot;,\n&quot; +
+        &quot;        \&quot;startDate\&quot;: 1998\n&quot; +
+        &quot;      },\n&quot; +
+        &quot;      {\n&quot; +
+        &quot;        \&quot;userid\&quot;: \&quot;sergey\&quot;,\n&quot; +
+        &quot;        \&quot;startDate\&quot;: 1998\n&quot; +
+        &quot;      },\n&quot; +
+        &quot;      {\n&quot; +
+        &quot;        \&quot;userid\&quot;: \&quot;andy\&quot;,\n&quot; +
+        &quot;        \&quot;startDate\&quot;: 2005,\n&quot; +
+        &quot;        \&quot;minions\&quot;: [\n&quot; +
+        &quot;          {\n&quot; +
+        &quot;            \&quot;userid\&quot;: \&quot;inder\&quot;,\n&quot; +
+        &quot;            \&quot;startDate\&quot;: 2007\n&quot; +
+        &quot;          },\n&quot; +
+        &quot;          {\n&quot; +
+        &quot;            \&quot;userid\&quot;: \&quot;joel\&quot;,\n&quot; +
+        &quot;            \&quot;startDate\&quot;: 2006\n&quot; +
+        &quot;          },\n&quot; +
+        &quot;          {\n&quot; +
+        &quot;            \&quot;userid\&quot;: \&quot;jesse\&quot;,\n&quot; +
+        &quot;            \&quot;startDate\&quot;: 2006\n&quot; +
+        &quot;          }\n&quot; +
+        &quot;        ]\n&quot; +
+        &quot;      }\n&quot; +
+        &quot;    ],\n&quot; +
+        &quot;    \&quot;assistant\&quot;: {\n&quot; +
+        &quot;      \&quot;userid\&quot;: \&quot;jerome\&quot;,\n&quot; +
+        &quot;      \&quot;startDate\&quot;: 2006\n&quot; +
+        &quot;    }\n&quot; +
+        &quot;  }\n&quot; +
+        &quot;}&quot;, json);
+
+<span class="fc" id="L106">    Company copied = gson.fromJson(json, Company.class);</span>
+<span class="fc" id="L107">    assertEquals(json, gson.toJson(copied, Company.class));</span>
+<span class="fc" id="L108">    assertEquals(copied.ceo.userid, company.ceo.userid);</span>
+<span class="fc" id="L109">    assertEquals(copied.ceo.assistant.userid, company.ceo.assistant.userid);</span>
+<span class="fc" id="L110">    assertEquals(copied.ceo.minions[0].userid, company.ceo.minions[0].userid);</span>
+<span class="fc" id="L111">    assertEquals(copied.ceo.minions[1].userid, company.ceo.minions[1].userid);</span>
+<span class="fc" id="L112">    assertEquals(copied.ceo.minions[2].userid, company.ceo.minions[2].userid);</span>
+<span class="fc" id="L113">    assertEquals(((Manager) copied.ceo.minions[2]).minions[0].userid,</span>
+        ((Manager) company.ceo.minions[2]).minions[0].userid);
+<span class="fc" id="L115">    assertEquals(((Manager) copied.ceo.minions[2]).minions[1].userid,</span>
+        ((Manager) company.ceo.minions[2]).minions[1].userid);
+<span class="fc" id="L117">  }</span>
+
+  public void testRegisterSuperTypeFirst() {
+<span class="fc" id="L120">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L121">        .registerTypeHierarchyAdapter(Employee.class, new EmployeeAdapter())</span>
+<span class="fc" id="L122">        .registerTypeHierarchyAdapter(Manager.class, new ManagerAdapter())</span>
+<span class="fc" id="L123">        .create();</span>
+
+<span class="fc" id="L125">    Manager manager = new Manager();</span>
+<span class="fc" id="L126">    manager.userid = &quot;inder&quot;;</span>
+
+<span class="fc" id="L128">    String json = gson.toJson(manager, Manager.class);</span>
+<span class="fc" id="L129">    assertEquals(&quot;\&quot;inder\&quot;&quot;, json);</span>
+<span class="fc" id="L130">    Manager copied = gson.fromJson(json, Manager.class);</span>
+<span class="fc" id="L131">    assertEquals(manager.userid, copied.userid);</span>
+<span class="fc" id="L132">  }</span>
+
+  /** This behaviour changed in Gson 2.1; it used to throw. */
+  public void testRegisterSubTypeFirstAllowed() {
+<span class="fc" id="L136">    new GsonBuilder()</span>
+<span class="fc" id="L137">        .registerTypeHierarchyAdapter(Manager.class, new ManagerAdapter())</span>
+<span class="fc" id="L138">        .registerTypeHierarchyAdapter(Employee.class, new EmployeeAdapter())</span>
+<span class="fc" id="L139">        .create();</span>
+<span class="fc" id="L140">  }</span>
+
+<span class="fc" id="L142">  static class ManagerAdapter implements JsonSerializer&lt;Manager&gt;, JsonDeserializer&lt;Manager&gt; {</span>
+    @Override public Manager deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+<span class="fc" id="L144">      Manager result = new Manager();</span>
+<span class="fc" id="L145">      result.userid = json.getAsString();</span>
+<span class="fc" id="L146">      return result;</span>
+    }
+    @Override public JsonElement serialize(Manager src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L149">      return new JsonPrimitive(src.userid);</span>
+    }
+  }
+
+<span class="fc" id="L153">  static class EmployeeAdapter implements JsonSerializer&lt;Employee&gt;, JsonDeserializer&lt;Employee&gt; {</span>
+    @Override public JsonElement serialize(Employee employee, Type typeOfSrc,
+        JsonSerializationContext context) {
+<span class="fc" id="L156">      JsonObject result = new JsonObject();</span>
+<span class="fc" id="L157">      result.add(&quot;userid&quot;, context.serialize(employee.userid, String.class));</span>
+<span class="fc" id="L158">      result.add(&quot;startDate&quot;, context.serialize(employee.startDate, long.class));</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">      if (employee instanceof Manager) {</span>
+<span class="fc" id="L160">        result.add(&quot;minions&quot;, context.serialize(((Manager) employee).minions, Employee[].class));</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (employee instanceof CEO) {</span>
+<span class="fc" id="L162">          result.add(&quot;assistant&quot;, context.serialize(((CEO) employee).assistant, Employee.class));</span>
+        }
+      }
+<span class="fc" id="L165">      return result;</span>
+    }
+
+    @Override public Employee deserialize(JsonElement json, Type typeOfT,
+        JsonDeserializationContext context) throws JsonParseException {
+<span class="fc" id="L170">      JsonObject object = json.getAsJsonObject();</span>
+<span class="fc" id="L171">      Employee result = null;</span>
+
+      // if the employee has an assistant, she must be the CEO
+<span class="fc" id="L174">      JsonElement assistant = object.get(&quot;assistant&quot;);</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">      if (assistant != null) {</span>
+<span class="fc" id="L176">        result = new CEO();</span>
+<span class="fc" id="L177">        ((CEO) result).assistant = context.deserialize(assistant, Employee.class);</span>
+      }
+
+      // only managers have minions
+<span class="fc" id="L181">      JsonElement minons = object.get(&quot;minions&quot;);</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">      if (minons != null) {</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (result == null) {</span>
+<span class="fc" id="L184">          result = new Manager();</span>
+        }
+<span class="fc" id="L186">        ((Manager) result).minions = context.deserialize(minons, Employee[].class);</span>
+      }
+
+<span class="fc bfc" id="L189" title="All 2 branches covered.">      if (result == null) {</span>
+<span class="fc" id="L190">        result = new Employee();</span>
+      }
+<span class="fc" id="L192">      result.userid = context.deserialize(object.get(&quot;userid&quot;), String.class);</span>
+<span class="fc" id="L193">      result.startDate = context.&lt;Long&gt;deserialize(object.get(&quot;startDate&quot;), long.class);</span>
+<span class="fc" id="L194">      return result;</span>
+    }
+  }
+
+  static class Employee {
+    String userid;
+    long startDate;
+
+<span class="fc" id="L202">    Employee(String userid, long startDate) {</span>
+<span class="fc" id="L203">      this.userid = userid;</span>
+<span class="fc" id="L204">      this.startDate = startDate;</span>
+<span class="fc" id="L205">    }</span>
+
+<span class="fc" id="L207">    Employee() {}</span>
+  }
+
+<span class="fc" id="L210">  static class Manager extends Employee {</span>
+    Employee[] minions;
+  }
+
+<span class="fc" id="L214">  static class CEO extends Manager {</span>
+    Employee assistant;
+  }
+
+<span class="fc" id="L218">  static class Company {</span>
+    CEO ceo;
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

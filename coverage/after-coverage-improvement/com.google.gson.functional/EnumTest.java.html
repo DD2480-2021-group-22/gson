@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EnumTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">EnumTest.java</span></div><h1>EnumTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.Set;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.common.MoreAsserts;
+import com.google.gson.reflect.TypeToken;
+
+import junit.framework.TestCase;
+/**
+ * Functional tests for Java 5.0 enums.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L45">public class EnumTest extends TestCase {</span>
+
+  private Gson gson;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L51">    super.setUp();</span>
+<span class="fc" id="L52">    gson = new Gson();</span>
+<span class="fc" id="L53">  }</span>
+
+  public void testTopLevelEnumSerialization() throws Exception {
+<span class="fc" id="L56">    String result = gson.toJson(MyEnum.VALUE1);</span>
+<span class="fc" id="L57">    assertEquals('&quot;' + MyEnum.VALUE1.toString() + '&quot;', result);</span>
+<span class="fc" id="L58">  }</span>
+
+  public void testTopLevelEnumDeserialization() throws Exception {
+<span class="fc" id="L61">    MyEnum result = gson.fromJson('&quot;' + MyEnum.VALUE1.toString() + '&quot;', MyEnum.class);</span>
+<span class="fc" id="L62">    assertEquals(MyEnum.VALUE1, result);</span>
+<span class="fc" id="L63">  }</span>
+
+  public void testCollectionOfEnumsSerialization() {
+<span class="fc" id="L66">    Type type = new TypeToken&lt;Collection&lt;MyEnum&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L67">    Collection&lt;MyEnum&gt; target = new ArrayList&lt;MyEnum&gt;();</span>
+<span class="fc" id="L68">    target.add(MyEnum.VALUE1);</span>
+<span class="fc" id="L69">    target.add(MyEnum.VALUE2);</span>
+<span class="fc" id="L70">    String expectedJson = &quot;[\&quot;VALUE1\&quot;,\&quot;VALUE2\&quot;]&quot;;</span>
+<span class="fc" id="L71">    String actualJson = gson.toJson(target);</span>
+<span class="fc" id="L72">    assertEquals(expectedJson, actualJson);</span>
+<span class="fc" id="L73">    actualJson = gson.toJson(target, type);</span>
+<span class="fc" id="L74">    assertEquals(expectedJson, actualJson);</span>
+<span class="fc" id="L75">  }</span>
+
+  public void testCollectionOfEnumsDeserialization() {
+<span class="fc" id="L78">    Type type = new TypeToken&lt;Collection&lt;MyEnum&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L79">    String json = &quot;[\&quot;VALUE1\&quot;,\&quot;VALUE2\&quot;]&quot;;</span>
+<span class="fc" id="L80">    Collection&lt;MyEnum&gt; target = gson.fromJson(json, type);</span>
+<span class="fc" id="L81">    MoreAsserts.assertContains(target, MyEnum.VALUE1);</span>
+<span class="fc" id="L82">    MoreAsserts.assertContains(target, MyEnum.VALUE2);</span>
+<span class="fc" id="L83">  }</span>
+
+  public void testClassWithEnumFieldSerialization() throws Exception {
+<span class="fc" id="L86">    ClassWithEnumFields target = new ClassWithEnumFields();</span>
+<span class="fc" id="L87">    assertEquals(target.getExpectedJson(), gson.toJson(target));</span>
+<span class="fc" id="L88">  }</span>
+
+  public void testClassWithEnumFieldDeserialization() throws Exception {
+<span class="fc" id="L91">    String json = &quot;{value1:'VALUE1',value2:'VALUE2'}&quot;;</span>
+<span class="fc" id="L92">    ClassWithEnumFields target = gson.fromJson(json, ClassWithEnumFields.class);</span>
+<span class="fc" id="L93">    assertEquals(MyEnum.VALUE1,target.value1);</span>
+<span class="fc" id="L94">    assertEquals(MyEnum.VALUE2,target.value2);</span>
+<span class="fc" id="L95">  }</span>
+
+<span class="fc" id="L97">  private static enum MyEnum {</span>
+<span class="fc" id="L98">    VALUE1, VALUE2</span>
+  }
+
+<span class="fc" id="L101">  private static class ClassWithEnumFields {</span>
+<span class="fc" id="L102">    private final MyEnum value1 = MyEnum.VALUE1;</span>
+<span class="fc" id="L103">    private final MyEnum value2 = MyEnum.VALUE2;</span>
+    public String getExpectedJson() {
+<span class="fc" id="L105">      return &quot;{\&quot;value1\&quot;:\&quot;&quot; + value1 + &quot;\&quot;,\&quot;value2\&quot;:\&quot;&quot; + value2 + &quot;\&quot;}&quot;;</span>
+    }
+  }
+
+  /**
+   * Test for issue 226.
+   */
+  public void testEnumSubclass() {
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">    assertFalse(Roshambo.class == Roshambo.ROCK.getClass());</span>
+<span class="fc" id="L114">    assertEquals(&quot;\&quot;ROCK\&quot;&quot;, gson.toJson(Roshambo.ROCK));</span>
+<span class="fc" id="L115">    assertEquals(&quot;[\&quot;ROCK\&quot;,\&quot;PAPER\&quot;,\&quot;SCISSORS\&quot;]&quot;, gson.toJson(EnumSet.allOf(Roshambo.class)));</span>
+<span class="fc" id="L116">    assertEquals(Roshambo.ROCK, gson.fromJson(&quot;\&quot;ROCK\&quot;&quot;, Roshambo.class));</span>
+<span class="fc" id="L117">    assertEquals(EnumSet.allOf(Roshambo.class),</span>
+<span class="fc" id="L118">        gson.fromJson(&quot;[\&quot;ROCK\&quot;,\&quot;PAPER\&quot;,\&quot;SCISSORS\&quot;]&quot;, new TypeToken&lt;Set&lt;Roshambo&gt;&gt;() {}.getType()));</span>
+<span class="fc" id="L119">  }</span>
+
+  public void testEnumSubclassWithRegisteredTypeAdapter() {
+<span class="fc" id="L122">    gson = new GsonBuilder()</span>
+<span class="fc" id="L123">        .registerTypeHierarchyAdapter(Roshambo.class, new MyEnumTypeAdapter())</span>
+<span class="fc" id="L124">        .create();</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">    assertFalse(Roshambo.class == Roshambo.ROCK.getClass());</span>
+<span class="fc" id="L126">    assertEquals(&quot;\&quot;123ROCK\&quot;&quot;, gson.toJson(Roshambo.ROCK));</span>
+<span class="fc" id="L127">    assertEquals(&quot;[\&quot;123ROCK\&quot;,\&quot;123PAPER\&quot;,\&quot;123SCISSORS\&quot;]&quot;, gson.toJson(EnumSet.allOf(Roshambo.class)));</span>
+<span class="fc" id="L128">    assertEquals(Roshambo.ROCK, gson.fromJson(&quot;\&quot;123ROCK\&quot;&quot;, Roshambo.class));</span>
+<span class="fc" id="L129">    assertEquals(EnumSet.allOf(Roshambo.class),</span>
+<span class="fc" id="L130">        gson.fromJson(&quot;[\&quot;123ROCK\&quot;,\&quot;123PAPER\&quot;,\&quot;123SCISSORS\&quot;]&quot;, new TypeToken&lt;Set&lt;Roshambo&gt;&gt;() {}.getType()));</span>
+<span class="fc" id="L131">  }</span>
+
+  public void testEnumSubclassAsParameterizedType() {
+<span class="fc" id="L134">    Collection&lt;Roshambo&gt; list = new ArrayList&lt;Roshambo&gt;();</span>
+<span class="fc" id="L135">    list.add(Roshambo.ROCK);</span>
+<span class="fc" id="L136">    list.add(Roshambo.PAPER);</span>
+
+<span class="fc" id="L138">    String json = gson.toJson(list);</span>
+<span class="fc" id="L139">    assertEquals(&quot;[\&quot;ROCK\&quot;,\&quot;PAPER\&quot;]&quot;, json);</span>
+
+<span class="fc" id="L141">    Type collectionType = new TypeToken&lt;Collection&lt;Roshambo&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L142">    Collection&lt;Roshambo&gt; actualJsonList = gson.fromJson(json, collectionType);</span>
+<span class="fc" id="L143">    MoreAsserts.assertContains(actualJsonList, Roshambo.ROCK);</span>
+<span class="fc" id="L144">    MoreAsserts.assertContains(actualJsonList, Roshambo.PAPER);</span>
+<span class="fc" id="L145">  }</span>
+
+  public void testEnumCaseMapping() {
+<span class="fc" id="L148">    assertEquals(Gender.MALE, gson.fromJson(&quot;\&quot;boy\&quot;&quot;, Gender.class));</span>
+<span class="fc" id="L149">    assertEquals(&quot;\&quot;boy\&quot;&quot;, gson.toJson(Gender.MALE, Gender.class));</span>
+<span class="fc" id="L150">  }</span>
+
+  public void testEnumSet() {
+<span class="fc" id="L153">    EnumSet&lt;Roshambo&gt; foo = EnumSet.of(Roshambo.ROCK, Roshambo.PAPER);</span>
+<span class="fc" id="L154">    String json = gson.toJson(foo);</span>
+<span class="fc" id="L155">    Type type = new TypeToken&lt;EnumSet&lt;Roshambo&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L156">    EnumSet&lt;Roshambo&gt; bar = gson.fromJson(json, type);</span>
+<span class="fc" id="L157">    assertTrue(bar.contains(Roshambo.ROCK));</span>
+<span class="fc" id="L158">    assertTrue(bar.contains(Roshambo.PAPER));</span>
+<span class="fc" id="L159">    assertFalse(bar.contains(Roshambo.SCISSORS));</span>
+<span class="fc" id="L160">  }</span>
+
+<span class="fc" id="L162">  public enum Roshambo {</span>
+<span class="fc" id="L163">    ROCK {</span>
+      @Override Roshambo defeats() {
+<span class="nc" id="L165">        return SCISSORS;</span>
+      }
+    },
+<span class="fc" id="L168">    PAPER {</span>
+      @Override Roshambo defeats() {
+<span class="nc" id="L170">        return ROCK;</span>
+      }
+    },
+<span class="fc" id="L173">    SCISSORS {</span>
+      @Override Roshambo defeats() {
+<span class="nc" id="L175">        return PAPER;</span>
+      }
+    };
+
+    abstract Roshambo defeats();
+  }
+
+  private static class MyEnumTypeAdapter
+      implements JsonSerializer&lt;Roshambo&gt;, JsonDeserializer&lt;Roshambo&gt; {
+    @Override public JsonElement serialize(Roshambo src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L185">      return new JsonPrimitive(&quot;123&quot; + src.name());</span>
+    }
+
+    @Override public Roshambo deserialize(JsonElement json, Type classOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+<span class="fc" id="L190">      return Roshambo.valueOf(json.getAsString().substring(3));</span>
+    }
+  }
+
+<span class="fc" id="L194">  public enum Gender {</span>
+<span class="fc" id="L195">    @SerializedName(&quot;boy&quot;)</span>
+    MALE,
+
+<span class="fc" id="L198">    @SerializedName(&quot;girl&quot;)</span>
+    FEMALE
+  }
+
+  public void testEnumClassWithFields() {
+<span class="fc" id="L203">	  assertEquals(&quot;\&quot;RED\&quot;&quot;, gson.toJson(Color.RED));</span>
+<span class="fc" id="L204">	  assertEquals(&quot;red&quot;, gson.fromJson(&quot;RED&quot;, Color.class).value);</span>
+<span class="fc" id="L205">  }</span>
+
+<span class="fc" id="L207">  public enum Color {</span>
+<span class="fc" id="L208">	  RED(&quot;red&quot;, 1), BLUE(&quot;blue&quot;, 2), GREEN(&quot;green&quot;, 3);</span>
+	  String value;
+	  int index;
+<span class="fc" id="L211">	  private Color(String value, int index) {</span>
+<span class="fc" id="L212">		  this.value = value;</span>
+<span class="fc" id="L213">		  this.index = index;</span>
+<span class="fc" id="L214">	  }</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

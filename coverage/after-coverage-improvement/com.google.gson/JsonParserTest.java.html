@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonParserTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson</a> &gt; <span class="el_source">JsonParserTest.java</span></div><h1>JsonParserTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2009 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson;
+
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+import com.google.gson.internal.Streams;
+import com.google.gson.stream.JsonReader;
+import junit.framework.TestCase;
+
+import java.io.CharArrayReader;
+import java.io.CharArrayWriter;
+import java.io.StringReader;
+
+/**
+ * Unit test for {@link JsonParser}
+ *
+ * @author Inderjeet Singh
+ */
+<span class="fc" id="L33">public class JsonParserTest extends TestCase {</span>
+
+  public void testParseInvalidJson() {
+    try {
+<span class="nc" id="L37">      JsonParser.parseString(&quot;[[]&quot;);</span>
+<span class="nc" id="L38">      fail();</span>
+<span class="pc" id="L39">    } catch (JsonSyntaxException expected) { }</span>
+<span class="fc" id="L40">  }</span>
+
+  public void testParseUnquotedStringArrayFails() {
+<span class="fc" id="L43">    JsonElement element = JsonParser.parseString(&quot;[a,b,c]&quot;);</span>
+<span class="fc" id="L44">    assertEquals(&quot;a&quot;, element.getAsJsonArray().get(0).getAsString());</span>
+<span class="fc" id="L45">    assertEquals(&quot;b&quot;, element.getAsJsonArray().get(1).getAsString());</span>
+<span class="fc" id="L46">    assertEquals(&quot;c&quot;, element.getAsJsonArray().get(2).getAsString());</span>
+<span class="fc" id="L47">    assertEquals(3, element.getAsJsonArray().size());</span>
+<span class="fc" id="L48">  }</span>
+
+  public void testParseString() {
+<span class="fc" id="L51">    String json = &quot;{a:10,b:'c'}&quot;;</span>
+<span class="fc" id="L52">    JsonElement e = JsonParser.parseString(json);</span>
+<span class="fc" id="L53">    assertTrue(e.isJsonObject());</span>
+<span class="fc" id="L54">    assertEquals(10, e.getAsJsonObject().get(&quot;a&quot;).getAsInt());</span>
+<span class="fc" id="L55">    assertEquals(&quot;c&quot;, e.getAsJsonObject().get(&quot;b&quot;).getAsString());</span>
+<span class="fc" id="L56">  }</span>
+
+  public void testParseEmptyString() {
+<span class="fc" id="L59">    JsonElement e = JsonParser.parseString(&quot;\&quot;   \&quot;&quot;);</span>
+<span class="fc" id="L60">    assertTrue(e.isJsonPrimitive());</span>
+<span class="fc" id="L61">    assertEquals(&quot;   &quot;, e.getAsString());</span>
+<span class="fc" id="L62">  }</span>
+
+  public void testParseEmptyWhitespaceInput() {
+<span class="fc" id="L65">    JsonElement e = JsonParser.parseString(&quot;     &quot;);</span>
+<span class="fc" id="L66">    assertTrue(e.isJsonNull());</span>
+<span class="fc" id="L67">  }</span>
+
+  public void testParseUnquotedSingleWordStringFails() {
+<span class="fc" id="L70">    assertEquals(&quot;Test&quot;, JsonParser.parseString(&quot;Test&quot;).getAsString());</span>
+<span class="fc" id="L71">  }</span>
+
+  public void testParseUnquotedMultiWordStringFails() {
+<span class="fc" id="L74">    String unquotedSentence = &quot;Test is a test..blah blah&quot;;</span>
+    try {
+<span class="nc" id="L76">      JsonParser.parseString(unquotedSentence);</span>
+<span class="nc" id="L77">      fail();</span>
+<span class="pc" id="L78">    } catch (JsonSyntaxException expected) { }</span>
+<span class="fc" id="L79">  }</span>
+
+  public void testParseMixedArray() {
+<span class="fc" id="L82">    String json = &quot;[{},13,\&quot;stringValue\&quot;]&quot;;</span>
+<span class="fc" id="L83">    JsonElement e = JsonParser.parseString(json);</span>
+<span class="fc" id="L84">    assertTrue(e.isJsonArray());</span>
+
+<span class="fc" id="L86">    JsonArray  array = e.getAsJsonArray();</span>
+<span class="fc" id="L87">    assertEquals(&quot;{}&quot;, array.get(0).toString());</span>
+<span class="fc" id="L88">    assertEquals(13, array.get(1).getAsInt());</span>
+<span class="fc" id="L89">    assertEquals(&quot;stringValue&quot;, array.get(2).getAsString());</span>
+<span class="fc" id="L90">  }</span>
+
+  public void testParseReader() {
+<span class="fc" id="L93">    StringReader reader = new StringReader(&quot;{a:10,b:'c'}&quot;);</span>
+<span class="fc" id="L94">    JsonElement e = JsonParser.parseReader(reader);</span>
+<span class="fc" id="L95">    assertTrue(e.isJsonObject());</span>
+<span class="fc" id="L96">    assertEquals(10, e.getAsJsonObject().get(&quot;a&quot;).getAsInt());</span>
+<span class="fc" id="L97">    assertEquals(&quot;c&quot;, e.getAsJsonObject().get(&quot;b&quot;).getAsString());</span>
+<span class="fc" id="L98">  }</span>
+
+  public void testReadWriteTwoObjects() throws Exception {
+<span class="fc" id="L101">    Gson gson = new Gson();</span>
+<span class="fc" id="L102">    CharArrayWriter writer = new CharArrayWriter();</span>
+<span class="fc" id="L103">    BagOfPrimitives expectedOne = new BagOfPrimitives(1, 1, true, &quot;one&quot;);</span>
+<span class="fc" id="L104">    writer.write(gson.toJson(expectedOne).toCharArray());</span>
+<span class="fc" id="L105">    BagOfPrimitives expectedTwo = new BagOfPrimitives(2, 2, false, &quot;two&quot;);</span>
+<span class="fc" id="L106">    writer.write(gson.toJson(expectedTwo).toCharArray());</span>
+<span class="fc" id="L107">    CharArrayReader reader = new CharArrayReader(writer.toCharArray());</span>
+
+<span class="fc" id="L109">    JsonReader parser = new JsonReader(reader);</span>
+<span class="fc" id="L110">    parser.setLenient(true);</span>
+<span class="fc" id="L111">    JsonElement element1 = Streams.parse(parser);</span>
+<span class="fc" id="L112">    JsonElement element2 = Streams.parse(parser);</span>
+<span class="fc" id="L113">    BagOfPrimitives actualOne = gson.fromJson(element1, BagOfPrimitives.class);</span>
+<span class="fc" id="L114">    assertEquals(&quot;one&quot;, actualOne.stringValue);</span>
+<span class="fc" id="L115">    BagOfPrimitives actualTwo = gson.fromJson(element2, BagOfPrimitives.class);</span>
+<span class="fc" id="L116">    assertEquals(&quot;two&quot;, actualTwo.stringValue);</span>
+<span class="fc" id="L117">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

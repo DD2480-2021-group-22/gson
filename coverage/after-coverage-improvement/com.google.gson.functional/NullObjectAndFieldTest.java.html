@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NullObjectAndFieldTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.functional</a> &gt; <span class="el_source">NullObjectAndFieldTest.java</span></div><h1>NullObjectAndFieldTest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2008 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.functional;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.common.TestTypes.BagOfPrimitives;
+import com.google.gson.common.TestTypes.ClassWithObjects;
+
+import junit.framework.TestCase;
+
+import java.lang.reflect.Type;
+import java.util.Collection;
+
+/**
+ * Functional tests for the different cases for serializing (or ignoring) null fields and object.
+ *
+ * @author Inderjeet Singh
+ * @author Joel Leitch
+ */
+<span class="fc" id="L42">public class NullObjectAndFieldTest extends TestCase {</span>
+  private GsonBuilder gsonBuilder;
+
+  @Override
+  protected void setUp() throws Exception {
+<span class="fc" id="L47">    super.setUp();</span>
+<span class="fc" id="L48">    gsonBuilder = new GsonBuilder().serializeNulls();</span>
+<span class="fc" id="L49">  }</span>
+
+  public void testTopLevelNullObjectSerialization() {
+<span class="fc" id="L52">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L53">    String actual = gson.toJson(null);</span>
+<span class="fc" id="L54">    assertEquals(&quot;null&quot;, actual);</span>
+
+<span class="fc" id="L56">    actual = gson.toJson(null, String.class);</span>
+<span class="fc" id="L57">    assertEquals(&quot;null&quot;, actual);</span>
+<span class="fc" id="L58">  }</span>
+
+  public void testTopLevelNullObjectDeserialization() throws Exception {
+<span class="fc" id="L61">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L62">    String actual = gson.fromJson(&quot;null&quot;, String.class);</span>
+<span class="fc" id="L63">    assertNull(actual);</span>
+<span class="fc" id="L64">  }</span>
+
+  public void testExplicitSerializationOfNulls() {
+<span class="fc" id="L67">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L68">    ClassWithObjects target = new ClassWithObjects(null);</span>
+<span class="fc" id="L69">    String actual = gson.toJson(target);</span>
+<span class="fc" id="L70">    String expected = &quot;{\&quot;bag\&quot;:null}&quot;;</span>
+<span class="fc" id="L71">    assertEquals(expected, actual);</span>
+<span class="fc" id="L72">  }</span>
+
+  public void testExplicitDeserializationOfNulls() throws Exception {
+<span class="fc" id="L75">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L76">    ClassWithObjects target = gson.fromJson(&quot;{\&quot;bag\&quot;:null}&quot;, ClassWithObjects.class);</span>
+<span class="fc" id="L77">    assertNull(target.bag);</span>
+<span class="fc" id="L78">  }</span>
+  
+  public void testExplicitSerializationOfNullArrayMembers() {
+<span class="fc" id="L81">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L82">    ClassWithMembers target = new ClassWithMembers();</span>
+<span class="fc" id="L83">    String json = gson.toJson(target);</span>
+<span class="fc" id="L84">    assertTrue(json.contains(&quot;\&quot;array\&quot;:null&quot;));</span>
+<span class="fc" id="L85">  }</span>
+  
+  /** 
+   * Added to verify http://code.google.com/p/google-gson/issues/detail?id=68
+   */
+  public void testNullWrappedPrimitiveMemberSerialization() {
+<span class="fc" id="L91">    Gson gson = gsonBuilder.serializeNulls().create();</span>
+<span class="fc" id="L92">    ClassWithNullWrappedPrimitive target = new ClassWithNullWrappedPrimitive();</span>
+<span class="fc" id="L93">    String json = gson.toJson(target);</span>
+<span class="fc" id="L94">    assertTrue(json.contains(&quot;\&quot;value\&quot;:null&quot;));</span>
+<span class="fc" id="L95">  }</span>
+  
+  /** 
+   * Added to verify http://code.google.com/p/google-gson/issues/detail?id=68
+   */
+  public void testNullWrappedPrimitiveMemberDeserialization() {
+<span class="fc" id="L101">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L102">    String json = &quot;{'value':null}&quot;;</span>
+<span class="fc" id="L103">    ClassWithNullWrappedPrimitive target = gson.fromJson(json, ClassWithNullWrappedPrimitive.class);</span>
+<span class="fc" id="L104">    assertNull(target.value);</span>
+<span class="fc" id="L105">  }</span>
+  
+  public void testExplicitSerializationOfNullCollectionMembers() {
+<span class="fc" id="L108">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L109">    ClassWithMembers target = new ClassWithMembers();</span>
+<span class="fc" id="L110">    String json = gson.toJson(target);</span>
+<span class="fc" id="L111">    assertTrue(json.contains(&quot;\&quot;col\&quot;:null&quot;));</span>
+<span class="fc" id="L112">  }</span>
+  
+  public void testExplicitSerializationOfNullStringMembers() {
+<span class="fc" id="L115">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L116">    ClassWithMembers target = new ClassWithMembers();</span>
+<span class="fc" id="L117">    String json = gson.toJson(target);</span>
+<span class="fc" id="L118">    assertTrue(json.contains(&quot;\&quot;str\&quot;:null&quot;));</span>
+<span class="fc" id="L119">  }</span>
+
+  public void testCustomSerializationOfNulls() {
+<span class="fc" id="L122">    gsonBuilder.registerTypeAdapter(ClassWithObjects.class, new ClassWithObjectsSerializer());</span>
+<span class="fc" id="L123">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L124">    ClassWithObjects target = new ClassWithObjects(new BagOfPrimitives());</span>
+<span class="fc" id="L125">    String actual = gson.toJson(target);</span>
+<span class="fc" id="L126">    String expected = &quot;{\&quot;bag\&quot;:null}&quot;;</span>
+<span class="fc" id="L127">    assertEquals(expected, actual);</span>
+<span class="fc" id="L128">  }</span>
+  
+  public void testPrintPrintingObjectWithNulls() throws Exception {
+<span class="fc" id="L131">    gsonBuilder = new GsonBuilder();</span>
+<span class="fc" id="L132">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L133">    String result = gson.toJson(new ClassWithMembers());</span>
+<span class="fc" id="L134">    assertEquals(&quot;{}&quot;, result);</span>
+
+<span class="fc" id="L136">    gson = gsonBuilder.serializeNulls().create();</span>
+<span class="fc" id="L137">    result = gson.toJson(new ClassWithMembers());</span>
+<span class="fc" id="L138">    assertTrue(result.contains(&quot;\&quot;str\&quot;:null&quot;));</span>
+<span class="fc" id="L139">  }</span>
+  
+  public void testPrintPrintingArraysWithNulls() throws Exception {
+<span class="fc" id="L142">    gsonBuilder = new GsonBuilder();</span>
+<span class="fc" id="L143">    Gson gson = gsonBuilder.create();</span>
+<span class="fc" id="L144">    String result = gson.toJson(new String[] { &quot;1&quot;, null, &quot;3&quot; });</span>
+<span class="fc" id="L145">    assertEquals(&quot;[\&quot;1\&quot;,null,\&quot;3\&quot;]&quot;, result);</span>
+
+<span class="fc" id="L147">    gson = gsonBuilder.serializeNulls().create();</span>
+<span class="fc" id="L148">    result = gson.toJson(new String[] { &quot;1&quot;, null, &quot;3&quot; });</span>
+<span class="fc" id="L149">    assertEquals(&quot;[\&quot;1\&quot;,null,\&quot;3\&quot;]&quot;, result);</span>
+<span class="fc" id="L150">  }</span>
+
+  // test for issue 389
+  public void testAbsentJsonElementsAreSetToNull() {
+<span class="fc" id="L154">    Gson gson = new Gson();</span>
+<span class="fc" id="L155">    ClassWithInitializedMembers target =</span>
+<span class="fc" id="L156">        gson.fromJson(&quot;{array:[1,2,3]}&quot;, ClassWithInitializedMembers.class);</span>
+<span class="pc bpc" id="L157" title="2 of 4 branches missed.">    assertTrue(target.array.length == 3 &amp;&amp; target.array[1] == 2);</span>
+<span class="fc" id="L158">    assertEquals(ClassWithInitializedMembers.MY_STRING_DEFAULT, target.str1);</span>
+<span class="fc" id="L159">    assertNull(target.str2);</span>
+<span class="fc" id="L160">    assertEquals(ClassWithInitializedMembers.MY_INT_DEFAULT, target.int1);</span>
+<span class="fc" id="L161">    assertEquals(0, target.int2); // test the default value of a primitive int field per JVM spec</span>
+<span class="fc" id="L162">    assertEquals(ClassWithInitializedMembers.MY_BOOLEAN_DEFAULT, target.bool1);</span>
+<span class="fc" id="L163">    assertFalse(target.bool2); // test the default value of a primitive boolean field per JVM spec</span>
+<span class="fc" id="L164">  }</span>
+
+  public static class ClassWithInitializedMembers {
+    // Using a mix of no-args constructor and field initializers
+    // Also, some fields are intialized and some are not (so initialized per JVM spec)
+    public static final String MY_STRING_DEFAULT = &quot;string&quot;;
+    private static final int MY_INT_DEFAULT = 2;
+    private static final boolean MY_BOOLEAN_DEFAULT = true;
+    int[] array;
+    String str1, str2;
+<span class="fc" id="L174">    int int1 = MY_INT_DEFAULT;</span>
+    int int2;
+<span class="fc" id="L176">    boolean bool1 = MY_BOOLEAN_DEFAULT;</span>
+    boolean bool2;
+<span class="fc" id="L178">    public ClassWithInitializedMembers() {</span>
+<span class="fc" id="L179">      str1 = MY_STRING_DEFAULT;</span>
+<span class="fc" id="L180">    }</span>
+  }
+
+  private static class ClassWithNullWrappedPrimitive {
+    private Long value;
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  private static class ClassWithMembers {
+    String str;
+    int[] array;
+    Collection&lt;String&gt; col;
+  }
+  
+  private static class ClassWithObjectsSerializer implements JsonSerializer&lt;ClassWithObjects&gt; {
+    @Override public JsonElement serialize(ClassWithObjects src, Type typeOfSrc,
+        JsonSerializationContext context) {
+<span class="fc" id="L197">      JsonObject obj = new JsonObject();</span>
+<span class="fc" id="L198">      obj.add(&quot;bag&quot;, JsonNull.INSTANCE);</span>
+<span class="fc" id="L199">      return obj;</span>
+    }
+  }
+
+  public void testExplicitNullSetsFieldToNullDuringDeserialization() {
+<span class="fc" id="L204">    Gson gson = new Gson();</span>
+<span class="fc" id="L205">    String json = &quot;{value:null}&quot;;</span>
+<span class="fc" id="L206">    ObjectWithField obj = gson.fromJson(json, ObjectWithField.class);</span>
+<span class="fc" id="L207">    assertNull(obj.value);</span>
+<span class="fc" id="L208">  }</span>
+
+  public void testCustomTypeAdapterPassesNullSerialization() {
+<span class="fc" id="L211">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L212">        .registerTypeAdapter(ObjectWithField.class, new JsonSerializer&lt;ObjectWithField&gt;() {</span>
+          @Override public JsonElement serialize(ObjectWithField src, Type typeOfSrc,
+              JsonSerializationContext context) {
+<span class="fc" id="L215">            return context.serialize(null);</span>
+          }
+<span class="fc" id="L217">        }).create();</span>
+<span class="fc" id="L218">    ObjectWithField target = new ObjectWithField();</span>
+<span class="fc" id="L219">    target.value = &quot;value1&quot;;</span>
+<span class="fc" id="L220">    String json = gson.toJson(target);</span>
+<span class="fc" id="L221">    assertFalse(json.contains(&quot;value1&quot;));</span>
+<span class="fc" id="L222">  }</span>
+
+  public void testCustomTypeAdapterPassesNullDesrialization() {
+<span class="fc" id="L225">    Gson gson = new GsonBuilder()</span>
+<span class="fc" id="L226">        .registerTypeAdapter(ObjectWithField.class, new JsonDeserializer&lt;ObjectWithField&gt;() {</span>
+          @Override public ObjectWithField deserialize(JsonElement json, Type type,
+              JsonDeserializationContext context) {
+<span class="fc" id="L229">            return context.deserialize(null, type);</span>
+          }
+<span class="fc" id="L231">        }).create();</span>
+<span class="fc" id="L232">    String json = &quot;{value:'value1'}&quot;;</span>
+<span class="fc" id="L233">    ObjectWithField target = gson.fromJson(json, ObjectWithField.class);</span>
+<span class="fc" id="L234">    assertNull(target);</span>
+<span class="fc" id="L235">  }</span>
+
+<span class="fc" id="L237">  private static class ObjectWithField {</span>
+<span class="fc" id="L238">    String value = &quot;&quot;;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

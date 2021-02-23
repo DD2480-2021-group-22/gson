@@ -1,0 +1,1612 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonReader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gson_parent$All_in_gson.exec</a> &gt; <a href="index.source.html" class="el_package">com.google.gson.stream</a> &gt; <span class="el_source">JsonReader.java</span></div><h1>JsonReader.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2010 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.gson.stream;
+
+import com.google.gson.internal.JsonReaderInternalAccess;
+import com.google.gson.internal.bind.JsonTreeReader;
+import java.io.Closeable;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Arrays;
+
+/**
+ * Reads a JSON (&lt;a href=&quot;http://www.ietf.org/rfc/rfc7159.txt&quot;&gt;RFC 7159&lt;/a&gt;)
+ * encoded value as a stream of tokens. This stream includes both literal
+ * values (strings, numbers, booleans, and nulls) as well as the begin and
+ * end delimiters of objects and arrays. The tokens are traversed in
+ * depth-first order, the same order that they appear in the JSON document.
+ * Within JSON objects, name/value pairs are represented by a single token.
+ *
+ * &lt;h3&gt;Parsing JSON&lt;/h3&gt;
+ * To create a recursive descent parser for your own JSON streams, first create
+ * an entry point method that creates a {@code JsonReader}.
+ *
+ * &lt;p&gt;Next, create handler methods for each structure in your JSON text. You'll
+ * need a method for each object type and for each array type.
+ * &lt;ul&gt;
+ *   &lt;li&gt;Within &lt;strong&gt;array handling&lt;/strong&gt; methods, first call {@link
+ *       #beginArray} to consume the array's opening bracket. Then create a
+ *       while loop that accumulates values, terminating when {@link #hasNext}
+ *       is false. Finally, read the array's closing bracket by calling {@link
+ *       #endArray}.
+ *   &lt;li&gt;Within &lt;strong&gt;object handling&lt;/strong&gt; methods, first call {@link
+ *       #beginObject} to consume the object's opening brace. Then create a
+ *       while loop that assigns values to local variables based on their name.
+ *       This loop should terminate when {@link #hasNext} is false. Finally,
+ *       read the object's closing brace by calling {@link #endObject}.
+ * &lt;/ul&gt;
+ * &lt;p&gt;When a nested object or array is encountered, delegate to the
+ * corresponding handler method.
+ *
+ * &lt;p&gt;When an unknown name is encountered, strict parsers should fail with an
+ * exception. Lenient parsers should call {@link #skipValue()} to recursively
+ * skip the value's nested tokens, which may otherwise conflict.
+ *
+ * &lt;p&gt;If a value may be null, you should first check using {@link #peek()}.
+ * Null literals can be consumed using either {@link #nextNull()} or {@link
+ * #skipValue()}.
+ *
+ * &lt;h3&gt;Example&lt;/h3&gt;
+ * Suppose we'd like to parse a stream of messages such as the following: &lt;pre&gt; {@code
+ * [
+ *   {
+ *     &quot;id&quot;: 912345678901,
+ *     &quot;text&quot;: &quot;How do I read a JSON stream in Java?&quot;,
+ *     &quot;geo&quot;: null,
+ *     &quot;user&quot;: {
+ *       &quot;name&quot;: &quot;json_newb&quot;,
+ *       &quot;followers_count&quot;: 41
+ *      }
+ *   },
+ *   {
+ *     &quot;id&quot;: 912345678902,
+ *     &quot;text&quot;: &quot;@json_newb just use JsonReader!&quot;,
+ *     &quot;geo&quot;: [50.454722, -104.606667],
+ *     &quot;user&quot;: {
+ *       &quot;name&quot;: &quot;jesse&quot;,
+ *       &quot;followers_count&quot;: 2
+ *     }
+ *   }
+ * ]}&lt;/pre&gt;
+ * This code implements the parser for the above structure: &lt;pre&gt;   {@code
+ *
+ *   public List&lt;Message&gt; readJsonStream(InputStream in) throws IOException {
+ *     JsonReader reader = new JsonReader(new InputStreamReader(in, &quot;UTF-8&quot;));
+ *     try {
+ *       return readMessagesArray(reader);
+ *     } finally {
+ *       reader.close();
+ *     }
+ *   }
+ *
+ *   public List&lt;Message&gt; readMessagesArray(JsonReader reader) throws IOException {
+ *     List&lt;Message&gt; messages = new ArrayList&lt;Message&gt;();
+ *
+ *     reader.beginArray();
+ *     while (reader.hasNext()) {
+ *       messages.add(readMessage(reader));
+ *     }
+ *     reader.endArray();
+ *     return messages;
+ *   }
+ *
+ *   public Message readMessage(JsonReader reader) throws IOException {
+ *     long id = -1;
+ *     String text = null;
+ *     User user = null;
+ *     List&lt;Double&gt; geo = null;
+ *
+ *     reader.beginObject();
+ *     while (reader.hasNext()) {
+ *       String name = reader.nextName();
+ *       if (name.equals(&quot;id&quot;)) {
+ *         id = reader.nextLong();
+ *       } else if (name.equals(&quot;text&quot;)) {
+ *         text = reader.nextString();
+ *       } else if (name.equals(&quot;geo&quot;) &amp;&amp; reader.peek() != JsonToken.NULL) {
+ *         geo = readDoublesArray(reader);
+ *       } else if (name.equals(&quot;user&quot;)) {
+ *         user = readUser(reader);
+ *       } else {
+ *         reader.skipValue();
+ *       }
+ *     }
+ *     reader.endObject();
+ *     return new Message(id, text, user, geo);
+ *   }
+ *
+ *   public List&lt;Double&gt; readDoublesArray(JsonReader reader) throws IOException {
+ *     List&lt;Double&gt; doubles = new ArrayList&lt;Double&gt;();
+ *
+ *     reader.beginArray();
+ *     while (reader.hasNext()) {
+ *       doubles.add(reader.nextDouble());
+ *     }
+ *     reader.endArray();
+ *     return doubles;
+ *   }
+ *
+ *   public User readUser(JsonReader reader) throws IOException {
+ *     String username = null;
+ *     int followersCount = -1;
+ *
+ *     reader.beginObject();
+ *     while (reader.hasNext()) {
+ *       String name = reader.nextName();
+ *       if (name.equals(&quot;name&quot;)) {
+ *         username = reader.nextString();
+ *       } else if (name.equals(&quot;followers_count&quot;)) {
+ *         followersCount = reader.nextInt();
+ *       } else {
+ *         reader.skipValue();
+ *       }
+ *     }
+ *     reader.endObject();
+ *     return new User(username, followersCount);
+ *   }}&lt;/pre&gt;
+ *
+ * &lt;h3&gt;Number Handling&lt;/h3&gt;
+ * This reader permits numeric values to be read as strings and string values to
+ * be read as numbers. For example, both elements of the JSON array {@code
+ * [1, &quot;1&quot;]} may be read using either {@link #nextInt} or {@link #nextString}.
+ * This behavior is intended to prevent lossy numeric conversions: double is
+ * JavaScript's only numeric type and very large values like {@code
+ * 9007199254740993} cannot be represented exactly on that platform. To minimize
+ * precision loss, extremely large values should be written and read as strings
+ * in JSON.
+ *
+ * &lt;a id=&quot;nonexecuteprefix&quot;/&gt;&lt;h3&gt;Non-Execute Prefix&lt;/h3&gt;
+ * Web servers that serve private data using JSON may be vulnerable to &lt;a
+ * href=&quot;http://en.wikipedia.org/wiki/JSON#Cross-site_request_forgery&quot;&gt;Cross-site
+ * request forgery&lt;/a&gt; attacks. In such an attack, a malicious site gains access
+ * to a private JSON file by executing it with an HTML {@code &lt;script&gt;} tag.
+ *
+ * &lt;p&gt;Prefixing JSON files with &lt;code&gt;&quot;)]}'\n&quot;&lt;/code&gt; makes them non-executable
+ * by {@code &lt;script&gt;} tags, disarming the attack. Since the prefix is malformed
+ * JSON, strict parsing fails when it is encountered. This class permits the
+ * non-execute prefix when {@link #setLenient(boolean) lenient parsing} is
+ * enabled.
+ *
+ * &lt;p&gt;Each {@code JsonReader} may be used to read a single JSON stream. Instances
+ * of this class are not thread safe.
+ *
+ * @author Jesse Wilson
+ * @since 1.6
+ */
+public class JsonReader implements Closeable {
+  private static final long MIN_INCOMPLETE_INTEGER = Long.MIN_VALUE / 10;
+
+  private static final int PEEKED_NONE = 0;
+  private static final int PEEKED_BEGIN_OBJECT = 1;
+  private static final int PEEKED_END_OBJECT = 2;
+  private static final int PEEKED_BEGIN_ARRAY = 3;
+  private static final int PEEKED_END_ARRAY = 4;
+  private static final int PEEKED_TRUE = 5;
+  private static final int PEEKED_FALSE = 6;
+  private static final int PEEKED_NULL = 7;
+  private static final int PEEKED_SINGLE_QUOTED = 8;
+  private static final int PEEKED_DOUBLE_QUOTED = 9;
+  private static final int PEEKED_UNQUOTED = 10;
+  /** When this is returned, the string value is stored in peekedString. */
+  private static final int PEEKED_BUFFERED = 11;
+  private static final int PEEKED_SINGLE_QUOTED_NAME = 12;
+  private static final int PEEKED_DOUBLE_QUOTED_NAME = 13;
+  private static final int PEEKED_UNQUOTED_NAME = 14;
+  /** When this is returned, the integer value is stored in peekedLong. */
+  private static final int PEEKED_LONG = 15;
+  private static final int PEEKED_NUMBER = 16;
+  private static final int PEEKED_EOF = 17;
+
+  /* State machine when parsing numbers */
+  private static final int NUMBER_CHAR_NONE = 0;
+  private static final int NUMBER_CHAR_SIGN = 1;
+  private static final int NUMBER_CHAR_DIGIT = 2;
+  private static final int NUMBER_CHAR_DECIMAL = 3;
+  private static final int NUMBER_CHAR_FRACTION_DIGIT = 4;
+  private static final int NUMBER_CHAR_EXP_E = 5;
+  private static final int NUMBER_CHAR_EXP_SIGN = 6;
+  private static final int NUMBER_CHAR_EXP_DIGIT = 7;
+
+  /** The input JSON. */
+  private final Reader in;
+
+  /** True to accept non-spec compliant JSON */
+<span class="fc" id="L229">  private boolean lenient = false;</span>
+
+  /**
+   * Use a manual buffer to easily read and unread upcoming characters, and
+   * also so we can create strings without an intermediate StringBuilder.
+   * We decode literals directly out of this buffer, so it must be at least as
+   * long as the longest token that can be reported as a number.
+   */
+<span class="fc" id="L237">  private final char[] buffer = new char[1024];</span>
+<span class="fc" id="L238">  private int pos = 0;</span>
+<span class="fc" id="L239">  private int limit = 0;</span>
+
+<span class="fc" id="L241">  private int lineNumber = 0;</span>
+<span class="fc" id="L242">  private int lineStart = 0;</span>
+
+<span class="fc" id="L244">  int peeked = PEEKED_NONE;</span>
+
+  /**
+   * A peeked value that was composed entirely of digits with an optional
+   * leading dash. Positive values may not have a leading 0.
+   */
+  private long peekedLong;
+
+  /**
+   * The number of characters in a peeked number literal. Increment 'pos' by
+   * this after reading a number.
+   */
+  private int peekedNumberLength;
+
+  /**
+   * A peeked string that should be parsed on the next double, long or string.
+   * This is populated before a numeric value is parsed and used if that parsing
+   * fails.
+   */
+  private String peekedString;
+
+  /*
+   * The nesting stack. Using a manual array rather than an ArrayList saves 20%.
+   */
+<span class="fc" id="L268">  private int[] stack = new int[32];</span>
+<span class="fc" id="L269">  private int stackSize = 0;</span>
+  {
+<span class="fc" id="L271">    stack[stackSize++] = JsonScope.EMPTY_DOCUMENT;</span>
+  }
+
+  /*
+   * The path members. It corresponds directly to stack: At indices where the
+   * stack contains an object (EMPTY_OBJECT, DANGLING_NAME or NONEMPTY_OBJECT),
+   * pathNames contains the name at this scope. Where it contains an array
+   * (EMPTY_ARRAY, NONEMPTY_ARRAY) pathIndices contains the current index in
+   * that array. Otherwise the value is undefined, and we take advantage of that
+   * by incrementing pathIndices when doing so isn't useful.
+   */
+<span class="fc" id="L282">  private String[] pathNames = new String[32];</span>
+<span class="fc" id="L283">  private int[] pathIndices = new int[32];</span>
+
+  /**
+   * Creates a new instance that reads a JSON-encoded stream from {@code in}.
+   */
+<span class="fc" id="L288">  public JsonReader(Reader in) {</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">    if (in == null) {</span>
+<span class="fc" id="L290">      throw new NullPointerException(&quot;in == null&quot;);</span>
+    }
+<span class="fc" id="L292">    this.in = in;</span>
+<span class="fc" id="L293">  }</span>
+
+  /**
+   * Configure this parser to be liberal in what it accepts. By default,
+   * this parser is strict and only accepts JSON as specified by &lt;a
+   * href=&quot;http://www.ietf.org/rfc/rfc4627.txt&quot;&gt;RFC 4627&lt;/a&gt;. Setting the
+   * parser to lenient causes it to ignore the following syntax errors:
+   *
+   * &lt;ul&gt;
+   *   &lt;li&gt;Streams that start with the &lt;a href=&quot;#nonexecuteprefix&quot;&gt;non-execute
+   *       prefix&lt;/a&gt;, &lt;code&gt;&quot;)]}'\n&quot;&lt;/code&gt;.
+   *   &lt;li&gt;Streams that include multiple top-level values. With strict parsing,
+   *       each stream must contain exactly one top-level value.
+   *   &lt;li&gt;Top-level values of any type. With strict parsing, the top-level
+   *       value must be an object or an array.
+   *   &lt;li&gt;Numbers may be {@link Double#isNaN() NaNs} or {@link
+   *       Double#isInfinite() infinities}.
+   *   &lt;li&gt;End of line comments starting with {@code //} or {@code #} and
+   *       ending with a newline character.
+   *   &lt;li&gt;C-style comments starting with {@code /*} and ending with
+   *       {@code *}{@code /}. Such comments may not be nested.
+   *   &lt;li&gt;Names that are unquoted or {@code 'single quoted'}.
+   *   &lt;li&gt;Strings that are unquoted or {@code 'single quoted'}.
+   *   &lt;li&gt;Array elements separated by {@code ;} instead of {@code ,}.
+   *   &lt;li&gt;Unnecessary array separators. These are interpreted as if null
+   *       was the omitted value.
+   *   &lt;li&gt;Names and values separated by {@code =} or {@code =&gt;} instead of
+   *       {@code :}.
+   *   &lt;li&gt;Name/value pairs separated by {@code ;} instead of {@code ,}.
+   * &lt;/ul&gt;
+   */
+  public final void setLenient(boolean lenient) {
+<span class="fc" id="L325">    this.lenient = lenient;</span>
+<span class="fc" id="L326">  }</span>
+
+  /**
+   * Returns true if this parser is liberal in what it accepts.
+   */
+  public final boolean isLenient() {
+<span class="fc" id="L332">    return lenient;</span>
+  }
+
+  /**
+   * Consumes the next token from the JSON stream and asserts that it is the
+   * beginning of a new array.
+   */
+  public void beginArray() throws IOException {
+<span class="fc" id="L340">    int p = peeked;</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L342">      p = doPeek();</span>
+    }
+<span class="fc bfc" id="L344" title="All 2 branches covered.">    if (p == PEEKED_BEGIN_ARRAY) {</span>
+<span class="fc" id="L345">      push(JsonScope.EMPTY_ARRAY);</span>
+<span class="fc" id="L346">      pathIndices[stackSize - 1] = 0;</span>
+<span class="fc" id="L347">      peeked = PEEKED_NONE;</span>
+    } else {
+<span class="fc" id="L349">      throw new IllegalStateException(&quot;Expected BEGIN_ARRAY but was &quot; + peek() + locationString());</span>
+    }
+<span class="fc" id="L351">  }</span>
+
+  /**
+   * Consumes the next token from the JSON stream and asserts that it is the
+   * end of the current array.
+   */
+  public void endArray() throws IOException {
+<span class="fc" id="L358">    int p = peeked;</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L360">      p = doPeek();</span>
+    }
+<span class="fc bfc" id="L362" title="All 2 branches covered.">    if (p == PEEKED_END_ARRAY) {</span>
+<span class="fc" id="L363">      stackSize--;</span>
+<span class="fc" id="L364">      pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L365">      peeked = PEEKED_NONE;</span>
+    } else {
+<span class="fc" id="L367">      throw new IllegalStateException(&quot;Expected END_ARRAY but was &quot; + peek() + locationString());</span>
+    }
+<span class="fc" id="L369">  }</span>
+
+  /**
+   * Consumes the next token from the JSON stream and asserts that it is the
+   * beginning of a new object.
+   */
+  public void beginObject() throws IOException {
+<span class="fc" id="L376">    int p = peeked;</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L378">      p = doPeek();</span>
+    }
+<span class="fc bfc" id="L380" title="All 2 branches covered.">    if (p == PEEKED_BEGIN_OBJECT) {</span>
+<span class="fc" id="L381">      push(JsonScope.EMPTY_OBJECT);</span>
+<span class="fc" id="L382">      peeked = PEEKED_NONE;</span>
+    } else {
+<span class="fc" id="L384">      throw new IllegalStateException(&quot;Expected BEGIN_OBJECT but was &quot; + peek() + locationString());</span>
+    }
+<span class="fc" id="L386">  }</span>
+
+  /**
+   * Consumes the next token from the JSON stream and asserts that it is the
+   * end of the current object.
+   */
+  public void endObject() throws IOException {
+<span class="fc" id="L393">    int p = peeked;</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L395">      p = doPeek();</span>
+    }
+<span class="fc bfc" id="L397" title="All 2 branches covered.">    if (p == PEEKED_END_OBJECT) {</span>
+<span class="fc" id="L398">      stackSize--;</span>
+<span class="fc" id="L399">      pathNames[stackSize] = null; // Free the last path name so that it can be garbage collected!</span>
+<span class="fc" id="L400">      pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L401">      peeked = PEEKED_NONE;</span>
+    } else {
+<span class="fc" id="L403">      throw new IllegalStateException(&quot;Expected END_OBJECT but was &quot; + peek() + locationString());</span>
+    }
+<span class="fc" id="L405">  }</span>
+
+  /**
+   * Returns true if the current array or object has another element.
+   */
+  public boolean hasNext() throws IOException {
+<span class="fc" id="L411">    int p = peeked;</span>
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L413">      p = doPeek();</span>
+    }
+<span class="fc bfc" id="L415" title="All 4 branches covered.">    return p != PEEKED_END_OBJECT &amp;&amp; p != PEEKED_END_ARRAY;</span>
+  }
+
+  /**
+   * Returns the type of the next token without consuming it.
+   */
+  public JsonToken peek() throws IOException {
+<span class="fc" id="L422">    int p = peeked;</span>
+<span class="fc bfc" id="L423" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L424">      p = doPeek();</span>
+    }
+
+<span class="pc bpc" id="L427" title="1 of 11 branches missed.">    switch (p) {</span>
+    case PEEKED_BEGIN_OBJECT:
+<span class="fc" id="L429">      return JsonToken.BEGIN_OBJECT;</span>
+    case PEEKED_END_OBJECT:
+<span class="fc" id="L431">      return JsonToken.END_OBJECT;</span>
+    case PEEKED_BEGIN_ARRAY:
+<span class="fc" id="L433">      return JsonToken.BEGIN_ARRAY;</span>
+    case PEEKED_END_ARRAY:
+<span class="fc" id="L435">      return JsonToken.END_ARRAY;</span>
+    case PEEKED_SINGLE_QUOTED_NAME:
+    case PEEKED_DOUBLE_QUOTED_NAME:
+    case PEEKED_UNQUOTED_NAME:
+<span class="fc" id="L439">      return JsonToken.NAME;</span>
+    case PEEKED_TRUE:
+    case PEEKED_FALSE:
+<span class="fc" id="L442">      return JsonToken.BOOLEAN;</span>
+    case PEEKED_NULL:
+<span class="fc" id="L444">      return JsonToken.NULL;</span>
+    case PEEKED_SINGLE_QUOTED:
+    case PEEKED_DOUBLE_QUOTED:
+    case PEEKED_UNQUOTED:
+    case PEEKED_BUFFERED:
+<span class="fc" id="L449">      return JsonToken.STRING;</span>
+    case PEEKED_LONG:
+    case PEEKED_NUMBER:
+<span class="fc" id="L452">      return JsonToken.NUMBER;</span>
+    case PEEKED_EOF:
+<span class="fc" id="L454">      return JsonToken.END_DOCUMENT;</span>
+    default:
+<span class="nc" id="L456">      throw new AssertionError();</span>
+    }
+  }
+
+  int doPeek() throws IOException {
+<span class="fc" id="L461">    int peekStack = stack[stackSize - 1];</span>
+<span class="fc bfc" id="L462" title="All 2 branches covered.">    if (peekStack == JsonScope.EMPTY_ARRAY) {</span>
+<span class="fc" id="L463">      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {</span>
+      // Look for a comma before the next element.
+<span class="fc" id="L466">      int c = nextNonWhitespace(true);</span>
+<span class="pc bpc" id="L467" title="1 of 4 branches missed.">      switch (c) {</span>
+      case ']':
+<span class="fc" id="L469">        return peeked = PEEKED_END_ARRAY;</span>
+      case ';':
+<span class="fc" id="L471">        checkLenient(); // fall-through</span>
+      case ',':
+<span class="fc" id="L473">        break;</span>
+      default:
+<span class="nc" id="L475">        throw syntaxError(&quot;Unterminated array&quot;);</span>
+      }
+<span class="fc bfc" id="L477" title="All 4 branches covered.">    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {</span>
+<span class="fc" id="L478">      stack[stackSize - 1] = JsonScope.DANGLING_NAME;</span>
+      // Look for a comma before the next element.
+<span class="fc bfc" id="L480" title="All 2 branches covered.">      if (peekStack == JsonScope.NONEMPTY_OBJECT) {</span>
+<span class="fc" id="L481">        int c = nextNonWhitespace(true);</span>
+<span class="pc bpc" id="L482" title="1 of 4 branches missed.">        switch (c) {</span>
+        case '}':
+<span class="fc" id="L484">          return peeked = PEEKED_END_OBJECT;</span>
+        case ';':
+<span class="fc" id="L486">          checkLenient(); // fall-through</span>
+        case ',':
+<span class="fc" id="L488">          break;</span>
+        default:
+<span class="nc" id="L490">          throw syntaxError(&quot;Unterminated object&quot;);</span>
+        }
+      }
+<span class="fc" id="L493">      int c = nextNonWhitespace(true);</span>
+<span class="fc bfc" id="L494" title="All 4 branches covered.">      switch (c) {</span>
+      case '&quot;':
+<span class="fc" id="L496">        return peeked = PEEKED_DOUBLE_QUOTED_NAME;</span>
+      case '\'':
+<span class="fc" id="L498">        checkLenient();</span>
+<span class="fc" id="L499">        return peeked = PEEKED_SINGLE_QUOTED_NAME;</span>
+      case '}':
+<span class="pc bpc" id="L501" title="1 of 2 branches missed.">        if (peekStack != JsonScope.NONEMPTY_OBJECT) {</span>
+<span class="fc" id="L502">          return peeked = PEEKED_END_OBJECT;</span>
+        } else {
+<span class="nc" id="L504">          throw syntaxError(&quot;Expected name&quot;);</span>
+        }
+      default:
+<span class="fc" id="L507">        checkLenient();</span>
+<span class="fc" id="L508">        pos--; // Don't consume the first character in an unquoted string.</span>
+<span class="pc bpc" id="L509" title="1 of 2 branches missed.">        if (isLiteral((char) c)) {</span>
+<span class="fc" id="L510">          return peeked = PEEKED_UNQUOTED_NAME;</span>
+        } else {
+<span class="nc" id="L512">          throw syntaxError(&quot;Expected name&quot;);</span>
+        }
+      }
+<span class="fc bfc" id="L515" title="All 2 branches covered.">    } else if (peekStack == JsonScope.DANGLING_NAME) {</span>
+<span class="fc" id="L516">      stack[stackSize - 1] = JsonScope.NONEMPTY_OBJECT;</span>
+      // Look for a colon before the value.
+<span class="fc" id="L518">      int c = nextNonWhitespace(true);</span>
+<span class="pc bpc" id="L519" title="1 of 3 branches missed.">      switch (c) {</span>
+      case ':':
+<span class="fc" id="L521">        break;</span>
+      case '=':
+<span class="fc" id="L523">        checkLenient();</span>
+<span class="pc bpc" id="L524" title="3 of 6 branches missed.">        if ((pos &lt; limit || fillBuffer(1)) &amp;&amp; buffer[pos] == '&gt;') {</span>
+<span class="fc" id="L525">          pos++;</span>
+        }
+        break;
+      default:
+<span class="nc" id="L529">        throw syntaxError(&quot;Expected ':'&quot;);</span>
+      }
+<span class="fc bfc" id="L531" title="All 2 branches covered.">    } else if (peekStack == JsonScope.EMPTY_DOCUMENT) {</span>
+<span class="fc bfc" id="L532" title="All 2 branches covered.">      if (lenient) {</span>
+<span class="fc" id="L533">        consumeNonExecutePrefix();</span>
+      }
+<span class="fc" id="L535">      stack[stackSize - 1] = JsonScope.NONEMPTY_DOCUMENT;</span>
+<span class="fc bfc" id="L536" title="All 2 branches covered.">    } else if (peekStack == JsonScope.NONEMPTY_DOCUMENT) {</span>
+<span class="fc" id="L537">      int c = nextNonWhitespace(false);</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">      if (c == -1) {</span>
+<span class="fc" id="L539">        return peeked = PEEKED_EOF;</span>
+      } else {
+<span class="fc" id="L541">        checkLenient();</span>
+<span class="fc" id="L542">        pos--;</span>
+      }
+<span class="pc bpc" id="L544" title="1 of 2 branches missed.">    } else if (peekStack == JsonScope.CLOSED) {</span>
+<span class="fc" id="L545">      throw new IllegalStateException(&quot;JsonReader is closed&quot;);</span>
+    }
+
+<span class="fc" id="L548">    int c = nextNonWhitespace(true);</span>
+<span class="fc bfc" id="L549" title="All 7 branches covered.">    switch (c) {</span>
+    case ']':
+<span class="fc bfc" id="L551" title="All 2 branches covered.">      if (peekStack == JsonScope.EMPTY_ARRAY) {</span>
+<span class="fc" id="L552">        return peeked = PEEKED_END_ARRAY;</span>
+      }
+      // fall-through to handle &quot;,]&quot;
+    case ';':
+    case ',':
+      // In lenient mode, a 0-length literal in an array means 'null'.
+<span class="pc bpc" id="L558" title="1 of 4 branches missed.">      if (peekStack == JsonScope.EMPTY_ARRAY || peekStack == JsonScope.NONEMPTY_ARRAY) {</span>
+<span class="fc" id="L559">        checkLenient();</span>
+<span class="fc" id="L560">        pos--;</span>
+<span class="fc" id="L561">        return peeked = PEEKED_NULL;</span>
+      } else {
+<span class="nc" id="L563">        throw syntaxError(&quot;Unexpected value&quot;);</span>
+      }
+    case '\'':
+<span class="fc" id="L566">      checkLenient();</span>
+<span class="fc" id="L567">      return peeked = PEEKED_SINGLE_QUOTED;</span>
+    case '&quot;':
+<span class="fc" id="L569">      return peeked = PEEKED_DOUBLE_QUOTED;</span>
+    case '[':
+<span class="fc" id="L571">      return peeked = PEEKED_BEGIN_ARRAY;</span>
+    case '{':
+<span class="fc" id="L573">      return peeked = PEEKED_BEGIN_OBJECT;</span>
+    default:
+<span class="fc" id="L575">      pos--; // Don't consume the first character in a literal value.</span>
+    }
+
+<span class="fc" id="L578">    int result = peekKeyword();</span>
+<span class="fc bfc" id="L579" title="All 2 branches covered.">    if (result != PEEKED_NONE) {</span>
+<span class="fc" id="L580">      return result;</span>
+    }
+
+<span class="fc" id="L583">    result = peekNumber();</span>
+<span class="fc bfc" id="L584" title="All 2 branches covered.">    if (result != PEEKED_NONE) {</span>
+<span class="fc" id="L585">      return result;</span>
+    }
+
+<span class="fc bfc" id="L588" title="All 2 branches covered.">    if (!isLiteral(buffer[pos])) {</span>
+<span class="nc" id="L589">      throw syntaxError(&quot;Expected value&quot;);</span>
+    }
+
+<span class="fc" id="L592">    checkLenient();</span>
+<span class="fc" id="L593">    return peeked = PEEKED_UNQUOTED;</span>
+  }
+
+  private int peekKeyword() throws IOException {
+    // Figure out which keyword we're matching against by its first character.
+<span class="fc" id="L598">    char c = buffer[pos];</span>
+    String keyword;
+    String keywordUpper;
+    int peeking;
+<span class="fc bfc" id="L602" title="All 4 branches covered.">    if (c == 't' || c == 'T') {</span>
+<span class="fc" id="L603">      keyword = &quot;true&quot;;</span>
+<span class="fc" id="L604">      keywordUpper = &quot;TRUE&quot;;</span>
+<span class="fc" id="L605">      peeking = PEEKED_TRUE;</span>
+<span class="fc bfc" id="L606" title="All 4 branches covered.">    } else if (c == 'f' || c == 'F') {</span>
+<span class="fc" id="L607">      keyword = &quot;false&quot;;</span>
+<span class="fc" id="L608">      keywordUpper = &quot;FALSE&quot;;</span>
+<span class="fc" id="L609">      peeking = PEEKED_FALSE;</span>
+<span class="fc bfc" id="L610" title="All 4 branches covered.">    } else if (c == 'n' || c == 'N') {</span>
+<span class="fc" id="L611">      keyword = &quot;null&quot;;</span>
+<span class="fc" id="L612">      keywordUpper = &quot;NULL&quot;;</span>
+<span class="fc" id="L613">      peeking = PEEKED_NULL;</span>
+    } else {
+<span class="fc" id="L615">      return PEEKED_NONE;</span>
+    }
+
+    // Confirm that chars [1..length) match the keyword.
+<span class="fc" id="L619">    int length = keyword.length();</span>
+<span class="fc bfc" id="L620" title="All 2 branches covered.">    for (int i = 1; i &lt; length; i++) {</span>
+<span class="pc bpc" id="L621" title="3 of 4 branches missed.">      if (pos + i &gt;= limit &amp;&amp; !fillBuffer(i + 1)) {</span>
+<span class="nc" id="L622">        return PEEKED_NONE;</span>
+      }
+<span class="fc" id="L624">      c = buffer[pos + i];</span>
+<span class="fc bfc" id="L625" title="All 4 branches covered.">      if (c != keyword.charAt(i) &amp;&amp; c != keywordUpper.charAt(i)) {</span>
+<span class="fc" id="L626">        return PEEKED_NONE;</span>
+      }
+    }
+
+<span class="pc bpc" id="L630" title="1 of 4 branches missed.">    if ((pos + length &lt; limit || fillBuffer(length + 1))</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">        &amp;&amp; isLiteral(buffer[pos + length])) {</span>
+<span class="fc" id="L632">      return PEEKED_NONE; // Don't match trues, falsey or nullsoft!</span>
+    }
+
+    // We've found the keyword followed either by EOF or by a non-literal character.
+<span class="fc" id="L636">    pos += length;</span>
+<span class="fc" id="L637">    return peeked = peeking;</span>
+  }
+
+  private int peekNumber() throws IOException {
+    // Like nextNonWhitespace, this uses locals 'p' and 'l' to save inner-loop field access.
+<span class="fc" id="L642">    char[] buffer = this.buffer;</span>
+<span class="fc" id="L643">    int p = pos;</span>
+<span class="fc" id="L644">    int l = limit;</span>
+
+<span class="fc" id="L646">    long value = 0; // Negative to accommodate Long.MIN_VALUE more easily.</span>
+<span class="fc" id="L647">    boolean negative = false;</span>
+<span class="fc" id="L648">    boolean fitsInLong = true;</span>
+<span class="fc" id="L649">    int last = NUMBER_CHAR_NONE;</span>
+
+<span class="fc" id="L651">    int i = 0;</span>
+
+    charactersOfNumber:
+<span class="fc" id="L654">    for (; true; i++) {</span>
+<span class="fc bfc" id="L655" title="All 2 branches covered.">      if (p + i == l) {</span>
+<span class="fc bfc" id="L656" title="All 2 branches covered.">        if (i == buffer.length) {</span>
+          // Though this looks like a well-formed number, it's too long to continue reading. Give up
+          // and let the application handle this as an unquoted literal.
+<span class="fc" id="L659">          return PEEKED_NONE;</span>
+        }
+<span class="fc bfc" id="L661" title="All 2 branches covered.">        if (!fillBuffer(i + 1)) {</span>
+<span class="fc" id="L662">          break;</span>
+        }
+<span class="fc" id="L664">        p = pos;</span>
+<span class="fc" id="L665">        l = limit;</span>
+      }
+
+<span class="fc" id="L668">      char c = buffer[p + i];</span>
+<span class="fc bfc" id="L669" title="All 5 branches covered.">      switch (c) {</span>
+      case '-':
+<span class="fc bfc" id="L671" title="All 2 branches covered.">        if (last == NUMBER_CHAR_NONE) {</span>
+<span class="fc" id="L672">          negative = true;</span>
+<span class="fc" id="L673">          last = NUMBER_CHAR_SIGN;</span>
+<span class="fc" id="L674">          continue;</span>
+<span class="pc bpc" id="L675" title="1 of 2 branches missed.">        } else if (last == NUMBER_CHAR_EXP_E) {</span>
+<span class="fc" id="L676">          last = NUMBER_CHAR_EXP_SIGN;</span>
+<span class="fc" id="L677">          continue;</span>
+        }
+<span class="nc" id="L679">        return PEEKED_NONE;</span>
+
+      case '+':
+<span class="pc bpc" id="L682" title="1 of 2 branches missed.">        if (last == NUMBER_CHAR_EXP_E) {</span>
+<span class="fc" id="L683">          last = NUMBER_CHAR_EXP_SIGN;</span>
+<span class="fc" id="L684">          continue;</span>
+        }
+<span class="nc" id="L686">        return PEEKED_NONE;</span>
+
+      case 'e':
+      case 'E':
+<span class="fc bfc" id="L690" title="All 4 branches covered.">        if (last == NUMBER_CHAR_DIGIT || last == NUMBER_CHAR_FRACTION_DIGIT) {</span>
+<span class="fc" id="L691">          last = NUMBER_CHAR_EXP_E;</span>
+<span class="fc" id="L692">          continue;</span>
+        }
+<span class="fc" id="L694">        return PEEKED_NONE;</span>
+
+      case '.':
+<span class="fc bfc" id="L697" title="All 2 branches covered.">        if (last == NUMBER_CHAR_DIGIT) {</span>
+<span class="fc" id="L698">          last = NUMBER_CHAR_DECIMAL;</span>
+<span class="fc" id="L699">          continue;</span>
+        }
+<span class="fc" id="L701">        return PEEKED_NONE;</span>
+
+      default:
+<span class="fc bfc" id="L704" title="All 4 branches covered.">        if (c &lt; '0' || c &gt; '9') {</span>
+<span class="fc bfc" id="L705" title="All 2 branches covered.">          if (!isLiteral(c)) {</span>
+<span class="fc" id="L706">            break charactersOfNumber;</span>
+          }
+<span class="fc" id="L708">          return PEEKED_NONE;</span>
+        }
+<span class="fc bfc" id="L710" title="All 4 branches covered.">        if (last == NUMBER_CHAR_SIGN || last == NUMBER_CHAR_NONE) {</span>
+<span class="fc" id="L711">          value = -(c - '0');</span>
+<span class="fc" id="L712">          last = NUMBER_CHAR_DIGIT;</span>
+<span class="fc bfc" id="L713" title="All 2 branches covered.">        } else if (last == NUMBER_CHAR_DIGIT) {</span>
+<span class="pc bpc" id="L714" title="1 of 2 branches missed.">          if (value == 0) {</span>
+<span class="nc" id="L715">            return PEEKED_NONE; // Leading '0' prefix is not allowed (since it could be octal).</span>
+          }
+<span class="fc" id="L717">          long newValue = value * 10 - (c - '0');</span>
+<span class="pc bpc" id="L718" title="1 of 6 branches missed.">          fitsInLong &amp;= value &gt; MIN_INCOMPLETE_INTEGER</span>
+              || (value == MIN_INCOMPLETE_INTEGER &amp;&amp; newValue &lt; value);
+<span class="fc" id="L720">          value = newValue;</span>
+<span class="fc bfc" id="L721" title="All 2 branches covered.">        } else if (last == NUMBER_CHAR_DECIMAL) {</span>
+<span class="fc" id="L722">          last = NUMBER_CHAR_FRACTION_DIGIT;</span>
+<span class="fc bfc" id="L723" title="All 4 branches covered.">        } else if (last == NUMBER_CHAR_EXP_E || last == NUMBER_CHAR_EXP_SIGN) {</span>
+<span class="fc" id="L724">          last = NUMBER_CHAR_EXP_DIGIT;</span>
+        }
+      }
+    }
+
+    // We've read a complete number. Decide if it's a PEEKED_LONG or a PEEKED_NUMBER.
+<span class="pc bpc" id="L730" title="1 of 12 branches missed.">    if (last == NUMBER_CHAR_DIGIT &amp;&amp; fitsInLong &amp;&amp; (value != Long.MIN_VALUE || negative) &amp;&amp; (value!=0 || false==negative)) {</span>
+<span class="fc bfc" id="L731" title="All 2 branches covered.">      peekedLong = negative ? value : -value;</span>
+<span class="fc" id="L732">      pos += i;</span>
+<span class="fc" id="L733">      return peeked = PEEKED_LONG;</span>
+<span class="fc bfc" id="L734" title="All 6 branches covered.">    } else if (last == NUMBER_CHAR_DIGIT || last == NUMBER_CHAR_FRACTION_DIGIT</span>
+        || last == NUMBER_CHAR_EXP_DIGIT) {
+<span class="fc" id="L736">      peekedNumberLength = i;</span>
+<span class="fc" id="L737">      return peeked = PEEKED_NUMBER;</span>
+    } else {
+<span class="fc" id="L739">      return PEEKED_NONE;</span>
+    }
+  }
+
+  private boolean isLiteral(char c) throws IOException {
+<span class="fc bfc" id="L744" title="All 3 branches covered.">    switch (c) {</span>
+    case '/':
+    case '\\':
+    case ';':
+    case '#':
+    case '=':
+<span class="fc" id="L750">      checkLenient(); // fall-through</span>
+    case '{':
+    case '}':
+    case '[':
+    case ']':
+    case ':':
+    case ',':
+    case ' ':
+    case '\t':
+    case '\f':
+    case '\r':
+    case '\n':
+<span class="fc" id="L762">      return false;</span>
+    default:
+<span class="fc" id="L764">      return true;</span>
+    }
+  }
+
+  /**
+   * Returns the next token, a {@link com.google.gson.stream.JsonToken#NAME property name}, and
+   * consumes it.
+   *
+   * @throws java.io.IOException if the next token in the stream is not a property
+   *     name.
+   */
+  public String nextName() throws IOException {
+<span class="fc" id="L776">    int p = peeked;</span>
+<span class="fc bfc" id="L777" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L778">      p = doPeek();</span>
+    }
+    String result;
+<span class="fc bfc" id="L781" title="All 2 branches covered.">    if (p == PEEKED_UNQUOTED_NAME) {</span>
+<span class="fc" id="L782">      result = nextUnquotedValue();</span>
+<span class="fc bfc" id="L783" title="All 2 branches covered.">    } else if (p == PEEKED_SINGLE_QUOTED_NAME) {</span>
+<span class="fc" id="L784">      result = nextQuotedValue('\'');</span>
+<span class="fc bfc" id="L785" title="All 2 branches covered.">    } else if (p == PEEKED_DOUBLE_QUOTED_NAME) {</span>
+<span class="fc" id="L786">      result = nextQuotedValue('&quot;');</span>
+    } else {
+<span class="fc" id="L788">      throw new IllegalStateException(&quot;Expected a name but was &quot; + peek() + locationString());</span>
+    }
+<span class="fc" id="L790">    peeked = PEEKED_NONE;</span>
+<span class="fc" id="L791">    pathNames[stackSize - 1] = result;</span>
+<span class="fc" id="L792">    return result;</span>
+  }
+
+  /**
+   * Returns the {@link com.google.gson.stream.JsonToken#STRING string} value of the next token,
+   * consuming it. If the next token is a number, this method will return its
+   * string form.
+   *
+   * @throws IllegalStateException if the next token is not a string or if
+   *     this reader is closed.
+   */
+  public String nextString() throws IOException {
+<span class="fc" id="L804">    int p = peeked;</span>
+<span class="fc bfc" id="L805" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L806">      p = doPeek();</span>
+    }
+    String result;
+<span class="fc bfc" id="L809" title="All 2 branches covered.">    if (p == PEEKED_UNQUOTED) {</span>
+<span class="fc" id="L810">      result = nextUnquotedValue();</span>
+<span class="fc bfc" id="L811" title="All 2 branches covered.">    } else if (p == PEEKED_SINGLE_QUOTED) {</span>
+<span class="fc" id="L812">      result = nextQuotedValue('\'');</span>
+<span class="fc bfc" id="L813" title="All 2 branches covered.">    } else if (p == PEEKED_DOUBLE_QUOTED) {</span>
+<span class="fc" id="L814">      result = nextQuotedValue('&quot;');</span>
+<span class="fc bfc" id="L815" title="All 2 branches covered.">    } else if (p == PEEKED_BUFFERED) {</span>
+<span class="fc" id="L816">      result = peekedString;</span>
+<span class="fc" id="L817">      peekedString = null;</span>
+<span class="fc bfc" id="L818" title="All 2 branches covered.">    } else if (p == PEEKED_LONG) {</span>
+<span class="fc" id="L819">      result = Long.toString(peekedLong);</span>
+<span class="fc bfc" id="L820" title="All 2 branches covered.">    } else if (p == PEEKED_NUMBER) {</span>
+<span class="fc" id="L821">      result = new String(buffer, pos, peekedNumberLength);</span>
+<span class="fc" id="L822">      pos += peekedNumberLength;</span>
+    } else {
+<span class="fc" id="L824">      throw new IllegalStateException(&quot;Expected a string but was &quot; + peek() + locationString());</span>
+    }
+<span class="fc" id="L826">    peeked = PEEKED_NONE;</span>
+<span class="fc" id="L827">    pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L828">    return result;</span>
+  }
+
+  /**
+   * Returns the {@link com.google.gson.stream.JsonToken#BOOLEAN boolean} value of the next token,
+   * consuming it.
+   *
+   * @throws IllegalStateException if the next token is not a boolean or if
+   *     this reader is closed.
+   */
+  public boolean nextBoolean() throws IOException {
+<span class="fc" id="L839">    int p = peeked;</span>
+<span class="fc bfc" id="L840" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L841">      p = doPeek();</span>
+    }
+<span class="fc bfc" id="L843" title="All 2 branches covered.">    if (p == PEEKED_TRUE) {</span>
+<span class="fc" id="L844">      peeked = PEEKED_NONE;</span>
+<span class="fc" id="L845">      pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L846">      return true;</span>
+<span class="fc bfc" id="L847" title="All 2 branches covered.">    } else if (p == PEEKED_FALSE) {</span>
+<span class="fc" id="L848">      peeked = PEEKED_NONE;</span>
+<span class="fc" id="L849">      pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L850">      return false;</span>
+    }
+<span class="fc" id="L852">    throw new IllegalStateException(&quot;Expected a boolean but was &quot; + peek() + locationString());</span>
+  }
+
+  /**
+   * Consumes the next token from the JSON stream and asserts that it is a
+   * literal null.
+   *
+   * @throws IllegalStateException if the next token is not null or if this
+   *     reader is closed.
+   */
+  public void nextNull() throws IOException {
+<span class="fc" id="L863">    int p = peeked;</span>
+<span class="fc bfc" id="L864" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L865">      p = doPeek();</span>
+    }
+<span class="fc bfc" id="L867" title="All 2 branches covered.">    if (p == PEEKED_NULL) {</span>
+<span class="fc" id="L868">      peeked = PEEKED_NONE;</span>
+<span class="fc" id="L869">      pathIndices[stackSize - 1]++;</span>
+    } else {
+<span class="fc" id="L871">      throw new IllegalStateException(&quot;Expected null but was &quot; + peek() + locationString());</span>
+    }
+<span class="fc" id="L873">  }</span>
+
+  /**
+   * Returns the {@link com.google.gson.stream.JsonToken#NUMBER double} value of the next token,
+   * consuming it. If the next token is a string, this method will attempt to
+   * parse it as a double using {@link Double#parseDouble(String)}.
+   *
+   * @throws IllegalStateException if the next token is not a literal value.
+   * @throws NumberFormatException if the next literal value cannot be parsed
+   *     as a double, or is non-finite.
+   */
+  public double nextDouble() throws IOException {
+<span class="fc" id="L885">    int p = peeked;</span>
+<span class="fc bfc" id="L886" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L887">      p = doPeek();</span>
+    }
+
+<span class="fc bfc" id="L890" title="All 2 branches covered.">    if (p == PEEKED_LONG) {</span>
+<span class="fc" id="L891">      peeked = PEEKED_NONE;</span>
+<span class="fc" id="L892">      pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L893">      return (double) peekedLong;</span>
+    }
+
+<span class="fc bfc" id="L896" title="All 2 branches covered.">    if (p == PEEKED_NUMBER) {</span>
+<span class="fc" id="L897">      peekedString = new String(buffer, pos, peekedNumberLength);</span>
+<span class="fc" id="L898">      pos += peekedNumberLength;</span>
+<span class="fc bfc" id="L899" title="All 4 branches covered.">    } else if (p == PEEKED_SINGLE_QUOTED || p == PEEKED_DOUBLE_QUOTED) {</span>
+<span class="fc bfc" id="L900" title="All 2 branches covered.">      peekedString = nextQuotedValue(p == PEEKED_SINGLE_QUOTED ? '\'' : '&quot;');</span>
+<span class="fc bfc" id="L901" title="All 2 branches covered.">    } else if (p == PEEKED_UNQUOTED) {</span>
+<span class="fc" id="L902">      peekedString = nextUnquotedValue();</span>
+<span class="fc bfc" id="L903" title="All 2 branches covered.">    } else if (p != PEEKED_BUFFERED) {</span>
+<span class="fc" id="L904">      throw new IllegalStateException(&quot;Expected a double but was &quot; + peek() + locationString());</span>
+    }
+
+<span class="fc" id="L907">    peeked = PEEKED_BUFFERED;</span>
+<span class="fc" id="L908">    double result = Double.parseDouble(peekedString); // don't catch this NumberFormatException.</span>
+<span class="pc bpc" id="L909" title="1 of 6 branches missed.">    if (!lenient &amp;&amp; (Double.isNaN(result) || Double.isInfinite(result))) {</span>
+<span class="fc" id="L910">      throw new MalformedJsonException(</span>
+<span class="fc" id="L911">          &quot;JSON forbids NaN and infinities: &quot; + result + locationString());</span>
+    }
+<span class="fc" id="L913">    peekedString = null;</span>
+<span class="fc" id="L914">    peeked = PEEKED_NONE;</span>
+<span class="fc" id="L915">    pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L916">    return result;</span>
+  }
+
+  /**
+   * Returns the {@link com.google.gson.stream.JsonToken#NUMBER long} value of the next token,
+   * consuming it. If the next token is a string, this method will attempt to
+   * parse it as a long. If the next token's numeric value cannot be exactly
+   * represented by a Java {@code long}, this method throws.
+   *
+   * @throws IllegalStateException if the next token is not a literal value.
+   * @throws NumberFormatException if the next literal value cannot be parsed
+   *     as a number, or exactly represented as a long.
+   */
+  public long nextLong() throws IOException {
+<span class="fc" id="L930">    int p = peeked;</span>
+<span class="fc bfc" id="L931" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L932">      p = doPeek();</span>
+    }
+
+<span class="fc bfc" id="L935" title="All 2 branches covered.">    if (p == PEEKED_LONG) {</span>
+<span class="fc" id="L936">      peeked = PEEKED_NONE;</span>
+<span class="fc" id="L937">      pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L938">      return peekedLong;</span>
+    }
+
+<span class="fc bfc" id="L941" title="All 2 branches covered.">    if (p == PEEKED_NUMBER) {</span>
+<span class="fc" id="L942">      peekedString = new String(buffer, pos, peekedNumberLength);</span>
+<span class="fc" id="L943">      pos += peekedNumberLength;</span>
+<span class="fc bfc" id="L944" title="All 6 branches covered.">    } else if (p == PEEKED_SINGLE_QUOTED || p == PEEKED_DOUBLE_QUOTED || p == PEEKED_UNQUOTED) {</span>
+<span class="fc bfc" id="L945" title="All 2 branches covered.">      if (p == PEEKED_UNQUOTED) {</span>
+<span class="fc" id="L946">        peekedString = nextUnquotedValue();</span>
+      } else {
+<span class="fc bfc" id="L948" title="All 2 branches covered.">        peekedString = nextQuotedValue(p == PEEKED_SINGLE_QUOTED ? '\'' : '&quot;');</span>
+      }
+      try {
+<span class="fc" id="L951">        long result = Long.parseLong(peekedString);</span>
+<span class="fc" id="L952">        peeked = PEEKED_NONE;</span>
+<span class="fc" id="L953">        pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L954">        return result;</span>
+<span class="nc" id="L955">      } catch (NumberFormatException ignored) {</span>
+        // Fall back to parse as a double below.
+<span class="nc" id="L957">      }</span>
+    } else {
+<span class="fc" id="L959">      throw new IllegalStateException(&quot;Expected a long but was &quot; + peek() + locationString());</span>
+    }
+
+<span class="fc" id="L962">    peeked = PEEKED_BUFFERED;</span>
+<span class="fc" id="L963">    double asDouble = Double.parseDouble(peekedString); // don't catch this NumberFormatException.</span>
+<span class="fc" id="L964">    long result = (long) asDouble;</span>
+<span class="fc bfc" id="L965" title="All 2 branches covered.">    if (result != asDouble) { // Make sure no precision was lost casting to 'long'.</span>
+<span class="fc" id="L966">      throw new NumberFormatException(&quot;Expected a long but was &quot; + peekedString + locationString());</span>
+    }
+<span class="fc" id="L968">    peekedString = null;</span>
+<span class="fc" id="L969">    peeked = PEEKED_NONE;</span>
+<span class="fc" id="L970">    pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L971">    return result;</span>
+  }
+
+  /**
+   * Returns the string up to but not including {@code quote}, unescaping any
+   * character escape sequences encountered along the way. The opening quote
+   * should have already been read. This consumes the closing quote, but does
+   * not include it in the returned string.
+   *
+   * @param quote either ' or &quot;.
+   * @throws NumberFormatException if any unicode escape sequences are
+   *     malformed.
+   */
+  private String nextQuotedValue(char quote) throws IOException {
+    // Like nextNonWhitespace, this uses locals 'p' and 'l' to save inner-loop field access.
+<span class="fc" id="L986">    char[] buffer = this.buffer;</span>
+<span class="fc" id="L987">    StringBuilder builder = null;</span>
+    while (true) {
+<span class="fc" id="L989">      int p = pos;</span>
+<span class="fc" id="L990">      int l = limit;</span>
+      /* the index of the first character not yet appended to the builder. */
+<span class="fc" id="L992">      int start = p;</span>
+<span class="fc bfc" id="L993" title="All 2 branches covered.">      while (p &lt; l) {</span>
+<span class="fc" id="L994">        int c = buffer[p++];</span>
+
+<span class="fc bfc" id="L996" title="All 2 branches covered.">        if (c == quote) {</span>
+<span class="fc" id="L997">          pos = p;</span>
+<span class="fc" id="L998">          int len = p - start - 1;</span>
+<span class="fc bfc" id="L999" title="All 2 branches covered.">          if (builder == null) {</span>
+<span class="fc" id="L1000">            return new String(buffer, start, len);</span>
+          } else {
+<span class="fc" id="L1002">            builder.append(buffer, start, len);</span>
+<span class="fc" id="L1003">            return builder.toString();</span>
+          }
+<span class="fc bfc" id="L1005" title="All 2 branches covered.">        } else if (c == '\\') {</span>
+<span class="fc" id="L1006">          pos = p;</span>
+<span class="fc" id="L1007">          int len = p - start - 1;</span>
+<span class="fc bfc" id="L1008" title="All 2 branches covered.">          if (builder == null) {</span>
+<span class="fc" id="L1009">            int estimatedLength = (len + 1) * 2;</span>
+<span class="fc" id="L1010">            builder = new StringBuilder(Math.max(estimatedLength, 16));</span>
+          }
+<span class="fc" id="L1012">          builder.append(buffer, start, len);</span>
+<span class="fc" id="L1013">          builder.append(readEscapeCharacter());</span>
+<span class="fc" id="L1014">          p = pos;</span>
+<span class="fc" id="L1015">          l = limit;</span>
+<span class="fc" id="L1016">          start = p;</span>
+<span class="fc bfc" id="L1017" title="All 2 branches covered.">        } else if (c == '\n') {</span>
+<span class="fc" id="L1018">          lineNumber++;</span>
+<span class="fc" id="L1019">          lineStart = p;</span>
+        }
+<span class="fc" id="L1021">      }</span>
+
+<span class="fc bfc" id="L1023" title="All 2 branches covered.">      if (builder == null) {</span>
+<span class="fc" id="L1024">        int estimatedLength = (p - start) * 2;</span>
+<span class="fc" id="L1025">        builder = new StringBuilder(Math.max(estimatedLength, 16));</span>
+      }
+<span class="fc" id="L1027">      builder.append(buffer, start, p - start);</span>
+<span class="fc" id="L1028">      pos = p;</span>
+<span class="fc bfc" id="L1029" title="All 2 branches covered.">      if (!fillBuffer(1)) {</span>
+<span class="nc" id="L1030">        throw syntaxError(&quot;Unterminated string&quot;);</span>
+      }
+<span class="fc" id="L1032">    }</span>
+  }
+
+  /**
+   * Returns an unquoted value as a string.
+   */
+  @SuppressWarnings(&quot;fallthrough&quot;)
+  private String nextUnquotedValue() throws IOException {
+<span class="fc" id="L1040">    StringBuilder builder = null;</span>
+<span class="fc" id="L1041">    int i = 0;</span>
+
+    findNonLiteralCharacter:
+    while (true) {
+<span class="fc bfc" id="L1045" title="All 2 branches covered.">      for (; pos + i &lt; limit; i++) {</span>
+<span class="pc bpc" id="L1046" title="1 of 3 branches missed.">        switch (buffer[pos + i]) {</span>
+        case '/':
+        case '\\':
+        case ';':
+        case '#':
+        case '=':
+<span class="nc" id="L1052">          checkLenient(); // fall-through</span>
+        case '{':
+        case '}':
+        case '[':
+        case ']':
+        case ':':
+        case ',':
+        case ' ':
+        case '\t':
+        case '\f':
+        case '\r':
+        case '\n':
+<span class="fc" id="L1064">          break findNonLiteralCharacter;</span>
+        }
+      }
+
+      // Attempt to load the entire literal into the buffer at once.
+<span class="fc bfc" id="L1069" title="All 2 branches covered.">      if (i &lt; buffer.length) {</span>
+<span class="fc bfc" id="L1070" title="All 2 branches covered.">        if (fillBuffer(i + 1)) {</span>
+<span class="fc" id="L1071">          continue;</span>
+        } else {
+          break;
+        }
+      }
+
+      // use a StringBuilder when the value is too long. This is too long to be a number!
+<span class="fc bfc" id="L1078" title="All 2 branches covered.">      if (builder == null) {</span>
+<span class="fc" id="L1079">        builder = new StringBuilder(Math.max(i,16));</span>
+      }
+<span class="fc" id="L1081">      builder.append(buffer, pos, i);</span>
+<span class="fc" id="L1082">      pos += i;</span>
+<span class="fc" id="L1083">      i = 0;</span>
+<span class="fc bfc" id="L1084" title="All 2 branches covered.">      if (!fillBuffer(1)) {</span>
+<span class="fc" id="L1085">        break;</span>
+      }
+    }
+   
+<span class="fc bfc" id="L1089" title="All 2 branches covered.">    String result = (null == builder) ? new String(buffer, pos, i) : builder.append(buffer, pos, i).toString();</span>
+<span class="fc" id="L1090">    pos += i;</span>
+<span class="fc" id="L1091">    return result;</span>
+  }
+
+  private void skipQuotedValue(char quote) throws IOException {
+    // Like nextNonWhitespace, this uses locals 'p' and 'l' to save inner-loop field access.
+<span class="fc" id="L1096">    char[] buffer = this.buffer;</span>
+    do {
+<span class="fc" id="L1098">      int p = pos;</span>
+<span class="fc" id="L1099">      int l = limit;</span>
+      /* the index of the first character not yet appended to the builder. */
+<span class="fc bfc" id="L1101" title="All 2 branches covered.">      while (p &lt; l) {</span>
+<span class="fc" id="L1102">        int c = buffer[p++];</span>
+<span class="fc bfc" id="L1103" title="All 2 branches covered.">        if (c == quote) {</span>
+<span class="fc" id="L1104">          pos = p;</span>
+<span class="fc" id="L1105">          return;</span>
+<span class="fc bfc" id="L1106" title="All 2 branches covered.">        } else if (c == '\\') {</span>
+<span class="fc" id="L1107">          pos = p;</span>
+<span class="fc" id="L1108">          readEscapeCharacter();</span>
+<span class="fc" id="L1109">          p = pos;</span>
+<span class="fc" id="L1110">          l = limit;</span>
+<span class="fc bfc" id="L1111" title="All 2 branches covered.">        } else if (c == '\n') {</span>
+<span class="fc" id="L1112">          lineNumber++;</span>
+<span class="fc" id="L1113">          lineStart = p;</span>
+        }
+<span class="fc" id="L1115">      }</span>
+<span class="fc" id="L1116">      pos = p;</span>
+<span class="pc bpc" id="L1117" title="1 of 2 branches missed.">    } while (fillBuffer(1));</span>
+<span class="nc" id="L1118">    throw syntaxError(&quot;Unterminated string&quot;);</span>
+  }
+
+  private void skipUnquotedValue() throws IOException {
+    do {
+<span class="fc" id="L1123">      int i = 0;</span>
+<span class="fc bfc" id="L1124" title="All 2 branches covered.">      for (; pos + i &lt; limit; i++) {</span>
+<span class="pc bpc" id="L1125" title="1 of 3 branches missed.">        switch (buffer[pos + i]) {</span>
+        case '/':
+        case '\\':
+        case ';':
+        case '#':
+        case '=':
+<span class="nc" id="L1131">          checkLenient(); // fall-through</span>
+        case '{':
+        case '}':
+        case '[':
+        case ']':
+        case ':':
+        case ',':
+        case ' ':
+        case '\t':
+        case '\f':
+        case '\r':
+        case '\n':
+<span class="fc" id="L1143">          pos += i;</span>
+<span class="fc" id="L1144">          return;</span>
+        }
+      }
+<span class="fc" id="L1147">      pos += i;</span>
+<span class="fc bfc" id="L1148" title="All 2 branches covered.">    } while (fillBuffer(1));</span>
+<span class="fc" id="L1149">  }</span>
+
+  /**
+   * Returns the {@link com.google.gson.stream.JsonToken#NUMBER int} value of the next token,
+   * consuming it. If the next token is a string, this method will attempt to
+   * parse it as an int. If the next token's numeric value cannot be exactly
+   * represented by a Java {@code int}, this method throws.
+   *
+   * @throws IllegalStateException if the next token is not a literal value.
+   * @throws NumberFormatException if the next literal value cannot be parsed
+   *     as a number, or exactly represented as an int.
+   */
+  public int nextInt() throws IOException {
+<span class="fc" id="L1162">    int p = peeked;</span>
+<span class="fc bfc" id="L1163" title="All 2 branches covered.">    if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L1164">      p = doPeek();</span>
+    }
+
+    int result;
+<span class="fc bfc" id="L1168" title="All 2 branches covered.">    if (p == PEEKED_LONG) {</span>
+<span class="fc" id="L1169">      result = (int) peekedLong;</span>
+<span class="fc bfc" id="L1170" title="All 2 branches covered.">      if (peekedLong != result) { // Make sure no precision was lost casting to 'int'.</span>
+<span class="fc" id="L1171">        throw new NumberFormatException(&quot;Expected an int but was &quot; + peekedLong + locationString());</span>
+      }
+<span class="fc" id="L1173">      peeked = PEEKED_NONE;</span>
+<span class="fc" id="L1174">      pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L1175">      return result;</span>
+    }
+
+<span class="fc bfc" id="L1178" title="All 2 branches covered.">    if (p == PEEKED_NUMBER) {</span>
+<span class="fc" id="L1179">      peekedString = new String(buffer, pos, peekedNumberLength);</span>
+<span class="fc" id="L1180">      pos += peekedNumberLength;</span>
+<span class="fc bfc" id="L1181" title="All 6 branches covered.">    } else if (p == PEEKED_SINGLE_QUOTED || p == PEEKED_DOUBLE_QUOTED || p == PEEKED_UNQUOTED) {</span>
+<span class="fc bfc" id="L1182" title="All 2 branches covered.">      if (p == PEEKED_UNQUOTED) {</span>
+<span class="fc" id="L1183">        peekedString = nextUnquotedValue();</span>
+      } else {
+<span class="fc bfc" id="L1185" title="All 2 branches covered.">        peekedString = nextQuotedValue(p == PEEKED_SINGLE_QUOTED ? '\'' : '&quot;');</span>
+      }
+      try {
+<span class="fc" id="L1188">        result = Integer.parseInt(peekedString);</span>
+<span class="fc" id="L1189">        peeked = PEEKED_NONE;</span>
+<span class="fc" id="L1190">        pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L1191">        return result;</span>
+<span class="fc" id="L1192">      } catch (NumberFormatException ignored) {</span>
+        // Fall back to parse as a double below.
+<span class="fc" id="L1194">      }</span>
+    } else {
+<span class="fc" id="L1196">      throw new IllegalStateException(&quot;Expected an int but was &quot; + peek() + locationString());</span>
+    }
+
+<span class="fc" id="L1199">    peeked = PEEKED_BUFFERED;</span>
+<span class="fc" id="L1200">    double asDouble = Double.parseDouble(peekedString); // don't catch this NumberFormatException.</span>
+<span class="fc" id="L1201">    result = (int) asDouble;</span>
+<span class="fc bfc" id="L1202" title="All 2 branches covered.">    if (result != asDouble) { // Make sure no precision was lost casting to 'int'.</span>
+<span class="fc" id="L1203">      throw new NumberFormatException(&quot;Expected an int but was &quot; + peekedString + locationString());</span>
+    }
+<span class="fc" id="L1205">    peekedString = null;</span>
+<span class="fc" id="L1206">    peeked = PEEKED_NONE;</span>
+<span class="fc" id="L1207">    pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L1208">    return result;</span>
+  }
+
+  /**
+   * Closes this JSON reader and the underlying {@link java.io.Reader}.
+   */
+  public void close() throws IOException {
+<span class="fc" id="L1215">    peeked = PEEKED_NONE;</span>
+<span class="fc" id="L1216">    stack[0] = JsonScope.CLOSED;</span>
+<span class="fc" id="L1217">    stackSize = 1;</span>
+<span class="fc" id="L1218">    in.close();</span>
+<span class="fc" id="L1219">  }</span>
+
+  /**
+   * Skips the next value recursively. If it is an object or array, all nested
+   * elements are skipped. This method is intended for use when the JSON token
+   * stream contains unrecognized or unhandled values.
+   */
+  public void skipValue() throws IOException {
+<span class="fc" id="L1227">    int count = 0;</span>
+    do {
+<span class="fc" id="L1229">      int p = peeked;</span>
+<span class="fc bfc" id="L1230" title="All 2 branches covered.">      if (p == PEEKED_NONE) {</span>
+<span class="fc" id="L1231">        p = doPeek();</span>
+      }
+
+<span class="fc bfc" id="L1234" title="All 2 branches covered.">      if (p == PEEKED_BEGIN_ARRAY) {</span>
+<span class="fc" id="L1235">        push(JsonScope.EMPTY_ARRAY);</span>
+<span class="fc" id="L1236">        count++;</span>
+<span class="fc bfc" id="L1237" title="All 2 branches covered.">      } else if (p == PEEKED_BEGIN_OBJECT) {</span>
+<span class="fc" id="L1238">        push(JsonScope.EMPTY_OBJECT);</span>
+<span class="fc" id="L1239">        count++;</span>
+<span class="fc bfc" id="L1240" title="All 2 branches covered.">      } else if (p == PEEKED_END_ARRAY) {</span>
+<span class="fc" id="L1241">        stackSize--;</span>
+<span class="fc" id="L1242">        count--;</span>
+<span class="fc bfc" id="L1243" title="All 2 branches covered.">      } else if (p == PEEKED_END_OBJECT) {</span>
+<span class="fc" id="L1244">        stackSize--;</span>
+<span class="fc" id="L1245">        count--;</span>
+<span class="fc bfc" id="L1246" title="All 4 branches covered.">      } else if (p == PEEKED_UNQUOTED_NAME || p == PEEKED_UNQUOTED) {</span>
+<span class="fc" id="L1247">        skipUnquotedValue();</span>
+<span class="fc bfc" id="L1248" title="All 4 branches covered.">      } else if (p == PEEKED_SINGLE_QUOTED || p == PEEKED_SINGLE_QUOTED_NAME) {</span>
+<span class="fc" id="L1249">        skipQuotedValue('\'');</span>
+<span class="fc bfc" id="L1250" title="All 4 branches covered.">      } else if (p == PEEKED_DOUBLE_QUOTED || p == PEEKED_DOUBLE_QUOTED_NAME) {</span>
+<span class="fc" id="L1251">        skipQuotedValue('&quot;');</span>
+<span class="fc bfc" id="L1252" title="All 2 branches covered.">      } else if (p == PEEKED_NUMBER) {</span>
+<span class="fc" id="L1253">        pos += peekedNumberLength;</span>
+      }
+<span class="fc" id="L1255">      peeked = PEEKED_NONE;</span>
+<span class="fc bfc" id="L1256" title="All 2 branches covered.">    } while (count != 0);</span>
+
+<span class="fc" id="L1258">    pathIndices[stackSize - 1]++;</span>
+<span class="fc" id="L1259">    pathNames[stackSize - 1] = &quot;null&quot;;</span>
+<span class="fc" id="L1260">  }</span>
+
+  private void push(int newTop) {
+<span class="fc bfc" id="L1263" title="All 2 branches covered.">    if (stackSize == stack.length) {</span>
+<span class="fc" id="L1264">      int newLength = stackSize * 2;</span>
+<span class="fc" id="L1265">      stack = Arrays.copyOf(stack, newLength);</span>
+<span class="fc" id="L1266">      pathIndices = Arrays.copyOf(pathIndices, newLength);</span>
+<span class="fc" id="L1267">      pathNames = Arrays.copyOf(pathNames, newLength);</span>
+    }
+<span class="fc" id="L1269">    stack[stackSize++] = newTop;</span>
+<span class="fc" id="L1270">  }</span>
+
+  /**
+   * Returns true once {@code limit - pos &gt;= minimum}. If the data is
+   * exhausted before that many characters are available, this returns
+   * false.
+   */
+  private boolean fillBuffer(int minimum) throws IOException {
+<span class="fc" id="L1278">    char[] buffer = this.buffer;</span>
+<span class="fc" id="L1279">    lineStart -= pos;</span>
+<span class="fc bfc" id="L1280" title="All 2 branches covered.">    if (limit != pos) {</span>
+<span class="fc" id="L1281">      limit -= pos;</span>
+<span class="fc" id="L1282">      System.arraycopy(buffer, pos, buffer, 0, limit);</span>
+    } else {
+<span class="fc" id="L1284">      limit = 0;</span>
+    }
+
+<span class="fc" id="L1287">    pos = 0;</span>
+    int total;
+<span class="fc bfc" id="L1289" title="All 2 branches covered.">    while ((total = in.read(buffer, limit, buffer.length - limit)) != -1) {</span>
+<span class="fc" id="L1290">      limit += total;</span>
+
+      // if this is the first read, consume an optional byte order mark (BOM) if it exists
+<span class="pc bpc" id="L1293" title="1 of 8 branches missed.">      if (lineNumber == 0 &amp;&amp; lineStart == 0 &amp;&amp; limit &gt; 0 &amp;&amp; buffer[0] == '\ufeff') {</span>
+<span class="fc" id="L1294">        pos++;</span>
+<span class="fc" id="L1295">        lineStart++;</span>
+<span class="fc" id="L1296">        minimum++;</span>
+      }
+
+<span class="pc bpc" id="L1299" title="1 of 2 branches missed.">      if (limit &gt;= minimum) {</span>
+<span class="fc" id="L1300">        return true;</span>
+      }
+    }
+<span class="fc" id="L1303">    return false;</span>
+  }
+
+  /**
+   * Returns the next character in the stream that is neither whitespace nor a
+   * part of a comment. When this returns, the returned character is always at
+   * {@code buffer[pos-1]}; this means the caller can always push back the
+   * returned character by decrementing {@code pos}.
+   */
+  private int nextNonWhitespace(boolean throwOnEof) throws IOException {
+    /*
+     * This code uses ugly local variables 'p' and 'l' representing the 'pos'
+     * and 'limit' fields respectively. Using locals rather than fields saves
+     * a few field reads for each whitespace character in a pretty-printed
+     * document, resulting in a 5% speedup. We need to flush 'p' to its field
+     * before any (potentially indirect) call to fillBuffer() and reread both
+     * 'p' and 'l' after any (potentially indirect) call to the same method.
+     */
+<span class="fc" id="L1321">    char[] buffer = this.buffer;</span>
+<span class="fc" id="L1322">    int p = pos;</span>
+<span class="fc" id="L1323">    int l = limit;</span>
+    while (true) {
+<span class="fc bfc" id="L1325" title="All 2 branches covered.">      if (p == l) {</span>
+<span class="fc" id="L1326">        pos = p;</span>
+<span class="fc bfc" id="L1327" title="All 2 branches covered.">        if (!fillBuffer(1)) {</span>
+<span class="fc" id="L1328">          break;</span>
+        }
+<span class="fc" id="L1330">        p = pos;</span>
+<span class="fc" id="L1331">        l = limit;</span>
+      }
+
+<span class="fc" id="L1334">      int c = buffer[p++];</span>
+<span class="fc bfc" id="L1335" title="All 2 branches covered.">      if (c == '\n') {</span>
+<span class="fc" id="L1336">        lineNumber++;</span>
+<span class="fc" id="L1337">        lineStart = p;</span>
+<span class="fc" id="L1338">        continue;</span>
+<span class="fc bfc" id="L1339" title="All 6 branches covered.">      } else if (c == ' ' || c == '\r' || c == '\t') {</span>
+<span class="fc" id="L1340">        continue;</span>
+      }
+
+<span class="fc bfc" id="L1343" title="All 2 branches covered.">      if (c == '/') {</span>
+<span class="fc" id="L1344">        pos = p;</span>
+<span class="fc bfc" id="L1345" title="All 2 branches covered.">        if (p == l) {</span>
+<span class="fc" id="L1346">          pos--; // push back '/' so it's still in the buffer when this method returns</span>
+<span class="fc" id="L1347">          boolean charsLoaded = fillBuffer(2);</span>
+<span class="fc" id="L1348">          pos++; // consume the '/' again</span>
+<span class="pc bpc" id="L1349" title="1 of 2 branches missed.">          if (!charsLoaded) {</span>
+<span class="fc" id="L1350">            return c;</span>
+          }
+        }
+
+<span class="fc" id="L1354">        checkLenient();</span>
+<span class="fc" id="L1355">        char peek = buffer[pos];</span>
+<span class="fc bfc" id="L1356" title="All 3 branches covered.">        switch (peek) {</span>
+        case '*':
+          // skip a /* c-style comment */
+<span class="fc" id="L1359">          pos++;</span>
+<span class="fc bfc" id="L1360" title="All 2 branches covered.">          if (!skipTo(&quot;*/&quot;)) {</span>
+<span class="nc" id="L1361">            throw syntaxError(&quot;Unterminated comment&quot;);</span>
+          }
+<span class="fc" id="L1363">          p = pos + 2;</span>
+<span class="fc" id="L1364">          l = limit;</span>
+<span class="fc" id="L1365">          continue;</span>
+
+        case '/':
+          // skip a // end-of-line comment
+<span class="fc" id="L1369">          pos++;</span>
+<span class="fc" id="L1370">          skipToEndOfLine();</span>
+<span class="fc" id="L1371">          p = pos;</span>
+<span class="fc" id="L1372">          l = limit;</span>
+<span class="fc" id="L1373">          continue;</span>
+
+        default:
+<span class="fc" id="L1376">          return c;</span>
+        }
+<span class="fc bfc" id="L1378" title="All 2 branches covered.">      } else if (c == '#') {</span>
+<span class="fc" id="L1379">        pos = p;</span>
+        /*
+         * Skip a # hash end-of-line comment. The JSON RFC doesn't
+         * specify this behaviour, but it's required to parse
+         * existing documents. See http://b/2571423.
+         */
+<span class="fc" id="L1385">        checkLenient();</span>
+<span class="fc" id="L1386">        skipToEndOfLine();</span>
+<span class="fc" id="L1387">        p = pos;</span>
+<span class="fc" id="L1388">        l = limit;</span>
+      } else {
+<span class="fc" id="L1390">        pos = p;</span>
+<span class="fc" id="L1391">        return c;</span>
+      }
+<span class="fc" id="L1393">    }</span>
+<span class="fc bfc" id="L1394" title="All 2 branches covered.">    if (throwOnEof) {</span>
+<span class="fc" id="L1395">      throw new EOFException(&quot;End of input&quot; + locationString());</span>
+    } else {
+<span class="fc" id="L1397">      return -1;</span>
+    }
+  }
+
+  private void checkLenient() throws IOException {
+<span class="fc bfc" id="L1402" title="All 2 branches covered.">    if (!lenient) {</span>
+<span class="nc" id="L1403">      throw syntaxError(&quot;Use JsonReader.setLenient(true) to accept malformed JSON&quot;);</span>
+    }
+<span class="fc" id="L1405">  }</span>
+
+  /**
+   * Advances the position until after the next newline character. If the line
+   * is terminated by &quot;\r\n&quot;, the '\n' must be consumed as whitespace by the
+   * caller.
+   */
+  private void skipToEndOfLine() throws IOException {
+<span class="pc bpc" id="L1413" title="1 of 4 branches missed.">    while (pos &lt; limit || fillBuffer(1)) {</span>
+<span class="fc" id="L1414">      char c = buffer[pos++];</span>
+<span class="fc bfc" id="L1415" title="All 2 branches covered.">      if (c == '\n') {</span>
+<span class="fc" id="L1416">        lineNumber++;</span>
+<span class="fc" id="L1417">        lineStart = pos;</span>
+<span class="fc" id="L1418">        break;</span>
+<span class="fc bfc" id="L1419" title="All 2 branches covered.">      } else if (c == '\r') {</span>
+<span class="fc" id="L1420">        break;</span>
+      }
+<span class="fc" id="L1422">    }</span>
+<span class="fc" id="L1423">  }</span>
+
+  /**
+   * @param toFind a string to search for. Must not contain a newline.
+   */
+  private boolean skipTo(String toFind) throws IOException {
+<span class="fc" id="L1429">    int length = toFind.length();</span>
+    outer:
+<span class="pc bpc" id="L1431" title="1 of 4 branches missed.">    for (; pos + length &lt;= limit || fillBuffer(length); pos++) {</span>
+<span class="fc bfc" id="L1432" title="All 2 branches covered.">      if (buffer[pos] == '\n') {</span>
+<span class="fc" id="L1433">        lineNumber++;</span>
+<span class="fc" id="L1434">        lineStart = pos + 1;</span>
+<span class="fc" id="L1435">        continue;</span>
+      }
+<span class="fc bfc" id="L1437" title="All 2 branches covered.">      for (int c = 0; c &lt; length; c++) {</span>
+<span class="fc bfc" id="L1438" title="All 2 branches covered.">        if (buffer[pos + c] != toFind.charAt(c)) {</span>
+<span class="fc" id="L1439">          continue outer;</span>
+        }
+      }
+<span class="fc" id="L1442">      return true;</span>
+    }
+<span class="fc" id="L1444">    return false;</span>
+  }
+
+  @Override public String toString() {
+<span class="nc" id="L1448">    return getClass().getSimpleName() + locationString();</span>
+  }
+
+  String locationString() {
+<span class="fc" id="L1452">    int line = lineNumber + 1;</span>
+<span class="fc" id="L1453">    int column = pos - lineStart + 1;</span>
+<span class="fc" id="L1454">    return &quot; at line &quot; + line + &quot; column &quot; + column + &quot; path &quot; + getPath();</span>
+  }
+
+  /**
+   * Returns a &lt;a href=&quot;http://goessner.net/articles/JsonPath/&quot;&gt;JsonPath&lt;/a&gt; to
+   * the current location in the JSON value.
+   */
+  public String getPath() {
+<span class="fc" id="L1462">    StringBuilder result = new StringBuilder().append('$');</span>
+<span class="fc bfc" id="L1463" title="All 2 branches covered.">    for (int i = 0, size = stackSize; i &lt; size; i++) {</span>
+<span class="fc bfc" id="L1464" title="All 3 branches covered.">      switch (stack[i]) {</span>
+        case JsonScope.EMPTY_ARRAY:
+        case JsonScope.NONEMPTY_ARRAY:
+<span class="fc" id="L1467">          result.append('[').append(pathIndices[i]).append(']');</span>
+<span class="fc" id="L1468">          break;</span>
+
+        case JsonScope.EMPTY_OBJECT:
+        case JsonScope.DANGLING_NAME:
+        case JsonScope.NONEMPTY_OBJECT:
+<span class="fc" id="L1473">          result.append('.');</span>
+<span class="fc bfc" id="L1474" title="All 2 branches covered.">          if (pathNames[i] != null) {</span>
+<span class="fc" id="L1475">            result.append(pathNames[i]);</span>
+          }
+          break;
+
+        case JsonScope.NONEMPTY_DOCUMENT:
+        case JsonScope.EMPTY_DOCUMENT:
+        case JsonScope.CLOSED:
+          break;
+      }
+    }
+<span class="fc" id="L1485">    return result.toString();</span>
+  }
+
+  /**
+   * Unescapes the character identified by the character or characters that
+   * immediately follow a backslash. The backslash '\' should have already
+   * been read. This supports both unicode escapes &quot;u000A&quot; and two-character
+   * escapes &quot;\n&quot;.
+   *
+   * @throws NumberFormatException if any unicode escape sequences are
+   *     malformed.
+   */
+  private char readEscapeCharacter() throws IOException {
+<span class="pc bpc" id="L1498" title="1 of 4 branches missed.">    if (pos == limit &amp;&amp; !fillBuffer(1)) {</span>
+<span class="nc" id="L1499">      throw syntaxError(&quot;Unterminated escape sequence&quot;);</span>
+    }
+
+<span class="fc" id="L1502">    char escaped = buffer[pos++];</span>
+<span class="pc bpc" id="L1503" title="1 of 9 branches missed.">    switch (escaped) {</span>
+    case 'u':
+<span class="pc bpc" id="L1505" title="1 of 4 branches missed.">      if (pos + 4 &gt; limit &amp;&amp; !fillBuffer(4)) {</span>
+<span class="nc" id="L1506">        throw syntaxError(&quot;Unterminated escape sequence&quot;);</span>
+      }
+      // Equivalent to Integer.parseInt(stringPool.get(buffer, pos, 4), 16);
+<span class="fc" id="L1509">      char result = 0;</span>
+<span class="fc bfc" id="L1510" title="All 2 branches covered.">      for (int i = pos, end = i + 4; i &lt; end; i++) {</span>
+<span class="fc" id="L1511">        char c = buffer[i];</span>
+<span class="fc" id="L1512">        result &lt;&lt;= 4;</span>
+<span class="pc bpc" id="L1513" title="1 of 4 branches missed.">        if (c &gt;= '0' &amp;&amp; c &lt;= '9') {</span>
+<span class="fc" id="L1514">          result += (c - '0');</span>
+<span class="fc bfc" id="L1515" title="All 4 branches covered.">        } else if (c &gt;= 'a' &amp;&amp; c &lt;= 'f') {</span>
+<span class="fc" id="L1516">          result += (c - 'a' + 10);</span>
+<span class="pc bpc" id="L1517" title="1 of 4 branches missed.">        } else if (c &gt;= 'A' &amp;&amp; c &lt;= 'F') {</span>
+<span class="fc" id="L1518">          result += (c - 'A' + 10);</span>
+        } else {
+<span class="fc" id="L1520">          throw new NumberFormatException(&quot;\\u&quot; + new String(buffer, pos, 4));</span>
+        }
+      }
+<span class="fc" id="L1523">      pos += 4;</span>
+<span class="fc" id="L1524">      return result;</span>
+
+    case 't':
+<span class="fc" id="L1527">      return '\t';</span>
+
+    case 'b':
+<span class="fc" id="L1530">      return '\b';</span>
+
+    case 'n':
+<span class="fc" id="L1533">      return '\n';</span>
+
+    case 'r':
+<span class="fc" id="L1536">      return '\r';</span>
+
+    case 'f':
+<span class="fc" id="L1539">      return '\f';</span>
+
+    case '\n':
+<span class="fc" id="L1542">      lineNumber++;</span>
+<span class="fc" id="L1543">      lineStart = pos;</span>
+      // fall-through
+
+    case '\'':
+    case '&quot;':
+    case '\\':
+    case '/':	
+<span class="fc" id="L1550">    	return escaped;</span>
+    default:
+    	// throw error when none of the above cases are matched
+<span class="nc" id="L1553">    	throw syntaxError(&quot;Invalid escape sequence&quot;);</span>
+    }
+  }
+
+  /**
+   * Throws a new IO exception with the given message and a context snippet
+   * with this reader's content.
+   */
+  private IOException syntaxError(String message) throws IOException {
+<span class="fc" id="L1562">    throw new MalformedJsonException(message + locationString());</span>
+  }
+
+  /**
+   * Consumes the non-execute prefix if it exists.
+   */
+  private void consumeNonExecutePrefix() throws IOException {
+    // fast forward through the leading whitespace
+<span class="fc" id="L1570">    nextNonWhitespace(true);</span>
+<span class="fc" id="L1571">    pos--;</span>
+
+<span class="fc" id="L1573">    int p = pos;</span>
+<span class="pc bpc" id="L1574" title="1 of 4 branches missed.">    if (p + 5 &gt; limit &amp;&amp; !fillBuffer(5)) {</span>
+<span class="fc" id="L1575">      return;</span>
+    }
+
+<span class="fc" id="L1578">    char[] buf = buffer;</span>
+<span class="pc bpc" id="L1579" title="3 of 10 branches missed.">    if(buf[p] != ')' || buf[p + 1] != ']' || buf[p + 2] != '}' || buf[p + 3] != '\'' || buf[p + 4] != '\n') {</span>
+<span class="fc" id="L1580">      return; // not a security token!</span>
+    }
+
+    // we consumed a security token!
+<span class="fc" id="L1584">    pos += 5;</span>
+<span class="fc" id="L1585">  }</span>
+
+  static {
+<span class="fc" id="L1588">    JsonReaderInternalAccess.INSTANCE = new JsonReaderInternalAccess() {</span>
+      @Override public void promoteNameToValue(JsonReader reader) throws IOException {
+<span class="fc bfc" id="L1590" title="All 2 branches covered.">        if (reader instanceof JsonTreeReader) {</span>
+<span class="fc" id="L1591">          ((JsonTreeReader)reader).promoteNameToValue();</span>
+<span class="fc" id="L1592">          return;</span>
+        }
+<span class="fc" id="L1594">        int p = reader.peeked;</span>
+<span class="pc bpc" id="L1595" title="1 of 2 branches missed.">        if (p == PEEKED_NONE) {</span>
+<span class="nc" id="L1596">          p = reader.doPeek();</span>
+        }
+<span class="fc bfc" id="L1598" title="All 2 branches covered.">        if (p == PEEKED_DOUBLE_QUOTED_NAME) {</span>
+<span class="fc" id="L1599">          reader.peeked = PEEKED_DOUBLE_QUOTED;</span>
+<span class="fc bfc" id="L1600" title="All 2 branches covered.">        } else if (p == PEEKED_SINGLE_QUOTED_NAME) {</span>
+<span class="fc" id="L1601">          reader.peeked = PEEKED_SINGLE_QUOTED;</span>
+<span class="pc bpc" id="L1602" title="1 of 2 branches missed.">        } else if (p == PEEKED_UNQUOTED_NAME) {</span>
+<span class="fc" id="L1603">          reader.peeked = PEEKED_UNQUOTED;</span>
+        } else {
+<span class="nc" id="L1605">          throw new IllegalStateException(</span>
+<span class="nc" id="L1606">              &quot;Expected a name but was &quot; + reader.peek() + reader.locationString());</span>
+        }
+<span class="fc" id="L1608">      }</span>
+    };
+<span class="fc" id="L1610">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

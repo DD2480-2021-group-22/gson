@@ -1,4 +1,9 @@
-# Gson
+# DD2480 Assignment 3: Code complexity, coverage
+Group 22
+
+Here's the [link](https://docs.google.com/document/d/1z9qEsqzQKn9rMJCoXnAgHYlUILiwxZERY8WYToPdhbM/edit?usp=sharing) to the report. 
+
+## Gson
 
 Gson is a Java library that can be used to convert Java Objects into their JSON representation. It can also be used to convert a JSON string to an equivalent Java object.
 Gson can work with arbitrary Java objects including pre-existing objects that you do not have source-code of.
